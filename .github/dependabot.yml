@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # Maintain dependencies for the Next.js app
+  - package-ecosystem: "npm"
+    directory: "/gordon-ramsay-reservations"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
