@@ -122,7 +122,7 @@ Building the user-facing web app adhering to Legal Compliance.
 > 4. Constraint (LEG-2): Build a simulated, tokenized payment form. Do not capture real credit card PANs."
 
 - [ ] Build input form (Date, Time, Party Size).
-- [ ] Display results from Phase 2 Availability RPC alongside a view-only digital menu component.
+- [ ] Display results from Phase 2 Availability RPC alongside a view-only digital menu component. [QDR-82]
 
 ### Subtask 3.3: Simulated Checkout Modal (FR-3 & SEC-3) [QDR-39]
 
@@ -254,10 +254,9 @@ Finalizing the management modules.
 > 1. `/admin/menu`: Build forms to Create, Read, Update, and Delete digital menu items (FR-11).
 > 2. `/admin/waitlist`: Build a UI to view the current waitlist queue. Add buttons allowing admins to manually prioritize (bump up) a VIP customer or remove someone from the queue (FR-12)."
 
-- [ ] Build Admin forms to Create, Read, Update, and Delete digital menu items (FR-11).
-- [ ] Updates will instantly reflect on the Customer Portal.
+- [ ] Build Admin forms to Create, Read, Update, and Delete digital menu items (FR-11). [QDR-81]
+- [ ] Updates will instantly reflect on the Customer Portal. [QDR-81]
 
 ### Subtask 6.4: Manual Waitlist Control [QDR-80]
 
-- [ ] Build Admin UI to view the current waitlist.
-- [ ] Add controls to manually bump VIPs to the top of the queue or remove users.
+- [ ] Build Admin UI to manually view, edit, and prioritize the waitlist queue for VIPs (FR-12). [QDR-83]
