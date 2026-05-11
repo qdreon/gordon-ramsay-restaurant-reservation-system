@@ -50,7 +50,7 @@ Building the 3NF Database Model and RBAC Security.
 - [x] Create `Waitlist` table.
 - [x] Implement Foreign Keys linking to `Customers` and `Tables` with `ON DELETE CASCADE`.
 
-### Subtask 1.3: Role-Based Access Control (RBAC) & RLS [QDR-37]
+### Subtask 1.3: Role-Based Access Control (RBAC) & RLS
 
 **AI Prompt:**
 > "Phase 1, Step 2. Generate the SQL for Role-Based Access Control (RBAC) and Row Level Security (RLS).
@@ -58,9 +58,9 @@ Building the 3NF Database Model and RBAC Security.
 > 2. Write RLS policies for all tables: Customers can only SELECT, INSERT, and UPDATE rows where their user ID matches.
 > 3. Admins have full CRUD access across all tables."
 
-- [x] Add `role` column (Customer vs. Admin).
-- [x] Write Supabase RLS policies: Customers can only SELECT/UPDATE their own UUID records.
-- [x] Admins get full CRUD access.
+- [x] Add `role` column (Customer vs. Admin). [QDR-55]
+- [x] Write Supabase RLS policies: Customers can only SELECT/UPDATE their own UUID records. [QDR-57]
+- [x] Admins get full CRUD access. [QDR-57]
 
 ---
 
@@ -76,9 +76,9 @@ Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 > 2. Constraint (FR-4): Include logic to automatically combine adjacent tables if the Party Size exceeds a single table's capacity.
 > 3. Cap this automatic table combination at a strict maximum of 12 Pax. Return the available table IDs or 'No Availability'."
 
-- [x] Write Postgres RPC to query available tables for a specific Date/Time.
-- [x] Implement algorithmic logic to automatically combine adjacent tables if Party Size exceeds a single table.
-- [x] Cap combination at 12 Pax (FR-4).
+- [x] Write Postgres RPC to query available tables for a specific Date/Time. [QDR-62]
+- [x] Implement algorithmic logic to automatically combine adjacent tables if Party Size exceeds a single table. [QDR-63]
+- [x] Cap combination at 12 Pax (FR-4). [QDR-63]
 
 ### Subtask 2.2: Concurrency Row-Locking Engine (PR-2) [QDR-40]
 
@@ -88,13 +88,13 @@ Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 > 2. The function must update the table status to 'Reserved' and initiate a 5-minute timeout window for the deposit checkout.
 > 3. Include the rollback logic: If the payment is not confirmed within 5 minutes, release the lock and revert the status to 'Available'."
 
-- [x] Write a Postgres transaction using `SELECT ... FOR UPDATE`.
-- [x] Lock selected table row(s); reject concurrent conflicts within 1 second.
+- [x] Write a Postgres transaction using `SELECT ... FOR UPDATE`. [QDR-64]
+- [x] Lock selected table row(s); reject concurrent conflicts within 1 second. [QDR-64]
 
 ### Subtask 2.3: Checkout Timeout Rollback [QDR-40]
 
-- [x] Write a database trigger or edge function that automatically releases the row-lock.
-- [x] Revert the table to 'Available' if the reservation is not marked 'Confirmed' within 5 minutes.
+- [x] Write a database trigger or edge function that automatically releases the row-lock. [QDR-65]
+- [x] Revert the table to 'Available' if the reservation is not marked 'Confirmed' within 5 minutes. [QDR-65]
 
 ---
 
@@ -102,15 +102,15 @@ Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 
 Building the user-facing web app adhering to Legal Compliance.
 
-### Subtask 3.1: Registration & Login UI [QDR-38]
+### Subtask 3.1: Registration & Login UI [QDR-36]
 
 **AI Prompt:**
 > "Phase 3, Step 1. Build the `/login` and `/register` Next.js pages using Supabase Auth.
 > 1. Include fields for Name, Email, Password, Contact Info, and Dietary Restrictions.
 > 2. Constraint (LEG-1): The register form MUST include a mandatory consent checkbox for RA 10173 (Data Privacy Act). The form cannot submit unless checked."
 
-- [ ] Build Auth forms using Supabase Auth.
-- [ ] Add mandatory checkbox for Data Privacy Act (RA 10173) consent.
+- [ ] Build Auth forms using Supabase Auth. [QDR-54]
+- [ ] Add mandatory checkbox for Data Privacy Act (RA 10173) consent. [QDR-54]
 
 ### Subtask 3.2: Search & Menu UI [QDR-39]
 
@@ -137,9 +137,9 @@ Building the user-facing web app adhering to Legal Compliance.
 > 1. Display upcoming and past reservations. Include a 'Cancel' button (disable it if within 2 hours of the booking time).
 > 2. Constraint (LEG-1): Build a prominent 'Delete Account' button. Write the backend function this triggers to perform a permanent cascade delete of the user's PII, CRM data, and Supabase Auth record."
 
-- [ ] Build UI for customers to view upcoming/past reservations.
-- [ ] Implement "Cancel Booking" button (disable if within 2 hours of reservation).
-- [ ] Build "Delete Account" button that triggers permanent cascade delete of PII and CRM data (LEG-1).
+- [ ] Build UI for customers to view upcoming/past reservations. [QDR-59]
+- [ ] Implement "Cancel Booking" button (disable if within 2 hours of reservation). [QDR-60]
+- [ ] Build "Delete Account" button that triggers permanent cascade delete of PII and CRM data (LEG-1). [QDR-61]
 
 ---
 
@@ -204,9 +204,9 @@ Building the automated workflows.
 > 2. Constraint: Do NOT trigger this if the current time is within 60 minutes of the restaurant's closing time.
 > 3. Setup the logic to grant the notified waitlist customer exactly 10 minutes to accept the table before moving to the next person."
 
-- [ ] Write a Postgres Trigger: `ON UPDATE` of Reservations to 'Cancelled', automatically pop the next customer off the Waitlist.
-- [ ] Add logic to abort this trigger if the current time is within 60 minutes of the restaurant's closing shift (FR-5).
-- [ ] Grant 10-minute acceptance window before moving to the next person.
+- [ ] Write a Postgres Trigger: `ON UPDATE` of Reservations to 'Cancelled', automatically pop the next customer off the Waitlist. [QDR-66]
+- [ ] Add logic to abort this trigger if the current time is within 60 minutes of the restaurant's closing shift (FR-5). [QDR-68]
+- [ ] Grant 10-minute acceptance window before moving to the next person. [QDR-67]
 
 ### Subtask 5.3: SMTP Email Service [QDR-45]
 
