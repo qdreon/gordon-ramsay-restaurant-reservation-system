@@ -1,12 +1,29 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
+
+const DEFAULT_RESERVATION_HOURS = 2;
+const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 
 type AvailabilityOption = {
   table_ids: string[];
   table_numbers: number[];
   total_capacity: number;
 };
+
+function isAvailabilityOptionArray(value: unknown): value is AvailabilityOption[] {
+  if (!Array.isArray(value)) return false;
+
+  return value.every((item) => {
+    if (!item || typeof item !== 'object') return false;
+    const candidate = item as Partial<AvailabilityOption>;
+    return (
+      Array.isArray(candidate.table_ids) &&
+      Array.isArray(candidate.table_numbers) &&
+      typeof candidate.total_capacity === 'number'
+    );
+  });
+}
 
 export default function Home() {
   const [reservationDate, setReservationDate] = useState('');
@@ -15,29 +32,50 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [options, setOptions] = useState<AvailabilityOption[]>([]);
-
-  const hasSearched = useMemo(
-    () => options.length > 0 || error !== null,
-    [options.length, error]
-  );
+  const [hasSearched, setHasSearched] = useState(false);
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setOptions([]);
+    setHasSearched(false);
 
     if (!reservationDate || !reservationTime) {
       setError('Please select both date and time.');
       return;
     }
 
-    const startLocal = new Date(`${reservationDate}T${reservationTime}:00`);
+    const dateParts = reservationDate.split('-');
+    const timeParts = reservationTime.split(':');
+
+    if (dateParts.length !== 3 || timeParts.length !== 2) {
+      setError('Invalid date/time format.');
+      return;
+    }
+
+    const [year, month, day] = dateParts.map(Number);
+    const [hour, minute] = timeParts.map(Number);
+
+    if (
+      !Number.isFinite(year) ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(day) ||
+      !Number.isFinite(hour) ||
+      !Number.isFinite(minute)
+    ) {
+      setError('Invalid date/time value.');
+      return;
+    }
+
+    const startLocal = new Date(year, month - 1, day, hour, minute, 0);
     if (Number.isNaN(startLocal.getTime())) {
       setError('Invalid date/time selection.');
       return;
     }
 
-    const endLocal = new Date(startLocal.getTime() + 2 * 60 * 60 * 1000);
+    const endLocal = new Date(
+      startLocal.getTime() + DEFAULT_RESERVATION_HOURS * ONE_HOUR_IN_MS
+    );
 
     setLoading(true);
     try {
@@ -61,11 +99,17 @@ export default function Home() {
         throw new Error(payload.error ?? 'Failed to search availability.');
       }
 
+      if (payload.options !== undefined && !isAvailabilityOptionArray(payload.options)) {
+        throw new Error('Unexpected response structure for availability options.');
+      }
+
       setOptions(payload.options ?? []);
+      setHasSearched(true);
     } catch (requestError) {
       const message =
         requestError instanceof Error ? requestError.message : 'Unexpected error occurred.';
       setError(message);
+      setHasSearched(true);
     } finally {
       setLoading(false);
     }
