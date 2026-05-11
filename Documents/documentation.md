@@ -7,6 +7,17 @@
 
 ---
 
+## Revision History
+
+### [May 9, 2026] - Phase 1: Data Layer & Security (Initial Architecture)
+*   **Schema:** Created 8 core 3NF tables (`users`, `customers`, `tables`, `menu`, `reservations`, `reservation_tables`, `waitlist`, `blocked_dates`) and dropped legacy tables.
+*   **Security:** Implemented comprehensive Row Level Security (RLS) matrix and Role-Based Access Control (RBAC).
+*   **Integrity:** Added database triggers (`handle_new_user`, `updated_at`), strict `TIMESTAMPTZ` data types, and cascade delete chains.
+*   **Foundation:** Seeded 15-table restaurant grid with adjacency mapping and generated TypeScript `database.types.ts`.
+*   **Compliance:** Fully mapped and verified CPE 2201 standard compliance and SRS business logic constraints.
+
+---
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
@@ -784,7 +795,7 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 |-------|------|--------|----------------|
 | Phase 0 | Project Scaffolding | **Complete** (Shadcn UI pending) | May 8, 2026 |
 | Phase 1 | Data Layer and Security | **Complete** | May 9, 2026 |
-| Phase 2 | Core Booking Engine | Not Started | -- |
+| Phase 2 | Core Booking Engine | **Complete** | May 11, 2026 |
 | Phase 3 | Customer Portal | Not Started | -- |
 | Phase 4 | Admin Real-Time Dashboard | Not Started | -- |
 | Phase 5 | Waitlist and Automations | Not Started | -- |
@@ -794,21 +805,25 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 
 | Ticket | Task | Due Date | Status |
 |--------|------|----------|--------|
-| QDR-36 | Setup Supabase Authentication | Apr 25 | Done |
-| QDR-37 | Configure Database Tables | Apr 28 | Done |
-| QDR-38 | Build Account Management Module | May 1 | Done |
-| QDR-39 | Build Search and Availability UI | May 4 | Done |
-| QDR-40 | Implement Booking Engine | May 9 | To Do |
-| QDR-41 | Develop Virtual Waitlist System | May 10 | To Do |
-| QDR-42 | Build Static Floor Plan Grid | May 11 | To Do |
-| QDR-43 | Implement Reservation Calendar | May 12 | To Do |
-| QDR-44 | Develop Guest CRM Table | May 13 | To Do |
-| QDR-45 | Integrate SMTP Email Server | May 14 | To Do |
-| QDR-48 | UI Latency Testing (3s Target) | May 17 | To Do |
-| QDR-49 | Real-Time Concurrency Testing | May 19 | To Do |
-| QDR-50 | Verify Offline Mode Failsafe | May 20 | To Do |
-| QDR-52 | Deploy to Supabase Cloud | May 22 | To Do |
-| QDR-53 | Finalize User Manual | May 24 | To Do |
+| **QDR-35** | **Section 3. Development (Epic)** | **May 14, 2026** | **To Do** |
+| QDR-36 | Setup SupaBase Authentication | Apr 25, 2026 | Done |
+| QDR-37 | Configure Database Tables | Apr 28, 2026 | Done |
+| QDR-38 | Build Account Management Module | May 1, 2026 | Done |
+| QDR-39 | Build Search & Availability UI | May 4, 2026 | Done |
+| QDR-40 | Implement Booking Engine | May 9, 2026 | In Progress |
+| QDR-41 | Develop Virtual Waitlist System | May 10, 2026 | To Do |
+| QDR-42 | Build Static Floor Plan Grid | May 11, 2026 | To Do |
+| QDR-43 | Implement Reservation Calendar | May 12, 2026 | To Do |
+| QDR-44 | Develop Guest CRM Table | May 13, 2026 | To Do |
+| QDR-45 | Integrate SMTP Email Server | May 14, 2026 | To Do |
+| QDR-79 | Implement Menu Management Module | TBD | To Do |
+| QDR-80 | Admin Waitlist Control Module | TBD | To Do |
+| **QDR-46** | **Section 4. Testing (Epic)** | **May 20, 2026** | **To Do** |
+| QDR-47 | Functional & Structural Testing | Apr 30, 2026 | Done |
+| QDR-48 | UI Latency Testing (3s Target) | May 17, 2026 | To Do |
+| QDR-49 | Real-Time Concurrency Testing | May 19, 2026 | To Do |
+| QDR-50 | Verify Offline Mode Failsafe | May 20, 2026 | To Do |
+| **QDR-51** | **Section 5. Deployment (Epic)** | **May 24, 2026** | **To Do** |
 
 ### 16.3 Next Phase: Phase 2 -- Core Booking Engine
 
