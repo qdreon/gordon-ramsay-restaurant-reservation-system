@@ -155,15 +155,15 @@ Building the staff tools using the Observer Pattern.
 > 2. Constraint (FR-7): Apply strict color coding: Green (Available), Yellow (Reserved), Red (Occupied), Grey (Dirty).
 > 3. Connect Supabase Real-Time WebSockets so when table statuses change in the DB, the UI colors update instantly without a page refresh."
 
-- [ ] Build the interactive visual map of the restaurant tables.
-- [ ] Implement strict color-coding logic: Green (Available), Yellow (Reserved), Red (Occupied), Grey (Dirty).
+- [ ] Build the interactive visual map of the restaurant tables. [QDR-69]
+- [ ] Implement strict color-coding logic: Green (Available), Yellow (Reserved), Red (Occupied), Grey (Dirty). [QDR-69]
 
 ### Subtask 4.2: Observer Pattern Integration (WebSockets) [QDR-42]
 
-- [ ] Implement `supabase.channel()` to subscribe to the `Tables` database.
-- [ ] Ensure the Floor Plan UI updates instantly when a customer books a table, without requiring a page refresh.
+- [ ] Implement `supabase.channel()` to subscribe to the `Tables` database. [QDR-70]
+- [ ] Ensure the Floor Plan UI updates instantly when a customer books a table, without requiring a page refresh. [QDR-70]
 
-### Subtask 4.3: Offline Failsafe (SAF-2) [QDR-50]
+### Subtask 4.3: Offline Failsafe (SAF-2) [QDR-42 / QDR-50]
 
 **AI Prompt:**
 > "Phase 4, Step 2. Implement the Offline Failsafe (SAF-2) for the floor plan.
@@ -171,8 +171,8 @@ Building the staff tools using the Observer Pattern.
 > 2. If the internet disconnects, display a highly visible 'Offline Warning' banner.
 > 3. Disable all clickable interactions on the grid until the connection is restored."
 
-- [ ] Implement a React `useEffect` network listener.
-- [ ] If internet disconnects, render an "Offline Warning" overlay and disable all clickable table actions.
+- [ ] Implement a React `useEffect` network listener. [QDR-71]
+- [ ] If internet disconnects, render an "Offline Warning" overlay and disable all clickable table actions. [QDR-71]
 
 ### Subtask 4.4: Master Reservation Calendar [QDR-43]
 
@@ -183,8 +183,9 @@ Building the staff tools using the Observer Pattern.
 > 3. Create a 'Block Date' function so admins can close the restaurant for holidays, preventing online searches for those dates (FR-8)."
 
 - [ ] Build the List/Calendar view of all bookings.
-- [ ] Add a form for Admins to manually enter Walk-ins/Phone bookings.
-- [ ] Add a "Block Date" feature to prevent online bookings for holidays.
+- [ ] Add a form for Admins to manually enter Walk-ins/Phone bookings. [QDR-72]
+- [ ] Add a "Block Date" feature to prevent online bookings for holidays. [QDR-73]
+- [ ] Add input validation to prevent bookings outside of operating hours (FR-8). [QDR-74]
 
 ---
 
@@ -216,8 +217,8 @@ Building the automated workflows.
 > 2. Generate an `.ics` calendar file containing the reservation details and attach it to the Confirmation email payload."
 
 - [ ] Create a Next.js API route integrating SMTP provider (e.g., Resend).
-- [ ] Build Booking Confirmation email (generate and attach a `.ics` calendar invite).
-- [ ] Build Waitlist Offer email (state explicitly that they have a 10-minute window to click the acceptance link).
+- [ ] Build Booking Confirmation email (generate and attach a `.ics` calendar invite). [QDR-77 / QDR-78]
+- [ ] Build Waitlist Offer email (state explicitly that they have a 10-minute window to click the acceptance link). [QDR-77]
 
 ---
 
@@ -232,8 +233,8 @@ Finalizing the management modules.
 > 1. Create a searchable table displaying Customer profiles.
 > 2. Display their total past visits, total no-show counts (calculated from the DB), VIP tags, and a text area for staff to read/update allergy notes."
 
-- [ ] Build a searchable data table for Admins.
-- [ ] Display customer history, calculate total past visits, add VIP tags, and include a text area for allergy notes.
+- [ ] Build a searchable data table for Admins. [QDR-75]
+- [ ] Display customer history, calculate total past visits, add VIP tags, and include a text area for allergy notes. [QDR-75]
 
 ### Subtask 6.2: Automated No-Show Cron Job [QDR-44]
 
@@ -242,9 +243,9 @@ Finalizing the management modules.
 > 1. The function should run frequently and check 'Confirmed' reservations.
 > 2. If the current time is 15 minutes past the scheduled reservation time and the admin has not updated the status to 'Seated', automatically change the reservation status to 'No-Show'."
 
-- [ ] Write a Supabase Edge Function (or `pg_cron`).
-- [ ] Schedule it to run every 5 minutes.
-- [ ] If a reservation is 'Confirmed' but the time is now > 15 minutes past the start time (and the Admin hasn't marked them 'Seated'), update status to 'No-Show'.
+- [ ] Write a Supabase Edge Function (or `pg_cron`). [QDR-76]
+- [ ] Schedule it to run every 5 minutes. [QDR-76]
+- [ ] If a reservation is 'Confirmed' but the time is now > 15 minutes past the start time (and the Admin hasn't marked them 'Seated'), update status to 'No-Show'. [QDR-76]
 
 ### Subtask 6.3: Menu Management CRUD [QDR-79]
 
