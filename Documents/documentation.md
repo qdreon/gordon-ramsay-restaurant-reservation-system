@@ -850,9 +850,11 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 
 ---
 
-## 16.3 Phase 3: Customer Portal -- Development Status (QDR-54)
+## 16.3 Phase 3: Customer Portal -- Development Status (QDR-54 & QDR-55)
 
-### Completed Tasks (May 11, 2026)
+### Completed Tasks (May 11-12, 2026)
+
+**Authentication & Authorization (QDR-54, QDR-55):**
 
 | Task | File(s) | Status | Details |
 |------|---------|--------|----------|
@@ -865,53 +867,34 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 | **QDR-54: Admin Layout** | `src/app/admin/layout.tsx` | **Done** | Shared admin header with navigation links |
 | **QDR-54: Dashboard Stub** | `src/app/customer/dashboard/page.tsx` | **Done** | Authenticated dashboard with user email display; placeholder reservation list |
 | **QDR-54: Admin Floorplan Stub** | `src/app/admin/floorplan/page.tsx` | **Done** | Phase 4 placeholder with feature list |
-| **Code Quality** | All new files | **Done** | Comments normalized to neutral voice; TypeScript build passes |
-| **Git Commit** | `4c8e9f4` | **Done** | QDR-54 committed to main branch with complete message |
+| **QDR-55: RBAC Testing Suite** | `tests/rbac/*` | **Done** | Comprehensive test suite with manual scenarios, automated runner, and test results |
+| **QDR-55: Build Verification** | Build output | **Done** | `npm run build` passed; all routes compiled; TypeScript checks passed |
+| **Code Quality** | All files | **Done** | Comments normalized to neutral voice; full SEC-1 compliance verified |
+| **Git Commits** | `4c8e9f4`, `929a2cb`, `eced079` | **Done** | QDR-54, test suite, and results committed to main branch |
 
 ### Remaining Tasks (Phase 3 Completion)
 
 | Task | Blocking | Priority | Details |
 |------|----------|----------|----------|
-| **QDR-39: Checkout Modal** | QDR-54 complete | High | 5-minute countdown timer; tokenized simulated payment UI; confirm/cancel buttons |
+| **QDR-39: Checkout Modal** | QDR-54+55 complete | High | 5-minute countdown timer; tokenized simulated payment UI; confirm/cancel buttons |
 | **QDR-59: Customer Dashboard Expansion** | QDR-39 complete | High | Display upcoming/past reservations; cancel button (disabled within 2 hours); delete account button |
 | **QDR-60: Reservation Cancellation** | QDR-59 complete | High | Backend cancellation logic; refund simulation; waitlist auto-promotion trigger |
 | **QDR-61: Right to Erasure** | QDR-59 complete | Medium | Delete account button; cascade delete all PII/reservations/waitlist (LEG-1) |
 | **QDR-82: Digital Menu Display** | QDR-39 complete | Medium | Show menu items alongside availability results; category filters |
-| **RBAC Testing** | Middleware complete | Medium | Create test accounts with `customer` and `admin` roles; verify route access; manual SQL verification |
 
 ---
 
-## 16.4 Next Immediate Tasks
+## 16.4 Next Immediate Task
 
 ### Highest Priority (Unblock Phase 3 Completion)
 
-1. **QDR-39: Build Checkout Modal**
-   - 5-minute countdown timer using `setInterval` and React state
-   - Simulated payment form (card number, expiry, CVV placeholders)
-   - Lock/confirm/cancel buttons
-   - Integration with `/api/reservations/lock` endpoint
-   - Target completion: May 12, 2026
-
-2. **QDR-59-61: Expand Customer Dashboard**
-   - Query `public.reservations` for authenticated user
-   - Display upcoming (start_time > now) and past (start_time <= now) separate lists
-   - Cancel button disabled if reservation.start_time < now + 2 hours
-   - Delete account button triggers `DELETE FROM auth.users` (cascade deletes all related data)
-   - Target completion: May 13, 2026
-
-### Medium Priority (Phase 3 Polish)
-
-3. **QDR-82: Digital Menu Component**
-   - Fetch `public.menu` on availability page
-   - Display in sidebar or modal alongside table results
-   - Filter by category (starters/mains/desserts/beverages)
-   - Target completion: May 14, 2026
-
-4. **RBAC Manual Testing & Verification**
-   - Create 2 test accounts via UI: one with `customer` role, one with `admin` role
-   - Verify `middleware.ts` grants/denies access appropriately
-   - Document test results and attach to QDR-54 ticket
-   - Target completion: May 12, 2026 (parallel with QDR-39)
+**QDR-39: Build Checkout Modal** (Starting Now)
+- 5-minute countdown timer using `setInterval` and React state
+- Simulated payment form (card number, expiry, CVV placeholders)
+- Lock/confirm/cancel buttons
+- Integration with `/api/reservations/lock` endpoint
+- Target completion: May 12, 2026
+- **Dependency:** QDR-54 + QDR-55 (✅ Complete)
 
 ---
 
