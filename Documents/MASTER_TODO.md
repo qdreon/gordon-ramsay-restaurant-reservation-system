@@ -15,7 +15,7 @@ Setting up the environment using MVC and Repository Pattern structures.
 - [x] Navigate into the folder: `cd gordon-ramsay-reservations`
 - [ ] Install Shadcn UI for modular, reusable components.
 
-### Subtask 0.2: Backend Connection
+### Subtask 0.2: Backend Connection [QDR-36]
 - [x] Install dependencies: `npm install @supabase/supabase-js @supabase/ssr lucide-react date-fns`
 - [x] Set up the Supabase project online, get API keys.
 - [x] Configure `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
@@ -31,7 +31,7 @@ Setting up the environment using MVC and Repository Pattern structures.
 
 Building the 3NF Database Model and RBAC Security.
 
-### Subtask 1.1: Enums & Base Tables (3NF)
+### Subtask 1.1: Enums & Base Tables (3NF) [QDR-37]
 
 **AI Prompt:**
 > "Phase 1, Step 1. Generate the Supabase PostgreSQL schema.
@@ -44,13 +44,13 @@ Building the 3NF Database Model and RBAC Security.
 - [x] Create `Users`, `Customers`, `Tables`, `Menu` tables with UUID PKs.
 - [x] Verify all date/time columns use `TIMESTAMPTZ` (UTC).
 
-### Subtask 1.2: Transactional Tables
+### Subtask 1.2: Transactional Tables [QDR-37]
 
 - [x] Create `Reservations` table.
 - [x] Create `Waitlist` table.
 - [x] Implement Foreign Keys linking to `Customers` and `Tables` with `ON DELETE CASCADE`.
 
-### Subtask 1.3: Role-Based Access Control (RBAC) & RLS
+### Subtask 1.3: Role-Based Access Control (RBAC) & RLS [QDR-37]
 
 **AI Prompt:**
 > "Phase 1, Step 2. Generate the SQL for Role-Based Access Control (RBAC) and Row Level Security (RLS).
@@ -68,7 +68,7 @@ Building the 3NF Database Model and RBAC Security.
 
 Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 
-### Subtask 2.1: Table Availability & Combination Logic
+### Subtask 2.1: Table Availability & Combination Logic [QDR-40]
 
 **AI Prompt:**
 > "Phase 2, Step 1. Write the backend function (Supabase RPC) to query table availability.
@@ -76,11 +76,11 @@ Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 > 2. Constraint (FR-4): Include logic to automatically combine adjacent tables if the Party Size exceeds a single table's capacity.
 > 3. Cap this automatic table combination at a strict maximum of 12 Pax. Return the available table IDs or 'No Availability'."
 
-- [ ] Write Postgres RPC to query available tables for a specific Date/Time.
-- [ ] Implement algorithmic logic to automatically combine adjacent tables if Party Size exceeds a single table.
-- [ ] Cap combination at 12 Pax (FR-4).
+- [x] Write Postgres RPC to query available tables for a specific Date/Time.
+- [x] Implement algorithmic logic to automatically combine adjacent tables if Party Size exceeds a single table.
+- [x] Cap combination at 12 Pax (FR-4).
 
-### Subtask 2.2: Concurrency Row-Locking Engine (PR-2)
+### Subtask 2.2: Concurrency Row-Locking Engine (PR-2) [QDR-40]
 
 **AI Prompt:**
 > "Phase 2, Step 2. Write the PostgreSQL transaction function for the booking lock (PR-2, FR-3).
@@ -88,13 +88,13 @@ Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 > 2. The function must update the table status to 'Reserved' and initiate a 5-minute timeout window for the deposit checkout.
 > 3. Include the rollback logic: If the payment is not confirmed within 5 minutes, release the lock and revert the status to 'Available'."
 
-- [ ] Write a Postgres transaction using `SELECT ... FOR UPDATE`.
-- [ ] Lock selected table row(s); reject concurrent conflicts within 1 second.
+- [x] Write a Postgres transaction using `SELECT ... FOR UPDATE`.
+- [x] Lock selected table row(s); reject concurrent conflicts within 1 second.
 
-### Subtask 2.3: Checkout Timeout Rollback
+### Subtask 2.3: Checkout Timeout Rollback [QDR-40]
 
-- [ ] Write a database trigger or edge function that automatically releases the row-lock.
-- [ ] Revert the table to 'Available' if the reservation is not marked 'Confirmed' within 5 minutes.
+- [x] Write a database trigger or edge function that automatically releases the row-lock.
+- [x] Revert the table to 'Available' if the reservation is not marked 'Confirmed' within 5 minutes.
 
 ---
 
@@ -102,7 +102,7 @@ Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
 
 Building the user-facing web app adhering to Legal Compliance.
 
-### Subtask 3.1: Registration & Login UI
+### Subtask 3.1: Registration & Login UI [QDR-38]
 
 **AI Prompt:**
 > "Phase 3, Step 1. Build the `/login` and `/register` Next.js pages using Supabase Auth.
@@ -112,7 +112,7 @@ Building the user-facing web app adhering to Legal Compliance.
 - [ ] Build Auth forms using Supabase Auth.
 - [ ] Add mandatory checkbox for Data Privacy Act (RA 10173) consent.
 
-### Subtask 3.2: Search & Menu UI
+### Subtask 3.2: Search & Menu UI [QDR-39]
 
 **AI Prompt:**
 > "Phase 3, Step 2. Build the main booking interface (`/customer/book`).
@@ -124,13 +124,13 @@ Building the user-facing web app adhering to Legal Compliance.
 - [ ] Build input form (Date, Time, Party Size).
 - [ ] Display results from Phase 2 Availability RPC alongside a view-only digital menu component.
 
-### Subtask 3.3: Simulated Checkout Modal (FR-3 & SEC-3)
+### Subtask 3.3: Simulated Checkout Modal (FR-3 & SEC-3) [QDR-39]
 
 - [ ] Build a tokenized, simulated payment UI (do NOT capture real PANs).
 - [ ] Include a visual 5-minute countdown timer.
 - [ ] If timer hits 00:00, automatically redirect user and call backend to release the row-lock.
 
-### Subtask 3.4: Customer Dashboard & Right to Erasure
+### Subtask 3.4: Customer Dashboard & Right to Erasure [QDR-38]
 
 **AI Prompt:**
 > "Phase 3, Step 3. Build the `/customer/dashboard` page.
@@ -147,7 +147,7 @@ Building the user-facing web app adhering to Legal Compliance.
 
 Building the staff tools using the Observer Pattern.
 
-### Subtask 4.1: Static Floor Plan Grid UI
+### Subtask 4.1: Static Floor Plan Grid UI [QDR-42]
 
 **AI Prompt:**
 > "Phase 4, Step 1. Build the `/admin/floorplan` Visual Table Management component.
@@ -158,12 +158,12 @@ Building the staff tools using the Observer Pattern.
 - [ ] Build the interactive visual map of the restaurant tables.
 - [ ] Implement strict color-coding logic: Green (Available), Yellow (Reserved), Red (Occupied), Grey (Dirty).
 
-### Subtask 4.2: Observer Pattern Integration (WebSockets)
+### Subtask 4.2: Observer Pattern Integration (WebSockets) [QDR-42]
 
 - [ ] Implement `supabase.channel()` to subscribe to the `Tables` database.
 - [ ] Ensure the Floor Plan UI updates instantly when a customer books a table, without requiring a page refresh.
 
-### Subtask 4.3: Offline Failsafe (SAF-2)
+### Subtask 4.3: Offline Failsafe (SAF-2) [QDR-50]
 
 **AI Prompt:**
 > "Phase 4, Step 2. Implement the Offline Failsafe (SAF-2) for the floor plan.
@@ -174,7 +174,7 @@ Building the staff tools using the Observer Pattern.
 - [ ] Implement a React `useEffect` network listener.
 - [ ] If internet disconnects, render an "Offline Warning" overlay and disable all clickable table actions.
 
-### Subtask 4.4: Master Reservation Calendar
+### Subtask 4.4: Master Reservation Calendar [QDR-43]
 
 **AI Prompt:**
 > "Phase 4, Step 3. Build the `/admin/reservations` page.
@@ -192,11 +192,11 @@ Building the staff tools using the Observer Pattern.
 
 Building the automated workflows.
 
-### Subtask 5.1: Waitlist UI
+### Subtask 5.1: Waitlist UI [QDR-41]
 
 - [ ] If Phase 2.1 returns "No Availability", display a "Join Virtual Waitlist" button on the Customer search page.
 
-### Subtask 5.2: Waitlist Database Trigger
+### Subtask 5.2: Waitlist Database Trigger [QDR-41]
 
 **AI Prompt:**
 > "Phase 5, Step 1. Write the Supabase Database Trigger for Waitlist Automation (FR-5).
@@ -208,7 +208,7 @@ Building the automated workflows.
 - [ ] Add logic to abort this trigger if the current time is within 60 minutes of the restaurant's closing shift (FR-5).
 - [ ] Grant 10-minute acceptance window before moving to the next person.
 
-### Subtask 5.3: SMTP Email Service
+### Subtask 5.3: SMTP Email Service [QDR-45]
 
 **AI Prompt:**
 > "Phase 5, Step 3. Build the Next.js API route to integrate SMTP Email (FR-6).
@@ -225,7 +225,7 @@ Building the automated workflows.
 
 Finalizing the management modules.
 
-### Subtask 6.1: Guest CRM Interface (FR-9)
+### Subtask 6.1: Guest CRM Interface (FR-9) [QDR-44]
 
 **AI Prompt:**
 > "Phase 6, Step 1. Build the `/admin/crm` page (FR-9).
@@ -235,7 +235,7 @@ Finalizing the management modules.
 - [ ] Build a searchable data table for Admins.
 - [ ] Display customer history, calculate total past visits, add VIP tags, and include a text area for allergy notes.
 
-### Subtask 6.2: Automated No-Show Cron Job
+### Subtask 6.2: Automated No-Show Cron Job [QDR-44]
 
 **AI Prompt:**
 > "Phase 5, Step 2. Write a Supabase Edge Function (or pg_cron job) for No-Shows (FR-9).
@@ -246,7 +246,7 @@ Finalizing the management modules.
 - [ ] Schedule it to run every 5 minutes.
 - [ ] If a reservation is 'Confirmed' but the time is now > 15 minutes past the start time (and the Admin hasn't marked them 'Seated'), update status to 'No-Show'.
 
-### Subtask 6.3: Menu Management CRUD
+### Subtask 6.3: Menu Management CRUD [QDR-79]
 
 **AI Prompt:**
 > "Phase 6, Step 2. Build the remaining Admin CRUD interfaces.
@@ -256,7 +256,7 @@ Finalizing the management modules.
 - [ ] Build Admin forms to Create, Read, Update, and Delete digital menu items (FR-11).
 - [ ] Updates will instantly reflect on the Customer Portal.
 
-### Subtask 6.4: Manual Waitlist Control
+### Subtask 6.4: Manual Waitlist Control [QDR-80]
 
 - [ ] Build Admin UI to view the current waitlist.
 - [ ] Add controls to manually bump VIPs to the top of the queue or remove users.
