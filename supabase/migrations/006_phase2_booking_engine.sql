@@ -52,7 +52,10 @@ BEGIN
         JOIN public.reservations r ON r.id = rt.reservation_id
         WHERE rt.table_id = t.id
           AND r.status IN ('pending_payment', 'confirmed', 'seated')
-          AND (r.status <> 'pending_payment' OR r.locked_until IS NULL OR r.locked_until > now())
+          AND (
+            r.status <> 'pending_payment'
+            OR (r.locked_until IS NOT NULL AND r.locked_until > now())
+          )
           AND NOT (r.end_time <= p_start_time OR r.start_time >= p_end_time)
       )
   ),
@@ -70,7 +73,10 @@ BEGIN
       (a.capacity + b.capacity) AS total_capacity
     FROM available_tables a
     JOIN available_tables b
-      ON b.id = ANY(a.adjacent_table_ids)
+      ON (
+        b.id = ANY(a.adjacent_table_ids)
+        OR a.id = ANY(b.adjacent_table_ids)
+      )
      AND a.id < b.id
     WHERE a.is_combinable = true
       AND b.is_combinable = true
@@ -82,10 +88,16 @@ BEGIN
       (a.capacity + b.capacity + c.capacity) AS total_capacity
     FROM available_tables a
     JOIN available_tables b
-      ON b.id = ANY(a.adjacent_table_ids)
+      ON (
+        b.id = ANY(a.adjacent_table_ids)
+        OR a.id = ANY(b.adjacent_table_ids)
+      )
      AND a.id < b.id
     JOIN available_tables c
-      ON c.id = ANY(b.adjacent_table_ids)
+      ON (
+        c.id = ANY(b.adjacent_table_ids)
+        OR b.id = ANY(c.adjacent_table_ids)
+      )
      AND b.id < c.id
     WHERE a.is_combinable = true
       AND b.is_combinable = true
@@ -187,7 +199,10 @@ BEGIN
     JOIN public.reservations r ON r.id = rt.reservation_id
     WHERE rt.table_id = ANY(p_table_ids)
       AND r.status IN ('pending_payment', 'confirmed', 'seated')
-      AND (r.status <> 'pending_payment' OR r.locked_until IS NULL OR r.locked_until > now())
+      AND (
+        r.status <> 'pending_payment'
+        OR (r.locked_until IS NOT NULL AND r.locked_until > now())
+      )
       AND NOT (r.end_time <= p_start_time OR r.start_time >= p_end_time)
   ) THEN
     RAISE EXCEPTION 'Selected tables are no longer available for the requested time slot.'
@@ -275,7 +290,10 @@ BEGIN
       JOIN public.reservations r2 ON r2.id = rt2.reservation_id
       WHERE rt2.table_id = t.id
         AND r2.status IN ('pending_payment', 'confirmed', 'seated')
-        AND (r2.status <> 'pending_payment' OR r2.locked_until IS NULL OR r2.locked_until > now())
+        AND (
+          r2.status <> 'pending_payment'
+          OR (r2.locked_until IS NOT NULL AND r2.locked_until > now())
+        )
     );
 
   RETURN v_expired_count;
