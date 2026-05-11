@@ -1,11 +1,11 @@
 /**
  * layout.tsx (customer)
  * ----------------------
- * I create a shared layout for all customer pages (/customer/dashboard, etc.).
- * 
+ * Shared layout for all customer pages (/customer/dashboard, etc.).
+ *
  * Purpose:
- *   I render the customer navigation header with sign-out and navigation links.
- *   I apply consistent styling across all customer-facing pages.
+ *   Renders the customer navigation header with sign-out and navigation links.
+ *   Applies consistent styling across all customer-facing pages.
  */
 
 import Link from 'next/link';

@@ -6,16 +6,16 @@ import { useRouter } from 'next/navigation';
 import { signIn } from '@/lib/authClient';
 
 /**
- * I build the Login page for returning customers.
- * 
+ * Login page for returning customers.
+ *
  * Purpose:
- *   I accept email and password, then authenticate against Supabase Auth.
- *   On success, I redirect to the customer dashboard.
- *   On error, I display an error message.
- * 
+ *   Accepts email and password, then authenticates against Supabase Auth.
+ *   On success, redirects to the customer dashboard.
+ *   On error, displays an error message.
+ *
  * Design:
- *   I follow KISS principle: minimal form with email, password, and submit button.
- *   I implement defensive programming with early error returns and try/catch blocks.
+ *   Minimal form with email, password, and submit button.
+ *   Implements defensive programming with early validation and try/catch.
  */
 
 export default function LoginPage() {
@@ -29,7 +29,7 @@ export default function LoginPage() {
     event.preventDefault();
     setError(null);
 
-    // I validate input early
+    // Validate input early
     if (!email || !password) {
       setError('Email and password are required.');
       return;
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     try {
       await signIn({ email, password });
-      // I redirect to customer dashboard on successful login
+      // Redirect to customer dashboard on successful login
       router.push('/customer/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';

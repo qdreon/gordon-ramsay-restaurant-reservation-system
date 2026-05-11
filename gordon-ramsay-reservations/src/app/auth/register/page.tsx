@@ -6,22 +6,21 @@ import { useRouter } from 'next/navigation';
 import { signUp } from '@/lib/authClient';
 
 /**
- * I build the Registration page for new customers.
- * 
+ * Registration page for new customers.
+ *
  * Purpose:
- *   I accept email, password, name, phone, and MANDATORY RA 10173 consent checkbox.
- *   I enforce that consent MUST be checked before registration (LEG-1).
- *   On success, I redirect to the customer dashboard.
- *   On error, I display an error message.
- * 
+ *   Accepts email, password, full name, phone, and a mandatory RA 10173 consent checkbox.
+ *   Enforces that consent must be checked before registration (LEG-1).
+ *   On success, redirects to the customer dashboard; on error, displays an error message.
+ *
  * Constraint (LEG-1 - RA 10173):
- *   I render a mandatory checkbox for Data Privacy Act consent.
+ *   Renders a mandatory checkbox for Data Privacy Act consent.
  *   The submit button is disabled until this checkbox is checked.
- *   I do NOT allow registration without explicit consent.
- * 
+ *   Registration is not allowed without explicit consent.
+ *
  * Design:
- *   I implement KISS principle with a simple form layout.
- *   I use defensive programming: validate inputs, check constraints, handle errors gracefully.
+ *   Simple form layout following KISS principle.
+ *   Uses defensive programming: input validation and error handling.
  */
 
 export default function RegisterPage() {
@@ -39,25 +38,25 @@ export default function RegisterPage() {
     event.preventDefault();
     setError(null);
 
-    // I validate all required fields early
+    // Validate all required fields early
     if (!email || !password || !confirmPassword || !fullName) {
       setError('Email, password, and full name are required.');
       return;
     }
 
-    // I enforce password confirmation match
+    // Enforce password confirmation match
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
-    // I enforce minimum password length (defensive programming)
+    // Enforce minimum password length (defensive programming)
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
     }
 
-    // I enforce RA 10173 consent (LEG-1): form cannot submit without this
+    // Enforce RA 10173 consent (LEG-1): form cannot submit without this
     if (!consentGiven) {
       setError('You must agree to the Data Privacy Act terms to register.');
       return;
@@ -73,7 +72,7 @@ export default function RegisterPage() {
         phone: phone || undefined,
         consentGiven: true,
       });
-      // I redirect to customer dashboard on successful registration
+      // Redirect to customer dashboard on successful registration
       router.push('/customer/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';

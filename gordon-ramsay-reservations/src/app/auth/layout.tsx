@@ -1,8 +1,8 @@
 /**
  * layout.tsx
  * -----------
- * I create a shared layout for all auth pages (/auth/login, /auth/register).
- * 
+ * Shared layout for all auth pages (/auth/login, /auth/register).
+ *
  * Purpose:
  *   Provides a consistent visual frame for authentication forms.
  *   Centers content and applies global styling.

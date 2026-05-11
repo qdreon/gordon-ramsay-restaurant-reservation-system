@@ -1,10 +1,10 @@
 /**
  * page.tsx (admin floorplan stub)
  * --------------------------------
- * I create a placeholder page for the Admin Floor Plan dashboard.
- * 
+ * Placeholder page for the Admin Floor Plan dashboard.
+ *
  * Purpose:
- *   This stub represents Phase 4, Subtask 4.1 (QDR-69-70).
+ *   Represents Phase 4, Subtask 4.1 (QDR-69-70).
  *   Full implementation will include:
  *   - Real-time WebSocket connection to the Tables database (Observer Pattern)
  *   - Visual grid of restaurant tables with color-coding (FR-7)

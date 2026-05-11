@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser, signOut } from '@/lib/authClient';
 
 /**
- * I build the Customer Dashboard page (/customer/dashboard).
- * 
+ * Customer Dashboard page (/customer/dashboard).
+ *
  * Purpose:
- *   I display the authenticated customer's reservations and account information.
- *   I provide access to the booking system and account settings.
- * 
+ *   Displays the authenticated customer's reservations and account information.
+ *   Provides access to the booking system and account settings.
+ *
  * Status (QDR-59):
- *   This is a stub for Phase 3. Full implementation includes:
+ *   Stub for Phase 3. Full implementation includes:
  *   - Viewing upcoming/past reservations (QDR-59)
  *   - Cancel button for reservations (QDR-60, disabled within 2 hours)
  *   - Delete account button (QDR-61, LEG-1 Right to Erasure)

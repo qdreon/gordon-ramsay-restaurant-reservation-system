@@ -1,16 +1,16 @@
 /**
  * middleware.ts
  * ---------------
- * I create Next.js middleware to protect customer and admin routes.
- * 
+ * Next.js middleware to protect customer and admin routes.
+ *
  * Purpose:
- *   I intercept requests to protected paths and verify the user is authenticated.
- *   I redirect unauthenticated users to /auth/login.
- *   I enforce role-based route access: customers can't access /admin, etc.
- * 
+ *   Intercepts requests to protected paths and verifies the user is authenticated.
+ *   Redirects unauthenticated users to /auth/login.
+ *   Enforces role-based route access: customers cannot access /admin, etc.
+ *
  * Constraint (SEC-1 - RBAC):
- *   I verify user role from the Supabase JWT token.
- *   I separate customer routes (/customer/*) from admin routes (/admin/*).
+ *   Verifies user role from the Supabase JWT token.
+ *   Separates customer routes (/customer/*) from admin routes (/admin/*).
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
@@ -21,19 +21,19 @@ const publicPaths = ['/', '/auth/login', '/auth/register', '/api/availability', 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // I allow public paths without authentication
+  // Allow public paths without authentication
   if (publicPaths.includes(pathname) || pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
 
-  // I create a response to modify
+  // Create a response object to modify
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  // I initialize the Supabase server client with cookies
+  // Initialize the Supabase server client with cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -61,14 +61,35 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // I check if the user has an active session
+  // Check if the user has an active session
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // I redirect unauthenticated users to login for protected paths
+  // Fetch the user's role from the `users` table (RBAC - SEC-1)
+  let role: string | null = null;
+  if (user) {
+    const { data: userRow, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!userError && userRow && (userRow as any).role) {
+      role = (userRow as any).role;
+    }
+  }
+
+  // Redirect unauthenticated users to login for protected paths
   if (!user) {
     if (pathname.startsWith('/customer') || pathname.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
+  }
+
+  // Enforce admin-only access for /admin paths
+  if (pathname.startsWith('/admin')) {
+    if (!user || role !== 'admin') {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
   }
@@ -79,7 +100,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * I match all request paths except for the ones starting with:
+     * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)

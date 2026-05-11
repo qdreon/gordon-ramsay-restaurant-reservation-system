@@ -1,15 +1,15 @@
 /**
  * authClient.ts
  * ---------------
- * I am creating a browser-side authentication helper for client-side auth flows.
- * 
+ * Browser-side authentication helper for client-side auth flows.
+ *
  * Purpose:
  *   Provides utility functions for sign-up, sign-in, sign-out, and session management.
  *   Uses the Supabase browser client configured with RLS enforcement.
- * 
+ *
  * Constraint (LEG-1):
- *   RA 10173 (Data Privacy Act) - I must ensure that registration captures consent.
- *   I do NOT store raw consent data; instead, I set the users.consent_given column to true.
+ *   RA 10173 (Data Privacy Act) - registration must capture explicit consent.
+ *   Raw consent data is not stored; `users.consent_given` is set to true.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -37,11 +37,11 @@ export interface SignInInput {
 }
 
 /**
- * I register a new customer with email, password, and profile data.
- * 
+ * Register a new customer with email, password, and profile data.
+
  * Constraint (LEG-1):
- *   I enforce that consentGiven must be true; otherwise, I throw an error.
- *   I create a user record in auth.users and a corresponding public.users row.
+ *   `consentGiven` must be true; otherwise an error is thrown.
+ *   A user record is created in `auth.users` and a corresponding `public.users` row.
  */
 export async function signUp(input: SignUpInput) {
   if (!input.consentGiven) {
@@ -72,7 +72,7 @@ export async function signUp(input: SignUpInput) {
 }
 
 /**
- * I sign in an existing customer with email and password.
+ * Sign in an existing customer with email and password.
  */
 export async function signIn(input: SignInInput) {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -92,7 +92,7 @@ export async function signIn(input: SignInInput) {
 }
 
 /**
- * I sign out the current user and clear the session.
+ * Sign out the current user and clear the session.
  */
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
@@ -103,7 +103,7 @@ export async function signOut() {
 }
 
 /**
- * I get the current authenticated user session.
+ * Get the current authenticated user session.
  * Returns null if no session exists.
  */
 export async function getCurrentSession() {
@@ -117,7 +117,7 @@ export async function getCurrentSession() {
 }
 
 /**
- * I get the current authenticated user.
+ * Get the current authenticated user.
  * Returns null if no user is authenticated.
  */
 export async function getCurrentUser() {

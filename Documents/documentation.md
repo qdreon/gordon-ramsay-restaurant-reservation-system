@@ -1,13 +1,21 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.0
-> **Last Updated:** May 9, 2026
+> **Document Version:** 1.1
+> **Last Updated:** May 11, 2026
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
 ---
 
 ## Revision History
+
+### [May 11, 2026] - Phase 3: Customer Portal Authentication (QDR-54)
+*   **Authentication:** Implemented Supabase Auth client with sign-up, sign-in, sign-out utilities.
+*   **Auth Pages:** Created `/auth/login` and `/auth/register` pages with RA 10173 (LEG-1) consent enforcement.
+*   **Protected Routes:** Built `middleware.ts` with route protection for `/customer/*` and `/admin/*`; enforces RBAC via role lookup.
+*   **Stubs:** Created `/customer/dashboard` (user profile + reservation list) and `/admin/floorplan` (Phase 4 placeholder).
+*   **Documentation:** Normalized code comments to neutral voice; updated system prompt with JIRA template.
+*   **Verification:** `npm run build` passed TypeScript checks; commit `4c8e9f4` pushed to main.
 
 ### [May 9, 2026] - Phase 1: Data Layer & Security (Initial Architecture)
 *   **Schema:** Created 8 core 3NF tables (`users`, `customers`, `tables`, `menu`, `reservations`, `reservation_tables`, `waitlist`, `blocked_dates`) and dropped legacy tables.
@@ -796,7 +804,7 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 | Phase 0 | Project Scaffolding | **Complete** (Shadcn UI pending) | May 8, 2026 |
 | Phase 1 | Data Layer and Security | **Complete** | May 9, 2026 |
 | Phase 2 | Core Booking Engine | **Complete** | May 11, 2026 |
-| Phase 3 | Customer Portal | Not Started | -- |
+| Phase 3 | Customer Portal Authentication | **In Progress** (Auth scaffolding done; checkout modal & dashboard pending) | May 11, 2026 |
 | Phase 4 | Admin Real-Time Dashboard | Not Started | -- |
 | Phase 5 | Waitlist and Automations | Not Started | -- |
 | Phase 6 | Admin Auxiliary Features | Not Started | -- |
@@ -805,12 +813,25 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 
 | Ticket | Task | Due Date | Status |
 |--------|------|----------|--------|
-| **QDR-35** | **Section 3. Development (Epic)** | **May 14, 2026** | **To Do** |
-| QDR-36 | Setup SupaBase Authentication | Apr 25, 2026 | Done |
+| **QDR-23** | **Section 1. Planning & Analysis (Epic)** | **May 5, 2026** | **Done** |
+| QDR-24 | Elicit Stakeholder Requirements | Apr 20, 2026 | Done |
+| QDR-25 | Negotiate Scope and MVP | Apr 21, 2026 | Done |
+| QDR-26 | Software Requirements Specification (SRS) | Apr 23, 2026 | Done |
+| QDR-27 | Progress Report | Apr 24, 2026 | Done |
+| QDR-28 | SPM Document / Project Charter | Apr 25, 2026 | Done |
+| **QDR-29** | **Section 2. System Design (Epic)** | **May 12, 2026** | **Done** |
+| QDR-30 | Architectural Design (COMET) | May 1, 2026 | Done |
+| QDR-31 | Create UML Diagrams | May 2, 2026 | Done |
+| QDR-32 | Design PostgreSQL Schema | May 3, 2026 | Done |
+| QDR-33 | Design UI/UX Mockups | May 4, 2026 | Done |
+| QDR-34 | Software Design Document (SWDD) | May 5, 2026 | Done |
+| **QDR-35** | **Section 3. Development (Epic)** | **May 20, 2026** | **In Progress** |
+| QDR-36 | Setup Supabase Authentication | Apr 25, 2026 | Done |
 | QDR-37 | Configure Database Tables | Apr 28, 2026 | Done |
 | QDR-38 | Build Account Management Module | May 1, 2026 | Done |
 | QDR-39 | Build Search & Availability UI | May 4, 2026 | Done |
-| QDR-40 | Implement Booking Engine | May 9, 2026 | In Progress |
+| QDR-40 | Implement Booking Engine | May 9, 2026 | Done |
+| **QDR-54** | **Phase 3 - Customer Portal Authentication Setup (QDR-35 Subtask)** | **May 11, 2026** | **Done** |
 | QDR-41 | Develop Virtual Waitlist System | May 10, 2026 | To Do |
 | QDR-42 | Build Static Floor Plan Grid | May 11, 2026 | To Do |
 | QDR-43 | Implement Reservation Calendar | May 12, 2026 | To Do |
@@ -818,20 +839,79 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 | QDR-45 | Integrate SMTP Email Server | May 14, 2026 | To Do |
 | QDR-79 | Implement Menu Management Module | TBD | To Do |
 | QDR-80 | Admin Waitlist Control Module | TBD | To Do |
-| **QDR-46** | **Section 4. Testing (Epic)** | **May 20, 2026** | **To Do** |
+| **QDR-46** | **Section 4. Testing (Epic)** | **May 20, 2026** | **In Progress** |
 | QDR-47 | Functional & Structural Testing | Apr 30, 2026 | Done |
 | QDR-48 | UI Latency Testing (3s Target) | May 17, 2026 | To Do |
 | QDR-49 | Real-Time Concurrency Testing | May 19, 2026 | To Do |
 | QDR-50 | Verify Offline Mode Failsafe | May 20, 2026 | To Do |
 | **QDR-51** | **Section 5. Deployment (Epic)** | **May 24, 2026** | **To Do** |
+| QDR-52 | Deploy to Supabase Cloud | May 22, 2026 | To Do |
+| QDR-53 | Finalize User Manual | May 24, 2026 | To Do |
 
-### 16.3 Next Phase: Phase 2 -- Core Booking Engine
+---
 
-The next development phase implements the backend business logic via Supabase RPCs:
+## 16.3 Phase 3: Customer Portal -- Development Status (QDR-54)
 
-1. **Subtask 2.1:** Table Availability and Combination RPC -- accepts date/time/pax, queries available tables, combines adjacent tables for large parties, caps at 12 pax
-2. **Subtask 2.2:** Concurrency Row-Locking Engine -- `SELECT ... FOR UPDATE`, resolves conflicts in less than 1 second, sets `locked_until` for 5-minute timeout
-3. **Subtask 2.3:** Checkout Timeout Rollback -- auto-releases row-lock and reverts table status to 'available' if payment not confirmed within 5 minutes
+### Completed Tasks (May 11, 2026)
+
+| Task | File(s) | Status | Details |
+|------|---------|--------|----------|
+| **QDR-54: Auth Client** | `src/lib/authClient.ts` | **Done** | Implemented `signUp()`, `signIn()`, `signOut()`, `getCurrentUser()`, `getCurrentSession()` with RA 10173 consent enforcement |
+| **QDR-54: Login Page** | `src/app/auth/login/page.tsx` | **Done** | Customer login form with email/password; redirects to dashboard on success |
+| **QDR-54: Register Page** | `src/app/auth/register/page.tsx` | **Done** | Registration with mandatory Data Privacy Act (LEG-1) consent checkbox; 8-char min password |
+| **QDR-54: Auth Layout** | `src/app/auth/layout.tsx` | **Done** | Centered auth page frame with gradient background |
+| **QDR-54: Middleware RBAC** | `middleware.ts` | **Done** | Route protection for `/customer/*` and `/admin/*`; role lookup from `public.users`; redirects to login |
+| **QDR-54: Customer Layout** | `src/app/customer/layout.tsx` | **Done** | Shared header with navigation and sign-out |
+| **QDR-54: Admin Layout** | `src/app/admin/layout.tsx` | **Done** | Shared admin header with navigation links |
+| **QDR-54: Dashboard Stub** | `src/app/customer/dashboard/page.tsx` | **Done** | Authenticated dashboard with user email display; placeholder reservation list |
+| **QDR-54: Admin Floorplan Stub** | `src/app/admin/floorplan/page.tsx` | **Done** | Phase 4 placeholder with feature list |
+| **Code Quality** | All new files | **Done** | Comments normalized to neutral voice; TypeScript build passes |
+| **Git Commit** | `4c8e9f4` | **Done** | QDR-54 committed to main branch with complete message |
+
+### Remaining Tasks (Phase 3 Completion)
+
+| Task | Blocking | Priority | Details |
+|------|----------|----------|----------|
+| **QDR-39: Checkout Modal** | QDR-54 complete | High | 5-minute countdown timer; tokenized simulated payment UI; confirm/cancel buttons |
+| **QDR-59: Customer Dashboard Expansion** | QDR-39 complete | High | Display upcoming/past reservations; cancel button (disabled within 2 hours); delete account button |
+| **QDR-60: Reservation Cancellation** | QDR-59 complete | High | Backend cancellation logic; refund simulation; waitlist auto-promotion trigger |
+| **QDR-61: Right to Erasure** | QDR-59 complete | Medium | Delete account button; cascade delete all PII/reservations/waitlist (LEG-1) |
+| **QDR-82: Digital Menu Display** | QDR-39 complete | Medium | Show menu items alongside availability results; category filters |
+| **RBAC Testing** | Middleware complete | Medium | Create test accounts with `customer` and `admin` roles; verify route access; manual SQL verification |
+
+---
+
+## 16.4 Next Immediate Tasks
+
+### Highest Priority (Unblock Phase 3 Completion)
+
+1. **QDR-39: Build Checkout Modal**
+   - 5-minute countdown timer using `setInterval` and React state
+   - Simulated payment form (card number, expiry, CVV placeholders)
+   - Lock/confirm/cancel buttons
+   - Integration with `/api/reservations/lock` endpoint
+   - Target completion: May 12, 2026
+
+2. **QDR-59-61: Expand Customer Dashboard**
+   - Query `public.reservations` for authenticated user
+   - Display upcoming (start_time > now) and past (start_time <= now) separate lists
+   - Cancel button disabled if reservation.start_time < now + 2 hours
+   - Delete account button triggers `DELETE FROM auth.users` (cascade deletes all related data)
+   - Target completion: May 13, 2026
+
+### Medium Priority (Phase 3 Polish)
+
+3. **QDR-82: Digital Menu Component**
+   - Fetch `public.menu` on availability page
+   - Display in sidebar or modal alongside table results
+   - Filter by category (starters/mains/desserts/beverages)
+   - Target completion: May 14, 2026
+
+4. **RBAC Manual Testing & Verification**
+   - Create 2 test accounts via UI: one with `customer` role, one with `admin` role
+   - Verify `middleware.ts` grants/denies access appropriately
+   - Document test results and attach to QDR-54 ticket
+   - Target completion: May 12, 2026 (parallel with QDR-39)
 
 ---
 

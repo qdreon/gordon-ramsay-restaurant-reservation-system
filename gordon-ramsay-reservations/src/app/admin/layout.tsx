@@ -1,11 +1,11 @@
 /**
  * layout.tsx (admin)
  * --------------------
- * I create a shared layout for all admin pages (/admin/floorplan, etc.).
- * 
+ * Shared layout for all admin pages (/admin/floorplan, etc.).
+ *
  * Purpose:
- *   I render the admin navigation header with role-based access indicators.
- *   I apply consistent styling and navigation structure across admin pages.
+ *   Renders the admin navigation header with role-based access indicators.
+ *   Applies consistent styling and navigation structure across admin pages.
  */
 
 import Link from 'next/link';
