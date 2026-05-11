@@ -13,7 +13,7 @@ Setting up the environment using MVC and Repository Pattern structures.
 ### Subtask 0.1: Initialize Next.js & Tailwind
 - [x] Run: `npx create-next-app@latest gordon-ramsay-reservations` (Select **App Router**, **Tailwind CSS**, **TypeScript**).
 - [x] Navigate into the folder: `cd gordon-ramsay-reservations`
-- [ ] Install Shadcn UI for modular, reusable components.
+- [x] Install Shadcn UI for modular, reusable components.
 
 ### Subtask 0.2: Backend Connection [QDR-36]
 - [x] Install dependencies: `npm install @supabase/supabase-js @supabase/ssr lucide-react date-fns`
