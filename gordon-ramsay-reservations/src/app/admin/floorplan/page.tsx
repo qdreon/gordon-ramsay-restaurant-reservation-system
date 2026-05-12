@@ -1,5 +1,9 @@
-import { FloorPlanManager } from '@/components/FloorPlanManager';
+import { FloorPlanManager } from "@/components/floor-plan-manager";
 
-export default function AdminFloorPlanPage() {
-  return <FloorPlanManager />;
+export default function Floorplan() {
+  return (
+    <div className="h-full w-full">
+      <FloorPlanManager />
+    </div>
+  );
 }

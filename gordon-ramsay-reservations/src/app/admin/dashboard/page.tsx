@@ -1,3 +1,4 @@
+
 import { FloorPlanManager } from "@/components/floor-plan-manager";
 
 export default function AdminDashboard() {

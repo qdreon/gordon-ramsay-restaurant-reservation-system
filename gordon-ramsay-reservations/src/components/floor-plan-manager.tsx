@@ -12,14 +12,22 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+// Database enum: table_status
 type TableStatus = "available" | "reserved" | "occupied" | "dirty"
 
+// Database schema: public.tables
 interface TableData {
-  id: string
-  capacity: number
-  col: number
-  row: number
-  status: TableStatus
+  id: string // UUID, PK
+  table_number: number // INTEGER, NOT NULL, UNIQUE
+  capacity: number // INTEGER, NOT NULL, CHECK (> 0)
+  status: TableStatus // table_status, NOT NULL, DEFAULT 'available'
+  position_x: number // INTEGER, NOT NULL, DEFAULT 0
+  position_y: number // INTEGER, NOT NULL, DEFAULT 0
+  is_combinable: boolean // BOOLEAN, NOT NULL, DEFAULT true
+  adjacent_table_ids: string[] // UUID[], DEFAULT '{}'
+  created_at: string // TIMESTAMPTZ, NOT NULL, DEFAULT now()
+  updated_at: string // TIMESTAMPTZ, NOT NULL, DEFAULT now()
+  // Runtime state (not persisted)
   guestName?: string
   guestCount?: number
 }
@@ -32,25 +40,26 @@ interface Reservation {
   pax: number
 }
 
+// Mock data matching the database schema
 const initialTables: TableData[] = [
-  // Front Row (Row 0)
-  { id: "T1", capacity: 2, col: 0, row: 0, status: "available" },
-  { id: "T2", capacity: 2, col: 1, row: 0, status: "reserved", guestName: "Martinez" },
-  { id: "T3", capacity: 4, col: 2, row: 0, status: "available" },
-  { id: "T4", capacity: 4, col: 3, row: 0, status: "occupied", guestName: "Chen", guestCount: 3 },
-  { id: "T5", capacity: 4, col: 4, row: 0, status: "dirty" },
-  // Middle Row (Row 1)
-  { id: "T6", capacity: 2, col: 0, row: 1, status: "occupied", guestName: "Smith", guestCount: 2 },
-  { id: "T7", capacity: 2, col: 1, row: 1, status: "available" },
-  { id: "T8", capacity: 4, col: 2, row: 1, status: "reserved", guestName: "Johnson" },
-  { id: "T9", capacity: 4, col: 3, row: 1, status: "available" },
-  { id: "T10", capacity: 4, col: 4, row: 1, status: "occupied", guestName: "Williams", guestCount: 4 },
-  // Back Row (Row 2)
-  { id: "T11", capacity: 6, col: 0, row: 2, status: "available" },
-  { id: "T12", capacity: 6, col: 1, row: 2, status: "reserved", guestName: "Davis" },
-  { id: "T13", capacity: 6, col: 2, row: 2, status: "occupied", guestName: "Brown", guestCount: 5 },
-  { id: "T14", capacity: 8, col: 3, row: 2, status: "available" },
-  { id: "T15", capacity: 8, col: 4, row: 2, status: "dirty" },
+  // Front Row (position_y: 0)
+  { id: "a1b2c3d4-0001-4000-8000-000000000001", table_number: 1, capacity: 2, status: "available", position_x: 0, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000002"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000002", table_number: 2, capacity: 2, status: "reserved", position_x: 1, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000001", "a1b2c3d4-0001-4000-8000-000000000003"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Martinez" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000003", table_number: 3, capacity: 4, status: "available", position_x: 2, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000002", "a1b2c3d4-0001-4000-8000-000000000004"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000004", table_number: 4, capacity: 4, status: "occupied", position_x: 3, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000003", "a1b2c3d4-0001-4000-8000-000000000005"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Chen", guestCount: 3 },
+  { id: "a1b2c3d4-0001-4000-8000-000000000005", table_number: 5, capacity: 4, status: "dirty", position_x: 4, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000004"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  // Middle Row (position_y: 1)
+  { id: "a1b2c3d4-0001-4000-8000-000000000006", table_number: 6, capacity: 2, status: "occupied", position_x: 0, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000007"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Smith", guestCount: 2 },
+  { id: "a1b2c3d4-0001-4000-8000-000000000007", table_number: 7, capacity: 2, status: "available", position_x: 1, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000006", "a1b2c3d4-0001-4000-8000-000000000008"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000008", table_number: 8, capacity: 4, status: "reserved", position_x: 2, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000007", "a1b2c3d4-0001-4000-8000-000000000009"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Johnson" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000009", table_number: 9, capacity: 4, status: "available", position_x: 3, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000008", "a1b2c3d4-0001-4000-8000-000000000010"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000010", table_number: 10, capacity: 4, status: "occupied", position_x: 4, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000009"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Williams", guestCount: 4 },
+  // Back Row (position_y: 2)
+  { id: "a1b2c3d4-0001-4000-8000-000000000011", table_number: 11, capacity: 6, status: "available", position_x: 0, position_y: 2, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000012"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000012", table_number: 12, capacity: 6, status: "reserved", position_x: 1, position_y: 2, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000011", "a1b2c3d4-0001-4000-8000-000000000013"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Davis" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000013", table_number: 13, capacity: 6, status: "occupied", position_x: 2, position_y: 2, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000012", "a1b2c3d4-0001-4000-8000-000000000014"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Brown", guestCount: 5 },
+  { id: "a1b2c3d4-0001-4000-8000-000000000014", table_number: 14, capacity: 8, status: "available", position_x: 3, position_y: 2, is_combinable: false, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000013", "a1b2c3d4-0001-4000-8000-000000000015"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "a1b2c3d4-0001-4000-8000-000000000015", table_number: 15, capacity: 8, status: "dirty", position_x: 4, position_y: 2, is_combinable: false, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000014"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
 ]
 
 const initialReservations: Reservation[] = [
@@ -90,11 +99,14 @@ function TableComponent({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`${baseSize} ${shape} ${statusColors[table.status]} flex flex-col items-center justify-center transition-all hover:scale-105 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyber focus:ring-offset-2 focus:ring-offset-background`}
+          className={`${baseSize} ${shape} ${statusColors[table.status]} flex flex-col items-center justify-center transition-all hover:scale-105 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyber focus:ring-offset-2 focus:ring-offset-background relative`}
           style={{ fontFamily: "Arial", fontSize: "11px" }}
         >
-          <span className="font-bold text-white">{table.id}</span>
+          <span className="font-bold text-white">T{table.table_number}</span>
           <span className="text-white/80">{table.capacity}p</span>
+          {table.is_combinable && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-cyber rounded-full" title="Combinable" />
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="min-w-[140px]">
@@ -173,15 +185,15 @@ export function FloorPlanManager() {
 
   const occupiedTables = tables.filter((t) => t.status === "occupied")
 
-  // Organize tables by row for the grid
+  // Organize tables by position_y for the grid
   const rows = [0, 1, 2].map((rowIndex) =>
-    tables.filter((t) => t.row === rowIndex).sort((a, b) => a.col - b.col)
+    tables.filter((t) => t.position_y === rowIndex).sort((a, b) => a.position_x - b.position_x)
   )
 
   return (
     <div className="flex h-screen w-full bg-background">
       {/* Left Sidebar */}
-       <aside className="w-80 flex-shrink-0 border-r border-border bg-sidebar flex flex-col h-screen overflow-hidden">
+      <aside className="w-80 flex-shrink-0 border-r border-border bg-sidebar flex flex-col h-screen overflow-hidden">
         <div className="p-4 border-b border-sidebar-border flex-shrink-0">
           <h1
             className="text-lg font-semibold text-sidebar-foreground flex items-center gap-2"
@@ -293,7 +305,7 @@ export function FloorPlanManager() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sidebar-foreground">{table.guestName}</span>
-                        <span className="text-red-400 font-mono">{table.id}</span>
+                        <span className="text-red-400 font-mono">T{table.table_number}</span>
                       </div>
                       <div className="flex items-center justify-between mt-1 text-muted-foreground">
                         <span>Capacity: {table.capacity}</span>
@@ -302,6 +314,11 @@ export function FloorPlanManager() {
                           {table.guestCount || "-"}
                         </span>
                       </div>
+                      {table.is_combinable && table.adjacent_table_ids.length > 0 && (
+                        <div className="mt-1 text-cyber text-[10px]">
+                          Can combine with adjacent tables
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
