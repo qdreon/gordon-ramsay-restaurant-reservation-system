@@ -29,6 +29,26 @@ export interface CustomerProfile {
   total_no_shows: number;
 }
 
+export interface CustomerAccountProfile {
+  customerId: string;
+  userId: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  dietaryRestrictions: string | null;
+  allergies: string | null;
+  vipStatus: boolean;
+  totalVisits: number;
+  totalNoShows: number;
+}
+
+export interface UpdateCustomerAccountInput {
+  fullName: string;
+  phone: string | null;
+  dietaryRestrictions: string | null;
+  allergies: string | null;
+}
+
 export interface ReservationRow {
   id: string;
   reservation_date: string;
@@ -68,6 +88,91 @@ export async function getCustomerByUserId(userId: string): Promise<CustomerProfi
   }
 
   return data as CustomerProfile;
+}
+
+/**
+ * Fetches the linked auth user and customer profile for the current account.
+ */
+export async function getCustomerAccountByUserId(
+  userId: string
+): Promise<CustomerAccountProfile | null> {
+  const supabase = createServiceSupabaseClient();
+
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('id, email, full_name, phone')
+    .eq('id', userId)
+    .single();
+
+  if (userError) {
+    if (userError.code === 'PGRST116') return null;
+    throw new Error(`[Customer Service] Failed to fetch user account: ${userError.message}`);
+  }
+
+  const { data: customerData, error: customerError } = await supabase
+    .from('customers')
+    .select('id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows')
+    .eq('user_id', userId)
+    .single();
+
+  if (customerError) {
+    if (customerError.code === 'PGRST116') return null;
+    throw new Error(`[Customer Service] Failed to fetch customer profile: ${customerError.message}`);
+  }
+
+  return {
+    customerId: customerData.id,
+    userId: userData.id,
+    email: userData.email,
+    fullName: userData.full_name,
+    phone: userData.phone,
+    dietaryRestrictions: customerData.dietary_restrictions,
+    allergies: customerData.allergies,
+    vipStatus: customerData.vip_status,
+    totalVisits: customerData.total_visits,
+    totalNoShows: customerData.total_no_shows,
+  };
+}
+
+/**
+ * Updates the customer-facing profile data for the signed-in account.
+ */
+export async function updateCustomerAccountByUserId(
+  userId: string,
+  input: UpdateCustomerAccountInput
+): Promise<CustomerAccountProfile> {
+  const supabase = createServiceSupabaseClient();
+
+  const { error: userError } = await supabase
+    .from('users')
+    .update({
+      full_name: input.fullName,
+      phone: input.phone,
+    })
+    .eq('id', userId);
+
+  if (userError) {
+    throw new Error(`[Customer Service] Failed to update contact details: ${userError.message}`);
+  }
+
+  const { error: customerError } = await supabase
+    .from('customers')
+    .update({
+      dietary_restrictions: input.dietaryRestrictions,
+      allergies: input.allergies,
+    })
+    .eq('user_id', userId);
+
+  if (customerError) {
+    throw new Error(`[Customer Service] Failed to update customer profile: ${customerError.message}`);
+  }
+
+  const updatedAccount = await getCustomerAccountByUserId(userId);
+  if (!updatedAccount) {
+    throw new Error('[Customer Service] Updated account could not be reloaded.');
+  }
+
+  return updatedAccount;
 }
 
 /**

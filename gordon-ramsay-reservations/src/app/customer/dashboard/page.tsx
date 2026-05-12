@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { FormEvent, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentSession, getCurrentUser, signOut } from '@/lib/authClient';
 
@@ -22,12 +22,19 @@ import { getCurrentSession, getCurrentUser, signOut } from '@/lib/authClient';
 export default function CustomerDashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
+  const [allergies, setAllergies] = useState('');
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const router = useRouter();
 
   const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
@@ -67,6 +74,40 @@ export default function CustomerDashboard() {
     setReservations(payload.reservations ?? []);
   }, []);
 
+  const loadProfile = useCallback(async (token: string) => {
+    const response = await fetch('/api/customer/me', {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const payload = (await response.json()) as {
+      customerId?: string;
+      profile?: {
+        fullName: string;
+        phone: string | null;
+        dietaryRestrictions: string | null;
+        allergies: string | null;
+        vipStatus: boolean;
+        totalVisits: number;
+        totalNoShows: number;
+      } | null;
+      error?: string;
+    };
+
+    if (!response.ok || !payload.customerId) {
+      throw new Error(payload.error ?? 'Failed to load customer profile.');
+    }
+
+    if (payload.profile) {
+      setFullName(payload.profile.fullName ?? '');
+      setPhone(payload.profile.phone ?? '');
+      setDietaryRestrictions(payload.profile.dietaryRestrictions ?? '');
+      setAllergies(payload.profile.allergies ?? '');
+    }
+  }, []);
+
   useEffect(() => {
     function tick() {
       setNowMs(Date.now());
@@ -94,7 +135,22 @@ export default function CustomerDashboard() {
         setUserEmail(user.email || null);
         setAccessToken(session.access_token);
 
-        await loadReservations(session.access_token);
+        const [profileResult, reservationsResult] = await Promise.allSettled([
+          loadProfile(session.access_token),
+          loadReservations(session.access_token),
+        ]);
+
+        if (profileResult.status === 'rejected') {
+          setProfileError(
+            profileResult.reason instanceof Error
+              ? profileResult.reason.message
+              : 'Failed to load customer profile.'
+          );
+        }
+
+        if (reservationsResult.status === 'rejected') {
+          throw reservationsResult.reason;
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load user.';
         setError(message);
@@ -190,6 +246,66 @@ export default function CustomerDashboard() {
     }
   }
 
+  async function handleUpdateProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setProfileError(null);
+    setProfileMessage(null);
+
+    if (!accessToken) {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (!fullName.trim()) {
+      setProfileError('Full name is required.');
+      return;
+    }
+
+    setSavingProfile(true);
+
+    try {
+      const response = await fetch('/api/customer/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          fullName,
+          phone,
+          dietaryRestrictions,
+          allergies,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        profile?: {
+          fullName: string;
+          phone: string | null;
+          dietaryRestrictions: string | null;
+          allergies: string | null;
+        };
+      };
+
+      if (!response.ok || !payload.profile) {
+        throw new Error(payload.error ?? 'Failed to update customer profile.');
+      }
+
+      setFullName(payload.profile.fullName ?? '');
+      setPhone(payload.profile.phone ?? '');
+      setDietaryRestrictions(payload.profile.dietaryRestrictions ?? '');
+      setAllergies(payload.profile.allergies ?? '');
+      setProfileMessage('Profile updated successfully.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Profile update failed.';
+      setProfileError(message);
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   function formatDateTime(value: string) {
     return new Date(value).toLocaleString();
   }
@@ -232,6 +348,101 @@ export default function CustomerDashboard() {
         <p className="text-slate-600 dark:text-slate-400">
           Email: <span className="font-semibold">{userEmail}</span>
         </p>
+      </section>
+
+      {/* Profile Section */}
+      <section className="space-y-4 rounded-lg border bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold">My Profile</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Update your contact details and dining preferences.
+          </p>
+        </div>
+
+        {profileMessage && (
+          <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
+            {profileMessage}
+          </div>
+        )}
+
+        {profileError && (
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+            {profileError}
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label htmlFor="fullName" className="text-sm font-medium">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={savingProfile}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="phone" className="text-sm font-medium">
+                Phone Number
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                disabled={savingProfile}
+                placeholder="+1 (555) 123-4567"
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label htmlFor="dietaryRestrictions" className="text-sm font-medium">
+                Dietary Restrictions
+              </label>
+              <textarea
+                id="dietaryRestrictions"
+                value={dietaryRestrictions}
+                onChange={(e) => setDietaryRestrictions(e.target.value)}
+                disabled={savingProfile}
+                rows={4}
+                placeholder="Vegetarian, halal, gluten-free, etc."
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="allergies" className="text-sm font-medium">
+                Allergies
+              </label>
+              <textarea
+                id="allergies"
+                value={allergies}
+                onChange={(e) => setAllergies(e.target.value)}
+                disabled={savingProfile}
+                rows={4}
+                placeholder="Peanuts, shellfish, dairy, etc."
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={savingProfile}
+            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60 dark:bg-blue-700 dark:hover:bg-blue-600"
+          >
+            {savingProfile ? 'Saving Profile...' : 'Save Profile'}
+          </button>
+        </form>
       </section>
 
       {/* Reservations Section */}
