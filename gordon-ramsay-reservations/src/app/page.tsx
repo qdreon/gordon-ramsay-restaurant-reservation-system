@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CheckoutModal from '@/components/CheckoutModal';
+import MenuDisplay from '@/components/MenuDisplay';
 
 /**
  * Home page -- Customer availability search and booking entry point.
@@ -334,49 +335,53 @@ export default function Home() {
         </div>
       )}
 
-      {/* Results Section */}
-      <section className="rounded-lg border p-4">
-        <h2 className="mb-3 text-xl font-semibold">Availability Results</h2>
+      {/* Results + Menu Section */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+        <section className="rounded-lg border p-4">
+          <h2 className="mb-3 text-xl font-semibold">Availability Results</h2>
 
-        {!hasSearched && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">
-            Submit a search to view available table options.
-          </p>
-        )}
+          {!hasSearched && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">
+              Submit a search to view available table options.
+            </p>
+          )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {!error && options.length === 0 && hasSearched && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">No available options found.</p>
-        )}
+          {!error && options.length === 0 && hasSearched && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">No available options found.</p>
+          )}
 
-        {!error && options.length > 0 && (
-          <ul className="space-y-2">
-            {options.map((option) => (
-              <li key={option.table_ids.join('-')}>
-                <button
-                  type="button"
-                  onClick={() => handleSelectOption(option)}
-                  className="w-full rounded border p-3 text-left text-sm transition-colors hover:border-black hover:bg-zinc-50 dark:hover:border-zinc-400 dark:hover:bg-zinc-800"
-                >
-                  <p>
-                    <span className="font-medium">
-                      {option.table_numbers.length > 1 ? 'Tables:' : 'Table:'}
-                    </span>{' '}
-                    {option.table_numbers.join(' + ')}
-                  </p>
-                  <p>
-                    <span className="font-medium">Seats up to:</span> {option.total_capacity} guests
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    Click to reserve this option
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          {!error && options.length > 0 && (
+            <ul className="space-y-2">
+              {options.map((option) => (
+                <li key={option.table_ids.join('-')}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectOption(option)}
+                    className="w-full rounded border p-3 text-left text-sm transition-colors hover:border-black hover:bg-zinc-50 dark:hover:border-zinc-400 dark:hover:bg-zinc-800"
+                  >
+                    <p>
+                      <span className="font-medium">
+                        {option.table_numbers.length > 1 ? 'Tables:' : 'Table:'}
+                      </span>{' '}
+                      {option.table_numbers.join(' + ')}
+                    </p>
+                    <p>
+                      <span className="font-medium">Seats up to:</span> {option.total_capacity} guests
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      Click to reserve this option
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <MenuDisplay className="self-start" />
+      </div>
 
       {/* Checkout Modal (FR-3 / QDR-39) */}
       <CheckoutModal

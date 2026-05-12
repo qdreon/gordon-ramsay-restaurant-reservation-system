@@ -109,8 +109,25 @@ The SRS defines non-functional requirements across Performance (PR-*), Safety (S
 
 | ID | Requirement | Description | Status |
 |----|-------------|-------------|--------|
-| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | Not explicitly verified -- Phase 0/1 task |
+| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | Not fully verified on free tier; fallback backup plan documented |
 | SAF-2 | Offline Failsafe | If the admin dashboard loses internet, display Offline Warning and disable all grid interactions | Phase 4 - Not Started |
+
+### PITR Recovery Procedure
+
+1. Open the Supabase project dashboard and go to **Settings → Backups**.
+2. Enable **Point-in-Time Recovery (PITR)** and confirm daily automated backups are turned on.
+3. Record the retention window, backup cadence, and restore target policy in the project notes.
+4. When a restore is required, choose a restore point and restore to a new project or branch first.
+5. Run a quick smoke test on the restored database and note the outcome plus RTO/RPO in the handoff notes.
+
+### Free-Tier Backup Fallback
+
+If the project remains on a free Supabase plan and PITR cannot be enabled, use a documented manual backup workflow instead:
+
+1. Schedule a daily GitHub Action or Windows Task Scheduler job to run `pg_dump` against the Supabase database.
+2. Store the dump artifact in a private, access-controlled location with a short retention window.
+3. Keep a restore script ready that can replay the dump with `psql` or `supabase db push` into a fresh database.
+4. Record that this is a budget workaround and does not provide true PITR semantics.
 
 **Security Requirements**
 

@@ -49,9 +49,9 @@
 | **3.4-API** | Lock API not called on checkout | Patched handleCheckoutConfirm() to call /api/reservations/lock | ✅ RESOLVED |
 | **3.4-ERR** | No error feedback for lock conflicts | Error message now displays in modal; user can retry | ✅ RESOLVED |
 
-### Next Priority Tasks (Phase 4 - Admin Dashboard)
-1. **Phase 2.3 Scheduler (QDR-65):** Deploy pg_cron job for timeout release (required for long-term stability)  
-2. **Phase 2.1 Teardown (QDR-63):** Add trigger for table combination teardown on reservation completion/cancellation  
+### Next Priority Tasks (Phase 4 - Admin Dashboard / Ops)
+1. **Phase 2.1 Teardown (QDR-63):** Add trigger for table combination teardown on reservation completion/cancellation  
+2. **Phase 1.5 PITR (SAF-1):** Enable Supabase Point-in-Time Recovery and verify daily backups  
 3. **Phase 4.1 Floor Plan (QDR-69):** Build `/admin/floorplan` interactive grid with color-coded status  
 4. **Phase 4.2 WebSockets (QDR-70):** Add Supabase real-time subscriptions for instant table status updates  
 5. **Phase 5.2 Waitlist Trigger (QDR-66):** Implement DB trigger to offer next waitlist customer on cancellation  
@@ -116,9 +116,9 @@ Building the 3NF Database Model and RBAC Security. **Status: COMPLETE**
 - [x] Install `date-fns` for client-side UTC-to-local time conversion. [QDR-58]
 
 ### Subtask 1.5: Data Backup & Recovery (SAF-1)
-- [ ] Enable Supabase Point-in-Time Recovery (PITR) in the Supabase dashboard project settings.
-- [ ] Verify daily automated backups are active.
-- [ ] Document backup retention period and recovery procedure in `documentation.md`.
+ - [ ] Enable Supabase Point-in-Time Recovery (PITR) in the Supabase dashboard project settings.
+ - [ ] Verify daily automated backups are active.
+- [x] Document backup retention period and recovery procedure in `documentation.md`.
 
 ---
 
@@ -143,7 +143,7 @@ Handling complex business logic via Supabase Remote Procedure Calls (RPCs). **St
 ### Subtask 2.3: Checkout Timeout Rollback [QDR-40 / QDR-65]
 - [x] Set `locked_until = now() + interval '5 minutes'` in the lock RPC. [QDR-65]
 - [x] Write `release_expired_pending_reservations()` function: batch-cancels expired locks, reverts tables to 'Available'. [QDR-65]
-- [ ] Configure pg_cron or Supabase Edge Function to invoke `release_expired_pending_reservations()` on a schedule (e.g., every 2 minutes). **[HIGH PRIORITY -- Phase 2.3 Scheduler Task] [QDR-65]**
+- [x] Configure pg_cron to invoke `release_expired_pending_reservations()` on a schedule (every 2 minutes). **[IMPLEMENTED IN `supabase/migrations/007_pg_cron_scheduler.sql`] [QDR-65]**
 
 ### Subtask 2.4: Service Layer Wiring (Repository Pattern)
 - [x] `tableService.ts`: `findAvailableTableOptions()` wired to availability RPC.
