@@ -33,16 +33,25 @@ export default function CustomerLayout({
                 My Reservations
               </Link>
               <Link
-                href="/"
+                href="/customer/booking"
                 className="text-sm hover:text-blue-600 dark:hover:text-blue-400"
               >
                 New Booking
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Placeholder for user menu / sign-out */}
-            <span className="text-sm text-slate-600 dark:text-slate-400">Customer Menu</span>
+          <div className="relative group inline-block">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 cursor-pointer">
+              <img src="/avatar.png" alt="" />
+            </div>
+
+            <div className="absolute right-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg hidden group-hover:block transition-all duration-300 z-50">
+              <div className="py-2">
+                <a href="/customer/profile" className="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                <hr className="my-1" />
+                <button className="block w-full text-left px-4 py-2 hover:big-red-50 text-sm -text-red-600">Sign Out</button>
+              </div>
+            </div>
           </div>
         </div>
       </header>

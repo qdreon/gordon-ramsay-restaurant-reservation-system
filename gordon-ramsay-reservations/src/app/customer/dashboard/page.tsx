@@ -20,7 +20,7 @@ import { getCurrentUser, signOut } from '@/lib/authClient';
  */
 
 export default function CustomerDashboard() {
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  /*const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function CustomerDashboard() {
         {error}
       </div>
     );
-  }
+  }*/
 
   return (
     <div className="space-y-8">
@@ -77,7 +77,7 @@ export default function CustomerDashboard() {
       <section className="space-y-4">
         <h1 className="text-3xl font-bold">Welcome to Your Account</h1>
         <p className="text-slate-600 dark:text-slate-400">
-          Email: <span className="font-semibold">{userEmail}</span>
+          Email: <span className="font-semibold">{/*userEmail*/}</span>
         </p>
       </section>
 
@@ -93,6 +93,7 @@ export default function CustomerDashboard() {
       </section>
 
       {/* Account Actions */}
+      {/*
       <section className="space-y-3">
         <button
           onClick={() => router.push('/')}
@@ -113,7 +114,7 @@ export default function CustomerDashboard() {
         >
           Delete Account (QDR-61)
         </button>
-      </section>
+      </section>*/}
     </div>
   );
 }
