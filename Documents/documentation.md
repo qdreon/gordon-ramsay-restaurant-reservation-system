@@ -9,6 +9,13 @@
 
 ## Revision History
 
+### [May 13, 2026] - Phase 4 Admin Dashboard UI Merge
+- **PR #10 Integration:** Merged cyghs's admin dashboard work into main; added CRM, Menu, and Reservations pages to the live app
+- **Dependency Fix:** Added `@remixicon/react` for the new UI components and resolved the MasterCalendar export issue
+- **Build Status:** ✅ Production build successful after merge; admin routes render correctly in browser smoke tests
+- **Contributor Credit:** Applied co-author attribution for cyghs <24104753@usc.edu.ph>
+- **Project: 58% Complete** — Phase 4 UI scaffold is now live; real-time wiring still pending
+
 ### [May 12, 2026] - Phase Completion: Phases 0-3 Fully Operational
 - **Phase 1 (100%):** Data layer complete; schema, RBAC, indexes, triggers, seed data all verified
 - **Phase 2 (100%):** Booking engine complete; 3 RPCs deployed; pg_cron scheduler + table teardown trigger added
