@@ -154,68 +154,9 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
   }
 }
 
-export async function sendWaitlistInvite(invite: WaitlistNotification): Promise<void> {
-  let htmlTemplate = loadTemplate("waitlistInvite.html");
-
-  htmlTemplate = htmlTemplate
-    .replace("{{ guestName }}", invite.guestName)
-    .replace("{{ restaurantName }}", invite.restaurantName)
-    .replace("{{ requestedDate }}", invite.requestedDate)
-    .replace("{{ requestedTime }}", invite.requestedTime)
-    .replace("{{ partySize }}", invite.partySize.toString())
-    .replace("{{ waitlistPosition }}", invite.waitlistPosition.toString())
-    .replace("{{ confirmationURL }}", invite.confirmationURL);
-
-  const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Gordon Ramsay Reservation System//EN
-CALSCALE:GREGORIAN
-METHOD:REQUEST
-BEGIN:VEVENT
-UID:${invite.inviteId}@example.com
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
-DTSTART:${invite.requestedDate.replace(/-/g, "")}T${invite.requestedTime.replace(":", "")}00Z
-DTEND:${invite.requestedDate.replace(/-/g, "")}T${invite.requestedTime.replace(":", "")}00Z
-SUMMARY:Waitlist Invitation - ${invite.restaurantName}
-DESCRIPTION:You are invited from the waitlist for ${invite.guestName} (Party of ${invite.partySize})
-LOCATION:${invite.restaurantAddress}
-STATUS:TENTATIVE
-ORGANIZER;CN=${invite.restaurantName}:mailto:reservations@example.com
-ATTENDEE;CN=${invite.guestName};RSVP=TRUE:mailto:${invite.guestEmail}
-END:VEVENT
-END:VCALENDAR`;
-
-  let transporter;
-  try {
-    transporter = createTransporter();
-  } catch (err) {
-    console.error("[Notification] Transporter creation failed:", err);
-    return;
-  }
-
-  try {
-    await transporter.sendMail({
-      from: `"Gordon Ramsay Reservations" <${process.env.EMAIL_USER}>`,
-      to: invite.guestEmail,
-      subject: "Your Waitlist Invitation",
-      html: htmlTemplate,
-      attachments: [
-        {
-          filename: "waitlist.ics",
-          content: icsContent,
-          contentType: "text/calendar",
-        },
-      ],
-    });
-  } catch (err) {
-    console.error("[Notification] sendWaitlistInvite failed:", err);
-  }
-}
-
 /**
  * Sends a waitlist invitation email with tentative .ics calendar invite attached.
  */
->>>>>>> pr-9
 export async function sendWaitlistInvite(invite: WaitlistNotification): Promise<void> {
   let htmlTemplate = loadTemplate("waitlistInvite.html");
 
@@ -247,7 +188,6 @@ ATTENDEE;CN=${invite.guestName};RSVP=TRUE:mailto:${invite.guestEmail}
 END:VEVENT
 END:VCALENDAR`;
 
-<<<<<<< HEAD
   let transporter;
   try {
     transporter = createTransporter();
@@ -273,27 +213,4 @@ END:VCALENDAR`;
   } catch (err) {
     console.error("[Notification] sendWaitlistInvite failed:", err);
   }
-=======
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"Gordon Ramsay Reservations" <${process.env.EMAIL_USER}>`,
-    to: invite.guestEmail,
-    subject: "Your Waitlist Invitation",
-    html: htmlTemplate,
-    attachments: [
-      {
-        filename: "waitlist.ics",
-        content: icsContent,
-        contentType: "text/calendar",
-      },
-    ],
-  });
->>>>>>> pr-9
 }
