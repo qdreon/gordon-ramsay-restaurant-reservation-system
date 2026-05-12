@@ -1,5 +1,6 @@
 .agents/
 .prompts/
+.github/prompts/System Prompt.prompt.md
 *.csv
 *.md
 .next/

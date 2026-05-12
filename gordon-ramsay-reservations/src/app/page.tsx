@@ -165,89 +165,98 @@ export default function Home() {
    *
    * Flow:
    *   1. Fetch the current session to get the auth user ID.
-   *   2. Resolve the customer_id from the users table via /api/reservations/lock.
+   *   2. Resolve the customer_id from the users table via /api/customer/me.
    *   3. POST to /api/reservations/lock with the full booking payload.
    *   4. On success, redirect to /customer/dashboard.
    *   5. On lock conflict (55P03), display a 'Table already reserved' error.
+   *   6. Keep modal open on error so user can try again.
    */
   async function handleCheckoutConfirm(paymentToken: string) {
     if (!selectedOption) return;
 
-    // Resolve the current user's auth session client-side.
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data: sessionData } = await supabase.auth.getSession();
+    try {
+      // Resolve the current user's auth session client-side.
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: sessionData } = await supabase.auth.getSession();
 
-    if (!sessionData.session) {
-      // Not logged in -- close modal and redirect to login.
+      if (!sessionData.session) {
+        // Not logged in -- close modal and redirect to login.
+        setIsModalOpen(false);
+        router.push('/auth/login');
+        return;
+      }
+
+      const authUserId = sessionData.session.user.id;
+
+      // Resolve customer_id from /api/customer/me, which looks up the
+      // public.customers row for the current auth user.
+      const customerRes = await fetch('/api/customer/me', {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+      });
+      const customerPayload = (await customerRes.json()) as {
+        customerId?: string;
+        error?: string;
+      };
+
+      if (!customerRes.ok || !customerPayload.customerId) {
+        throw new Error(
+          customerPayload.error ?? 'Could not resolve your customer account. Please try again.'
+        );
+      }
+
+      // POST the lock request to the booking engine.
+      const lockRes = await fetch('/api/reservations/lock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          customerId: customerPayload.customerId,
+          tableIds: selectedOption.table_ids,
+          reservationDate,
+          startTime: startTimeISO,
+          endTime: endTimeISO,
+          partySize,
+          paymentToken,
+          createdBy: authUserId,
+        }),
+      });
+
+      const lockPayload = (await lockRes.json()) as {
+        reservation?: { reservation_id: string; locked_until: string };
+        error?: string;
+      };
+
+      if (!lockRes.ok) {
+        // Map the 55P03 lock-conflict to a user-readable message (FR-3).
+        const msg = lockPayload.error ?? 'Reservation failed.';
+        const isConflict =
+          msg.includes('no longer available') || msg.includes('lock') || msg.includes('55P03');
+        throw new Error(
+          isConflict
+            ? 'This table was just reserved by someone else. Please select another option.'
+            : msg
+        );
+      }
+
+      // Success -- navigate to the dashboard.
       setIsModalOpen(false);
-      router.push('/auth/login');
-      return;
+      router.push('/customer/dashboard?booking=confirmed');
+    } catch (err) {
+      // Error is caught by the modal's error handler
+      const message = err instanceof Error ? err.message : 'Checkout failed. Please try again.';
+      setBookingError(message);
+      // Modal stays open for user to retry or cancel
+      throw err; // Re-throw so modal can catch and display in its error state
     }
-
-    const authUserId = sessionData.session.user.id;
-
-    // Resolve customer_id from /api/customer/me, which looks up the
-    // public.customers row for the current auth user.
-    const customerRes = await fetch('/api/customer/me', {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-      },
-    });
-    const customerPayload = (await customerRes.json()) as {
-      customerId?: string;
-      error?: string;
-    };
-
-    if (!customerRes.ok || !customerPayload.customerId) {
-      throw new Error(
-        customerPayload.error ?? 'Could not resolve your customer account. Please try again.'
-      );
-    }
-
-    // POST the lock request to the booking engine.
-    const lockRes = await fetch('/api/reservations/lock', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-      },
-      body: JSON.stringify({
-        customerId: customerPayload.customerId,
-        tableIds: selectedOption.table_ids,
-        reservationDate,
-        startTime: startTimeISO,
-        endTime: endTimeISO,
-        partySize,
-        paymentToken,
-        createdBy: authUserId,
-      }),
-    });
-
-    const lockPayload = (await lockRes.json()) as {
-      reservation?: { reservation_id: string; locked_until: string };
-      error?: string;
-    };
-
-    if (!lockRes.ok) {
-      // Map the 55P03 lock-conflict to a user-readable message (FR-3).
-      const msg = lockPayload.error ?? 'Reservation failed.';
-      const isConflict =
-        msg.includes('no longer available') || msg.includes('lock') || msg.includes('55P03');
-      throw new Error(
-        isConflict
-          ? 'This table was just reserved by someone else. Please select another option.'
-          : msg
-      );
-    }
-
-    // Success -- navigate to the dashboard.
-    setIsModalOpen(false);
-    router.push('/customer/dashboard?booking=confirmed');
   }
 
   function handleModalClose() {

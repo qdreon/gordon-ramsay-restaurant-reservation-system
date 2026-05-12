@@ -53,7 +53,7 @@ export interface ReservationSummary extends ReservationRow {}
  * Required before calling the reservation lock RPC, which expects `customer_id`.
  */
 export async function getCustomerByUserId(userId: string): Promise<CustomerProfile | null> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceSupabaseClient();
 
   const { data, error } = await supabase
     .from('customers')
@@ -75,7 +75,7 @@ export async function getCustomerByUserId(userId: string): Promise<CustomerProfi
  * Joins `reservation_tables` to get the physical table numbers for display.
  */
 export async function getReservationsForCustomer(customerId: string): Promise<ReservationRow[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceSupabaseClient();
 
   const { data, error } = await supabase
     .from('reservations')
@@ -101,11 +101,14 @@ export async function getReservationsForCustomer(customerId: string): Promise<Re
   }
 
   // Flatten nested reservation_tables -> tables -> table_number
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row: any) => ({
     ...row,
-    tables: (row.reservation_tables ?? []).flatMap(
-      (rt: { tables: { table_number: number }[] | null }) => rt.tables?.map(t => ({ table_number: t.table_number })) ?? []
-    ),
+    tables: (row.reservation_tables ?? [])
+      .map((rt: any) => rt.tables)
+      .filter((t: any) => t !== null)
+      .map((t: any) => (Array.isArray(t) ? t : [t]))
+      .flat()
+      .map((t: any) => ({ table_number: t?.table_number || 0 })),
   })) as ReservationRow[];
 }
 

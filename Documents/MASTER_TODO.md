@@ -7,6 +7,46 @@
 
 ---
 
+## PROJECT STATUS SUMMARY (As of May 12, 2026)
+
+### Completion by Phase
+| Phase | Title | Status | Completion |
+|-------|-------|--------|-----------|
+| **Phase 0** | Project Scaffolding & Architecture Setup | ✅ COMPLETE | 100% |
+| **Phase 1** | Data Layer & Security (Supabase SQL) | ✅ COMPLETE (95%) | 95% — Missing: PITR backup setup |
+| **Phase 2** | Core Booking Engine & Concurrency (Backend / RPCs) | ✅ MOSTLY COMPLETE (90%) | 90% — Missing: pg_cron scheduler for timeout release; Table teardown trigger |
+| **Phase 3** | Customer Portal (Frontend / View & Controller) | 🔄 IN PROGRESS (~45%) | 45% — Auth Complete ✓; Checkout modal wiring CRITICAL GAP; Account mgmt stubs in place |
+| **Phase 4** | Admin Real-Time Dashboard (Operations) | ❌ NOT STARTED | 0% |
+| **Phase 5** | Waitlist & Automations (Triggers & APIs) | ❌ NOT STARTED | 0% |
+| **Phase 6** | Admin Auxiliary Features (CRUD & CRM) | ❌ NOT STARTED | 0% |
+| **Phase 7** | QA, Testing & Final Deliverables | ❌ NOT STARTED | 0% |
+
+**Overall Project Completion: ~30%** | **High-Priority Blockers: 3 CRITICAL items in Phase 3**
+
+### Recent Fixes & Validations (May 12, 2026)
+✅ **Windows Build Fix:** Switched from Turbopack to Webpack (`npm run build --webpack`) -- resolves EBUSY file-lock errors  
+✅ **Auth Profile Bug Fix:** Patched `/api/auth/register` to explicitly upsert `public.users` + `public.customers` rows via service-role  
+✅ **End-to-End Auth Validation:** Verified registration → auto-login → profile lookup → dashboard works (test-customer-2@example.com)  
+✅ **Middleware RBAC:** Confirmed route protection enforces `/customer/*` and `/admin/*` access control  
+
+### Critical Blockers (Must Resolve Next Phase 3)
+| ID | Blocker | Severity | Impact |
+|----|---------|----------|--------|
+| **3.3-INT** | Availability search form selection NOT wired to CheckoutModal | **CRITICAL** | Customers cannot click table results to open payment UI |
+| **3.4-API** | CheckoutModal `onConfirm` callback NOT wired to `/api/reservations/lock` | **CRITICAL** | Payment confirmation doesn't create pending reservation |
+| **3.4-ERR** | Lock conflict error handling (`55P03`) not implemented in UI | **CRITICAL** | Double-booking UI feedback missing |
+
+### Next Priority Tasks (Recommended Sequence)
+1. **Phase 3.3 Integration (QDR-39):** Wire availability table selection → CheckoutModal open  
+2. **Phase 3.4 API Wiring (QDR-65):** Wire CheckoutModal onConfirm → POST `/api/reservations/lock`  
+3. **Phase 3.4 Error Handling (QDR-65):** Map `55P03` PostgreSQL error to user-friendly message  
+4. **Phase 3.5 Account Mgmt (QDR-59-61):** Implement dashboard cancel/delete buttons  
+5. **Phase 2.3 Scheduler (QDR-65):** Deploy pg_cron job for timeout release (required for Phase 3 to work end-to-end)  
+
+---
+
+## DETAILED PHASE BREAKDOWN
+
 ## PHASE 0: Project Scaffolding & Architecture Setup
 
 Setting up the environment using MVC and Repository Pattern structures.
@@ -79,7 +119,7 @@ Handling complex business logic via Supabase Remote Procedure Calls (RPCs). **St
 - [x] Include logic to auto-combine adjacent tables (single, pair, triple combinations). [QDR-63]
 - [x] Cap combination at a strict maximum of 12 Pax (FR-4). [QDR-63]
 - [x] Filter out blocked dates inside the RPC. [QDR-62]
-- [ ] Implement teardown logic: on reservation 'Completed' or 'Cancelled', dissolve all table combination links and revert combined tables to 'Available' (FR-4 full requirement). [Future subtask]
+- [ ] Implement teardown logic: on reservation 'Completed' or 'Cancelled', dissolve all table combination links and revert combined tables to 'Available' (FR-4 full requirement). **[HIGH PRIORITY -- Phase 2.1 Teardown Task]**
 
 ### Subtask 2.2: Concurrency Row-Locking Engine [QDR-40 / QDR-64]
 - [x] Write `create_pending_reservation_lock()` Postgres RPC using `SELECT ... FOR UPDATE`. [QDR-64]
@@ -90,7 +130,7 @@ Handling complex business logic via Supabase Remote Procedure Calls (RPCs). **St
 ### Subtask 2.3: Checkout Timeout Rollback [QDR-40 / QDR-65]
 - [x] Set `locked_until = now() + interval '5 minutes'` in the lock RPC. [QDR-65]
 - [x] Write `release_expired_pending_reservations()` function: batch-cancels expired locks, reverts tables to 'Available'. [QDR-65]
-- [ ] Configure pg_cron or Supabase Edge Function to invoke `release_expired_pending_reservations()` on a schedule (e.g., every 2 minutes). [QDR-65]
+- [ ] Configure pg_cron or Supabase Edge Function to invoke `release_expired_pending_reservations()` on a schedule (e.g., every 2 minutes). **[HIGH PRIORITY -- Phase 2.3 Scheduler Task] [QDR-65]**
 
 ### Subtask 2.4: Service Layer Wiring (Repository Pattern)
 - [x] `tableService.ts`: `findAvailableTableOptions()` wired to availability RPC.
@@ -110,33 +150,36 @@ Building the user-facing web app adhering to Legal Compliance. **Status: IN PROG
 - [x] Build `/auth/login` page with email/password sign-in. [QDR-54]
 - [x] Build auth layout with gradient background. [QDR-54]
 - [x] Implement `authClient.ts`: `signUp()`, `signIn()`, `signOut()`, `getCurrentUser()`. [QDR-54]
+- [x] **FIX (May 12):** Patch `/api/auth/register` to explicitly upsert `public.users` and `public.customers` rows via service-role after auth user creation (fixes: profile missing on dashboard bug). [QDR-54]
+- [x] **VERIFIED (May 12):** End-to-end test: register → auto-login → profile lookup → dashboard display works. Test account: test-customer-2@example.com. [QDR-54]
 
 ### Subtask 3.2: RBAC Verification & Testing [QDR-35 / QDR-55]
 - [x] Build comprehensive RBAC test suite (`tests/rbac/`). [QDR-55]
 - [x] Verify `npm run build` passes TypeScript checks. [QDR-55]
 - [x] Customer layout (shared header + nav for `/customer/*`). [QDR-55]
 - [x] Admin layout (shared header + nav for `/admin/*`). [QDR-55]
+- [x] **VERIFIED (May 12):** Middleware correctly enforces route protection; authenticated users can access `/customer/*`, unauthenticated redirected to `/auth/login`. [QDR-55]
 
 ### Subtask 3.3: Search & Availability UI [QDR-39]
 - [x] Build availability search form (Date, Time, Party Size) on the landing page (`/`). [QDR-39]
 - [x] Wire form to POST `/api/availability`; display returned table options as results. [QDR-39]
-- [ ] Wire table option selection to open `CheckoutModal` (currently results are displayed but not clickable). [QDR-39]
-- [ ] Display view-only digital menu component alongside availability results (FR-2). [QDR-82]
+- [ ] **Wire table option selection to open `CheckoutModal`** (currently results display but selection is not clickable). **[CRITICAL -- Phase 3.3 Modal Integration] [QDR-39]**
+- [ ] Display view-only digital menu component alongside availability results (FR-2). **[Phase 3.3 Menu Display] [QDR-82]**
 
 ### Subtask 3.4: Simulated Checkout Modal [QDR-39 / QDR-65]
 - [x] Build `CheckoutModal.tsx` with 5-minute countdown timer (setInterval). [QDR-39]
 - [x] Simulated payment form (card number, expiry, CVV -- no real PANs, LEG-2 / SEC-3). [QDR-39]
 - [x] Auto-close on timer expiry with error message displayed to user. [QDR-39]
 - [x] Token generation: `tok_${Date.now()}_${random}` (simulated, not real PAN). [QDR-39]
-- [ ] Wire `onConfirm(token)` callback to POST `/api/reservations/lock` endpoint. [QDR-65]
-- [ ] Handle `55P03` lock conflict error from API: display 'Table already reserved' message (FR-3). [QDR-65]
+- [ ] **Wire `onConfirm(token)` callback to POST `/api/reservations/lock` endpoint.** **[CRITICAL -- Phase 3.4 API Wiring] [QDR-65]**
+- [ ] Handle `55P03` lock conflict error from API: display 'Table already reserved' message (FR-3). **[Phase 3.4 Error Handling] [QDR-65]**
 
 ### Subtask 3.5: Account Management Module [QDR-38]
-- [ ] Build `/customer/dashboard` page: display upcoming/past reservations for authenticated user. [QDR-59]
-- [ ] Build UI to update contact info and dietary restrictions (FR-1). [QDR-59]
-- [ ] Implement "Cancel Booking" button: disable if within 2 hours of reservation time. [QDR-60]
-- [ ] Build backend cancellation API route (FR-10): (a) revert table status to 'Available', (b) trigger waitlist notification protocol. [QDR-60]
-- [ ] Build "Delete Account" button: trigger permanent cascade delete of all PII, CRM data, reservations, and Supabase Auth record (LEG-1). [QDR-61]
+- [x] Build `/customer/dashboard` page: display upcoming/past reservations for authenticated user. **[VERIFIED May 12: Displays user email, reservation lists (empty for new account).] [QDR-59]**
+- [ ] Build UI to update contact info and dietary restrictions (FR-1). **[Phase 3.5 Profile Update Form] [QDR-59]**
+- [ ] Implement "Cancel Booking" button: disable if within 2 hours of reservation time. **[Phase 3.5 + Phase 5 Cancel Logic] [QDR-60]**
+- [ ] Build backend cancellation API route (FR-10): (a) revert table status to 'Available', (b) trigger waitlist notification protocol. **[Phase 5 Dependency] [QDR-60]**
+- [ ] Build "Delete Account" button: trigger permanent cascade delete of all PII, CRM data, reservations, and Supabase Auth record (LEG-1). **[Phase 3.5 Delete Account] [QDR-61]**
 
 ---
 
