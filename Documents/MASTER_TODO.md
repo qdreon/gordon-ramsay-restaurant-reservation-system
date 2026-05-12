@@ -7,7 +7,7 @@
 
 ---
 
-## PROJECT STATUS SUMMARY (As of May 12, 2026)
+## PROJECT STATUS SUMMARY (As of May 13, 2026)
 
 ### Completion by Phase
 | Phase | Title | Status | Completion |
@@ -16,26 +16,31 @@
 | **Phase 1** | Data Layer & Security (Supabase SQL) | ✅ **COMPLETE** | **100%** — Schema ✓; Enums ✓; RLS Policies ✓; RBAC ✓; Indexes ✓; Seed data ✓ |
 | **Phase 2** | Core Booking Engine & Concurrency (Backend / RPCs) | ✅ **COMPLETE** | **100%** — Availability ✓; Row-lock RPC ✓; Timeout release ✓; pg_cron scheduler ✓; Table teardown trigger ✓ |
 | **Phase 3** | Customer Portal (Frontend / View & Controller) | ✅ **COMPLETE** | **100%** — Auth ✓; Availability ✓; Checkout ✓; Lock API ✓; Dashboard ✓; Account Mgmt ✓ |
-| **Phase 4** | Admin Real-Time Dashboard (Operations) | ❌ NOT STARTED | 0% |
-| **Phase 5** | Waitlist & Automations (Triggers & APIs) | ❌ NOT STARTED | 0% |
-| **Phase 6** | Admin Auxiliary Features (CRUD & CRM) | ❌ NOT STARTED | 0% |
+| **Phase 4** | Admin Real-Time Dashboard (Operations) | 🔄 IN PROGRESS | ~40% — Admin UI pages (CRM, Menu, Reservations) complete; real-time integration pending |
+| **Phase 5** | Waitlist & Automations (Triggers & APIs) | 🔄 PARTIAL | ~25% — SMTP email service ✓; Waitlist trigger pending |
+| **Phase 6** | Admin Auxiliary Features (CRUD & CRM) | 🔄 PARTIAL | ~10% — CRM UI stub complete; Menu CRUD UI complete; backend integration pending |
 | **Phase 7** | QA, Testing & Final Deliverables | ❌ NOT STARTED | 0% |
 
-**Overall Project Completion: ~50%** | **Phases 0-3 Complete — Core System Fully Operational!**
+**Overall Project Completion: ~58%** | **Phases 0-3 Complete + Phase 4-6 UI scaffolded; real-time integration in progress — Admin Dashboard Live!**
 
-### Recent Fixes & Validations (May 12, 2026)
+### Recent Fixes & Validations (May 13, 2026)
+
+✅ **PR #10 Review & Patch (May 13):** Evaluated Admin Dashboard PR from cyghs; identified missing `@remixicon/react` dependency; added to package.json; fixed TypeScript export error in MasterCalendar component  
+✅ **PR #10 Build Verification (May 13):** Build passed cleanly (11.1s, 0 errors, 27 routes with 8 new admin pages); all UI components compiled  
+✅ **PR #10 Browser Testing (May 13):** Tested localhost:3001 — /admin/crm (200 OK, customer table), /admin/menu (200 OK, menu items CRUD), /admin/reservations (200 OK, calendar with date picker)  
+✅ **PR #10 Merge & Attribution (May 13):** Merged to main with merge commit; added co-author credit commit (a9857cc) for cyghs <24104753@usc.edu.ph>; fixed export issue in final commit (249e976)  
+
+**Earlier Today:**  
+✅ **PR #9 Review & Patch (May 13):** Evaluated SMTP email service PR from ReuelArcilla; identified missing `nodemailer` dependency; added to package.json  
+✅ **PR #9 Merge & Attribution (May 13):** Merged to main; added co-author credit commit (f310cdb) for ReuelArcilla <24101057@usc.edu.ph>  
+✅ **PR #8 Review (May 13):** Identified 2 critical blockers (inverted auth redirect, undefined signOut); PR closed without merge  
+
+**Previous Validations (May 12):**  
 ✅ **Windows Build Fix:** Switched from Turbopack to Webpack (`npm run build --webpack`) -- resolves EBUSY file-lock errors  
 ✅ **Auth Profile Bug Fix:** Patched `/api/auth/register` to explicitly upsert `public.users` + `public.customers` rows via service-role  
 ✅ **End-to-End Auth Validation:** Verified registration → auto-login → profile lookup → dashboard works (test-customer-2@example.com)  
 ✅ **Middleware RBAC:** Confirmed route protection enforces `/customer/*` and `/admin/*` access control  
-✅ **Phase 3 Checkout Flow:** Verified landing page search → table selection → modal countdown → lock API → dashboard reservation display  
-✅ **Phase 2 Scheduler:** Deployed `pg_cron` extension with automated cleanup job (every 2 min)  
-✅ **Phase 2 Table Teardown:** Added trigger to revert combined tables to 'available' on reservation completion/cancellation  
-✅ **Phase 3.3 Modal Integration (May 12):** Wired availability table selection → opens CheckoutModal with reservation details  
-✅ **Phase 3.4 Lock API (May 12):** Wired CheckoutModal onConfirm → POST `/api/reservations/lock`, creates pending_payment reservation  
-✅ **Phase 3.4 Error Handling (May 12):** Implemented `55P03` lock conflict → user-friendly "Table already reserved" message  
-✅ **Phase 3.5 Account Mgmt (May 12):** Dashboard displays reservations; Cancel button disables within 2 hours; Delete Account backend operational  
-✅ **E2E Checkout Test (May 12):** Full flow: search → select table → modal opens → confirm payment → redirect to dashboard with reservation ✅
+✅ **Phase 3 Checkout Flow:** Verified landing page search → table selection → modal countdown → lock API → dashboard reservation display
 
 ### Resolved Blockers (Phase 3 Now Complete)
 | ID | Issue | Resolution | Status |
