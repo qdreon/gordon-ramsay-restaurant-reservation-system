@@ -55,6 +55,39 @@ export async function POST(req: Request) {
 
     const userId = createdUser.user.id;
 
+    const { error: profileError } = await admin.from('users').upsert(
+      {
+        id: userId,
+        email,
+        full_name: fullName,
+        phone,
+        role: 'customer',
+        consent_given: true,
+      },
+      { onConflict: 'id' }
+    );
+
+    if (profileError) {
+      return NextResponse.json(
+        { error: `Unable to create user profile: ${profileError.message}` },
+        { status: 500 }
+      );
+    }
+
+    const { error: customerError } = await admin.from('customers').upsert(
+      {
+        user_id: userId,
+      },
+      { onConflict: 'user_id' }
+    );
+
+    if (customerError) {
+      return NextResponse.json(
+        { error: `Unable to create customer profile: ${customerError.message}` },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       {
         user: {

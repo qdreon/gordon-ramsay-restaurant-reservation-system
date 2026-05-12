@@ -205,7 +205,7 @@ export default function RegisterPage() {
               I agree to the{' '}
               <strong>Republic Act 10173 (Data Privacy Act of the Philippines)</strong> terms
               and consent to the collection, use, and processing of my personal data as outlined
-              in Gordon Ramsay Restaurant's Privacy Policy. I understand I can request account
+              in Gordon Ramsay Restaurant&apos;s Privacy Policy. I understand I can request account
               deletion at any time.
             </span>
           </label>

@@ -11,5 +11,32 @@
  * Principle: Single Responsibility -- this file ONLY handles Menu data.
  */
 
-// [NOTE] Placeholder -- implementation begins in Phase 6 (Menu CRUD).
-export {};
+import { createServiceSupabaseClient } from '@/lib/supabaseAdmin';
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string | null;
+  available: boolean;
+  created_at: string;
+}
+
+export async function getAllMenuItems(): Promise<MenuItem[]> {
+  const supabase = createServiceSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('menu')
+    .select('id, name, description, price, category, available, created_at')
+    .eq('available', true)
+    .order('category', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch menu items: ${error.message}`);
+  }
+
+  return (data || []) as MenuItem[];
+}
+
