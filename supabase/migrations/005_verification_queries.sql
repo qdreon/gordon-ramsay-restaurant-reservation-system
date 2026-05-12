@@ -1,5 +1,5 @@
 -- ============================================================
--- VERIFICATION QUERIES: Run after all migrations (000-004)
+-- VERIFICATION QUERIES: Run after all migrations (000-006)
 -- Gordon Ramsay Restaurant Reservation System
 -- ============================================================
 -- Run in: Supabase Dashboard -> SQL Editor -> New Query
@@ -64,10 +64,27 @@ FROM information_schema.routines
 WHERE routine_schema = 'public'
   AND routine_type = 'FUNCTION'
 ORDER BY routine_name;
--- Expected: get_customer_id, handle_new_user, handle_updated_at, is_admin
+-- Expected includes: get_customer_id, handle_new_user, handle_updated_at, is_admin,
+--                    find_available_table_options, create_pending_reservation_lock,
+--                    release_expired_pending_reservations
 
 -- 8. Verify auth trigger exists
 SELECT trigger_name, event_object_table
 FROM information_schema.triggers
 WHERE trigger_schema = 'auth' OR event_object_schema = 'auth';
 -- Expected: on_auth_user_created on auth.users
+
+-- 9. Verify booking RPC grants
+SELECT
+  proname AS function_name,
+  pg_get_userbyid(proacl.grantee) AS grantee
+FROM pg_proc p
+JOIN LATERAL aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) AS proacl ON true
+WHERE p.pronamespace = 'public'::regnamespace
+  AND p.proname IN (
+    'find_available_table_options',
+    'create_pending_reservation_lock',
+    'release_expired_pending_reservations'
+  )
+  AND proacl.privilege_type = 'EXECUTE'
+ORDER BY function_name, grantee;

@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signUp } from '@/lib/authClient';
+import { signUp, signIn } from '@/lib/authClient';
 
 /**
  * Registration page for new customers.
@@ -72,6 +72,10 @@ export default function RegisterPage() {
         phone: phone || undefined,
         consentGiven: true,
       });
+      
+      // Auto-login the user immediately after account creation
+      await signIn({ email, password });
+      
       // Redirect to customer dashboard on successful registration
       router.push('/customer/dashboard');
     } catch (err) {

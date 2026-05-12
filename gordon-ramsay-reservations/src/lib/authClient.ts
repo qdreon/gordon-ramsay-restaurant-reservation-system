@@ -48,27 +48,33 @@ export async function signUp(input: SignUpInput) {
     throw new Error('[Auth Client] You must consent to RA 10173 Data Privacy Act terms.');
   }
 
-  const { data, error: signUpError } = await supabase.auth.signUp({
-    email: input.email,
-    password: input.password,
-    options: {
-      data: {
-        full_name: input.fullName,
-        phone: input.phone || null,
-        consent_given: true,
-      },
+  const response = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      email: input.email,
+      password: input.password,
+      fullName: input.fullName,
+      phone: input.phone || null,
+      consentGiven: true,
+    }),
   });
 
-  if (signUpError) {
-    throw new Error(`[Auth Client] Sign-up failed: ${signUpError.message}`);
+  const payload = (await response.json()) as
+    | { user?: { id: string; email?: string }; error?: string }
+    | { error?: string };
+
+  if (!response.ok) {
+    throw new Error(`[Auth Client] Sign-up failed: ${payload.error || 'Unknown registration error.'}`);
   }
 
-  if (!data.user) {
+  if (!('user' in payload) || !payload.user) {
     throw new Error('[Auth Client] Sign-up succeeded but no user was returned.');
   }
 
-  return data.user;
+  return payload.user;
 }
 
 /**
@@ -124,6 +130,10 @@ export async function getCurrentUser() {
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {
+    // If the error is just that they aren't logged in, return null gracefully
+    if (error.message.includes('Auth session missing')) {
+      return null;
+    }
     throw new Error(`[Auth Client] Failed to get user: ${error.message}`);
   }
 

@@ -2,8 +2,8 @@
 -- MIGRATION 4: Seed Data -- Restaurant Tables
 -- Gordon Ramsay Restaurant Reservation System
 -- ============================================================
--- Run this FOURTH (last) in Supabase SQL Editor.
--- Prerequisite: Migrations 0-3 must be run first.
+-- Run this after Migrations 000-003_1 (before 006).
+-- Prerequisite: Base schema, RLS, and grants must already exist.
 -- ============================================================
 -- Inserts 15 restaurant tables with varying capacities:
 --   - 4x 2-seat tables  (intimate dining)
@@ -36,7 +36,14 @@ INSERT INTO public.tables (table_number, capacity, status, position_x, position_
     (12, 6, 'available', 1, 2, true),
     (13, 6, 'available', 2, 2, true),
     (14, 8, 'available', 3, 2, true),
-    (15, 8, 'available', 4, 2, true);
+    (15, 8, 'available', 4, 2, true)
+ON CONFLICT (table_number) DO UPDATE
+SET
+    capacity = EXCLUDED.capacity,
+    status = EXCLUDED.status,
+    position_x = EXCLUDED.position_x,
+    position_y = EXCLUDED.position_y,
+    is_combinable = EXCLUDED.is_combinable;
 
 -- Now set adjacent_table_ids for table combination logic (FR-4).
 -- Adjacent means physically next to each other on the grid.

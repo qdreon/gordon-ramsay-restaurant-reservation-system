@@ -20,10 +20,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Normalize start/end times to full ISO timestamps (TIMESTAMPTZ)
+    const normalize = (date?: string, time?: string) => {
+      if (!date || !time) return undefined;
+      if (time.includes('T')) return time;
+      // Accept 'HH:MM' or 'HH:MM:SS' and append seconds/zulu as needed
+      let t = time;
+      if (/^\d{2}:\d{2}$/.test(time)) t = `${time}:00`;
+      return `${date}T${t}Z`;
+    };
+
+    const startIso = normalize(reservationDate, startTime)!;
+    const endIso = normalize(reservationDate, endTime)!;
+
     const options = await findAvailableTableOptions({
       reservationDate,
-      startTime,
-      endTime,
+      startTime: startIso,
+      endTime: endIso,
       partySize,
     });
 

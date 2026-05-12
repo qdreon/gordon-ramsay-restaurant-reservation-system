@@ -21,6 +21,7 @@ export interface CreateReservationLockInput {
   startTime: string;
   endTime: string;
   partySize: number;
+  paymentToken?: string;
   specialRequests?: string;
   createdBy?: string;
 }
@@ -46,6 +47,7 @@ export async function createPendingReservationLock(
     p_start_time: input.startTime,
     p_end_time: input.endTime,
     p_party_size: input.partySize,
+    p_payment_token: input.paymentToken ?? null,
     p_special_requests: input.specialRequests ?? null,
     p_created_by: input.createdBy ?? null,
   });

@@ -1,7 +1,7 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.1
-> **Last Updated:** May 11, 2026
+> **Document Version:** 1.2
+> **Last Updated:** May 12, 2026
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
@@ -9,7 +9,15 @@
 
 ## Revision History
 
-### [May 11, 2026] - Phase 3: Customer Portal Authentication (QDR-54)
+### [May 12, 2026] - Gap Analysis: Cross-Reference Against SRS/SWDD/SPM
+- Cross-referenced all three authoritative documents (SRS v1.4, SWDD, SPM Project Charter) against MASTER_TODO.md.
+- Added FR-1 (Account Management), FR-10 (Cancellation backend), and FR-13 (System Health Monitoring) to the FR table -- all were absent.
+- Added missing NFRs: PR-1, PR-3, SAF-1, SEC-2, and all SQA attributes.
+- Updated Business Logic Constraints Traceability matrix with all previously unlisted constraints.
+- Updated Development Roadmap with missing QA tasks (Phase 7) and deliverables.
+- Moved raw extraction files to `Documents/extracted_raw/` directory.
+
+### [May 11, 2026] - QDR-54: Customer Portal Authentication
 *   **Authentication:** Implemented Supabase Auth client with sign-up, sign-in, sign-out utilities.
 *   **Auth Pages:** Created `/auth/login` and `/auth/register` pages with RA 10173 (LEG-1) consent enforcement.
 *   **Protected Routes:** Built `middleware.ts` with route protection for `/customer/*` and `/admin/*`; enforces RBAC via role lookup.
@@ -17,7 +25,7 @@
 *   **Documentation:** Normalized code comments to neutral voice; updated system prompt with JIRA template.
 *   **Verification:** `npm run build` passed TypeScript checks; commit `4c8e9f4` pushed to main.
 
-### [May 9, 2026] - Phase 1: Data Layer & Security (Initial Architecture)
+### [May 9, 2026] - QDR-37: Data Layer & Security (Initial Architecture)
 *   **Schema:** Created 8 core 3NF tables (`users`, `customers`, `tables`, `menu`, `reservations`, `reservation_tables`, `waitlist`, `blocked_dates`) and dropped legacy tables.
 *   **Security:** Implemented comprehensive Row Level Security (RLS) matrix and Role-Based Access Control (RBAC).
 *   **Integrity:** Added database triggers (`handle_new_user`, `updated_at`), strict `TIMESTAMPTZ` data types, and cascade delete chains.
@@ -53,31 +61,116 @@ The **Gordon Ramsay Restaurant Reservation System (GRRRS)** is a single-tenant M
 
 ### 1.1 Key Functional Requirements
 
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| FR-2 | Table Search | Customers search availability by date, time, and party size |
-| FR-3 | Booking with Deposit | 5-minute checkout window with simulated tokenized payment |
-| FR-4 | Table Combination | Auto-combine adjacent tables for large parties (max 12 pax) |
-| FR-5 | Virtual Waitlist | Auto-promote waitlisted customers on cancellation (10-min window) |
-| FR-6 | Email Notifications | Booking confirmations with .ics calendar attachments |
-| FR-7 | Admin Floor Plan | Real-time color-coded grid (Green/Yellow/Red/Grey) |
-| FR-8 | Block Dates | Admin blocks holidays from online availability |
-| FR-9 | Guest CRM | Searchable customer profiles with visit history and VIP tags |
-| FR-11 | Menu CRUD | Admin manages digital menu items |
-| FR-12 | Waitlist Control | Admin manually bumps VIPs or removes entries |
+The SRS (v1.4) and SWDD define **13 Functional Requirements** spanning the Customer Portal and Admin Dashboard.
+
+| ID | Requirement | Description | Status |
+|----|-------------|-------------|--------|
+| FR-1 | Account Management | Register, login, manage profile (dietary restrictions, contact info) via Supabase Auth | Schema done (Phase 1); Auth pages done (Phase 3) |
+| FR-2 | Search and Discovery | Search table availability by date, time, party size; view-only menu before booking | Phase 3 - In Progress |
+| FR-3 | Booking Engine | Row-lock table on selection; 5-minute checkout timeout; simulated deposit; error on conflict | Phase 2 complete; UI Phase 3 In Progress |
+| FR-4 | Table Combination Logic | Auto-combine adjacent tables for large parties; hard cap at 12 Pax; teardown on completion | Schema done; RPC Phase 2 |
+| FR-5 | Waitlist Automation | Trigger on cancellation; 10-minute offer window; disable protocol 60 min before closing | Schema done; trigger Phase 5 |
+| FR-6 | Email Notifications | Booking confirmation email with .ics calendar invite; waitlist offer email | Phase 5 - Not Started |
+| FR-7 | Visual Table Management | Static interactive floor plan grid; color-coded (Green/Yellow/Red/Grey); WebSocket real-time | Phase 4 - Not Started |
+| FR-8 | Reservation Management | Admin manual walk-in/phone bookings; Block Date feature; operating hours validation | Phase 4 - Not Started |
+| FR-9 | Guest CRM | Past visit history, VIP status, no-show count, allergy notes per customer | Phase 6 - Not Started |
+| FR-10 | Booking Cancellation | Customer cancels from dashboard; backend must revert table to Available AND trigger waitlist protocol | UI Phase 3 In Progress; backend Phase 5 dependency |
+| FR-11 | Menu Management CRUD | Admin uploads, edits, removes menu items; changes reflect on Customer Portal in real-time | Phase 6 - Not Started |
+| FR-12 | Admin Waitlist Control | Admin manually views, prioritizes, edits waitlist queue for VIPs or walk-in emergencies | Phase 6 - Not Started |
+| FR-13 | System Health Monitoring | Admin Dashboard displays real-time connection status indicators for Supabase, Payment Gateway, SMTP | API stub `/api/health` exists; full Admin UI Phase 4 |
 
 ### 1.2 Key Non-Functional Requirements
 
-| ID | Requirement | Description |
-|----|-------------|-------------|
-| PR-2 | Concurrency | Row-level locking resolves booking conflicts in less than 1 second |
-| DB-3 | UTC Timestamps | All database timestamps stored in UTC via TIMESTAMPTZ |
-| SEC-1 | RBAC | Role-Based Access Control (Customer vs Admin) via RLS |
-| SAF-2 | Offline Failsafe | Disable floor plan interactions on network loss |
-| LEG-1 | RA 10173 | Data Privacy Act compliance with Right to Erasure |
-| LEG-2 | PCI-DSS | No raw credit card PANs stored; simulated tokens only |
+The SRS defines non-functional requirements across Performance (PR-*), Safety (SAF-*), Security (SEC-*), Database (DB-*), Legal (LEG-*), and Software Quality (SQA-*) categories.
+
+**Performance Requirements**
+
+| ID | Requirement | Metric | Status |
+|----|-------------|--------|--------|
+| PR-1 | UI Load Performance | Customer availability grid and admin floor plan must load within 3 seconds over 4G/LTE or broadband | Not tested -- Phase 7 QA task |
+| PR-2 | Concurrency Resolution | Row-level locking must resolve booking conflicts within 1 second | Schema ready (Phase 2 complete) |
+| PR-3 | Email Dispatch Latency | Booking confirmations dispatched to SMTP within 10 seconds of successful checkout | Not tested -- Phase 7 QA task |
+
+**Safety Requirements**
+
+| ID | Requirement | Description | Status |
+|----|-------------|-------------|--------|
+| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | Not explicitly verified -- Phase 0/1 task |
+| SAF-2 | Offline Failsafe | If the admin dashboard loses internet, display Offline Warning and disable all grid interactions | Phase 4 - Not Started |
+
+**Security Requirements**
+
+| ID | Requirement | Description | Status |
+|----|-------------|-------------|--------|
+| SEC-1 | RBAC and RLS | Supabase Auth with role-based access; Customers access only own data | Complete (Phase 1 + QDR-54) |
+| SEC-2 | HTTPS/TLS Encryption | All web traffic between client browsers and Supabase backend must be encrypted via HTTPS/TLS | Verify on deployment -- Phase 7 task |
+| SEC-3 | No Raw PAN Storage | Tokenized simulated checkout; no real credit card numbers stored or transmitted | Complete (Phase 2; LEG-2 aligned) |
+
+**Database Requirements**
+
+| ID | Requirement | Description | Status |
+|----|-------------|-------------|--------|
+| DB-1 | ACID Compliance | PostgreSQL via Supabase ensures ACID-compliant transactions | Inherent to Supabase/PostgreSQL |
+| DB-2 | Data Retention | CRM and profile data retained indefinitely unless user requests deletion | Implemented via LEG-1 cascade delete |
+| DB-3 | UTC Timestamps | All timestamps stored in TIMESTAMPTZ (UTC); converted to local timezone on client-side display | Complete (Phase 1) |
+
+**Legal Requirements**
+
+| ID | Requirement | Description | Status |
+|----|-------------|-------------|--------|
+| LEG-1 | RA 10173 Data Privacy Act | Mandatory consent checkbox on registration; automated Delete Account with full cascade PII erasure | Complete (Phase 1 schema; Phase 3 auth) |
+| LEG-2 | PCI-DSS Compliance | No raw credit card PANs captured, stored, or transmitted; simulated tokenized checkout only | Complete (Phase 2 schema + Phase 3 modal) |
+
+**Software Quality Attributes (SQA)**
+
+| Attribute | Requirement | Target |
+|-----------|-------------|--------|
+| Usability | Responsive UI for mobile, tablet, and desktop browsers | All phases |
+| Reliability | 99.9% uptime via Supabase globally distributed cloud infrastructure | Inherent to Supabase hosting |
+| Maintainability | MVC + Repository Pattern separation of concerns | Phase 0 complete |
+| Portability | Operates on Windows PC, Mac, tablets (iPads for front desk), smartphones | Phase 7 device testing |
 
 ---
+
+## Traceability & Verification
+
+- **Scope:** Functional Requirements (FR-*), Platform Requirements (PR-*), Database constraints (DB-*), Security requirements (SEC-*), and Legal constraints (LEG-*) declared in this document were cross-referenced with the authoritative project artifacts located in the `Documents/` folder: `SRS_Qdreon.pdf`, `SWDD_Qdreon.pdf`, and `SPM_ProjectCharter_GRRRS_Qdreon.pdf`.
+- **Status:** High-level cross-check performed: core FR identifiers (FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-11, FR-12) are present in this documentation and referenced in migrations, prompts, and migration SQL filenames. A full verification of the PDF source documents (word-for-word traceability) requires text extraction from the PDFs and manual confirmation; see `Documents/MASTER_TODO.md` for the tracking task.
+- **Action Items:**
+  - Extract and validate all FR/PR/DB/SEC/LEG references from the `SRS_Qdreon.pdf`, `SWDD_Qdreon.pdf`, and `SPM_ProjectCharter_GRRRS_Qdreon.pdf` into a traceability matrix (CSV/Markdown).
+  - Confirm each QDR ticket maps to at least one FR or design constraint in the SRS/SWDD/SPM and update this document's "Business Logic Constraints Traceability" section with exact citations.
+
+### Additional Audit Findings (Gemini)
+
+The following findings were reported by an external audit (Gemini). They summarize missing features, subtle business-logic edge cases, and architecture/infrastructure items that should be tracked in the traceability matrix and implemented as tickets where applicable:
+
+1. Major Missing Features (Entirely Omitted)
+
+  - System Health Monitoring (FR-13): Your admin dashboard lacked the requirement to display real-time connection status indicators for your three critical external dependencies: Supabase, the Payment Gateway, and the SMTP Email Server.
+  - Automated Deposit Refunds (FR-10): While you included the cancellation button, you missed the financial logic. The system must trigger an automated simulated deposit refund for cancellations made at least 24 hours in advance.
+  - Upcoming Email Reminders (FR-6): Your email API tasks covered confirmations and waitlist offers, but missed the requirement to automatically dispatch upcoming reminder notifications to customers before their scheduled reservation time.
+
+2. Business Logic & Edge Cases (Subtle Misses)
+
+  - Table Combination Teardown (FR-4): Your booking engine correctly combines adjacent tables for large parties, but misses the teardown logic. Upon conclusion of a reservation (status changed to 'Completed' or 'Cancelled'), the system must automatically dissolve these logical links to return tables to an 'Available' state.
+  - Status Synchronization (FR-7): On the interactive floor plan, if an Admin manually changes a Table Status to 'Dirty', the system must automatically transition the associated Reservation Status from 'Seated' to 'Completed'.
+  - Shift Hours Validation (FR-8): For the Admin reservation manager, you must enforce strict input validation preventing administrators from setting a closing time that is earlier than the opening time.
+  - Concurrency Failure Error Handling (FR-3): If the 1-second concurrency lock fails due to a conflict, the system must immediately abort and display a specific 'Table already reserved' error message to the customer.
+
+3. Architecture & Infrastructure
+
+  - Local Time Zone Conversion (DB-3): You correctly planned to store data in UTC format. However, the database must automatically convert this to the restaurant's local time zone for display on both the Customer Portal and Admin Dashboard.
+  - Data Loss Prevention (SAF-1): There was no DevOps task to explicitly rely on Supabase's automated Point-in-Time Recovery (PITR) and daily backups to prevent catastrophic loss of CRM data.
+  - Connection Security (SEC-2): A baseline task is needed to ensure all web traffic between client browsers and the backend is strictly encrypted using standard HTTPS/TLS protocols.
+
+4. Performance Testing & UI Requirements
+
+  - UI Latency QA Testing (PR-1): The Project Charter schedules a specific testing phase. You must verify that the real-time availability grid and static floor plan load within a strict 3-second limit.
+  - Notification Latency Testing (PR-3): Automated booking confirmations must be dispatched to the SMTP server within 10 seconds of a successful simulated checkout.
+  - Tablet Responsiveness: The system must be explicitly tested on standard touchscreen tablets (e.g., iPads), as this is the assumed hardware for the front-desk host stand.
+
+Add these items to the traceability matrix and create follow-up QDR tickets where appropriate.
+
 
 ## 2. Technology Stack and Architecture
 
@@ -774,24 +867,55 @@ Auth trigger (`on_auth_user_created` on `auth.users`) confirmed via `information
 
 ## 15. Business Logic Constraints Traceability
 
-This matrix maps each business constraint from the SRS/SWDD to its database implementation:
+This matrix maps every business constraint from the SRS (v1.4), SWDD, and SPM Project Charter to its implementation. Cross-referenced via full PDF text extraction on May 12, 2026.
 
-| Constraint ID | Requirement | Implementation |
-|--------------|-------------|----------------|
-| **DB-3** | UTC timestamps | All date/time columns use `TIMESTAMPTZ`. Client converts to local. |
-| **SEC-1** | RBAC (Customer vs Admin) | `user_role` enum on `users.role`; RLS policies use `is_admin()` |
-| **PR-2** | Row-level locking (<1s) | `reservations.locked_until` column ready for `SELECT ... FOR UPDATE` (Phase 2) |
-| **FR-3** | 5-minute checkout timeout | `reservations.locked_until` stores expiry timestamp; rollback logic in Phase 2 |
-| **FR-4** | Table combination (max 12 pax) | `reservation_tables` junction + `tables.adjacent_table_ids` + CHECK (party_size <= 12) |
-| **FR-5** | Waitlist auto-promotion | `waitlist.status`, `offered_at`, `expires_at` (10-min window). Trigger in Phase 5 |
-| **FR-7** | Floor plan color-coding | `table_status` enum: available/reserved/occupied/dirty |
-| **FR-8** | Block dates for holidays | `blocked_dates` table with UNIQUE date constraint |
-| **FR-9** | No-show auto-flag (15 min) | `reservation_status` includes `no_show`. Cron job in Phase 6 |
-| **FR-11** | Menu CRUD | `menu` table with `menu_category` enum. Admin-only RLS for writes |
-| **LEG-1** | RA 10173 Right to Erasure | CASCADE delete chain: auth.users -> users -> customers -> reservations/waitlist |
-| **LEG-1** | Consent checkbox | `users.consent_given` BOOLEAN (registration gate) |
-| **LEG-2** | PCI-DSS (no raw PANs) | `reservations.payment_token` stores simulated tokens only |
-| **SAF-2** | Offline failsafe | Implementation in Phase 4 (React useEffect network listener) |
+### 15.1 Functional Requirement Constraints
+
+| Constraint | Source | Rule | Implementation | Status |
+|-----------|--------|------|----------------|--------|
+| FR-1 | SRS 3.2.1 | Account management via Supabase Auth with UUID PKs | `public.users` + `public.customers` tables; `authClient.ts` | Complete |
+| FR-3 | SRS 3.2.1 | 5-minute checkout timeout; auto-revert table to Available on expiry | `reservations.locked_until`; rollback Edge Function / pg_cron (Phase 2) | Schema done |
+| FR-3 | SRS 3.2.1 | On 1-second lock conflict: abort transaction, display 'Table already reserved' error | RPC error handling in booking engine (Phase 2) | Phase 2 complete |
+| FR-4 | SRS 3.2.1 | Auto-combine adjacent tables; hard cap at 12 Pax | `reservation_tables` junction + `adjacent_table_ids` + CHECK <= 12 | Schema done |
+| FR-4 | SRS 3.2.1 | On reservation Completed or Cancelled: dissolve table combination, revert all tables to Available | Trigger logic required (Phase 2/5) | Not yet implemented |
+| FR-5 | SRS 3.2.1 | Waitlist trigger on cancellation; 10-minute offer window before moving to next person | `waitlist.offered_at`, `expires_at`; Postgres trigger (Phase 5) | Schema done |
+| FR-5 | SRS 3.2.1 | Waitlist automation DISABLED 60 minutes before restaurant closing time | Closing time comparison in trigger logic (Phase 5) | Not yet implemented |
+| FR-5 | SRS U3 | Waitlist capped at max ~50 parties; display 'Waitlist Full' when exceeded | Waitlist count check in UI (Phase 5) | Not yet implemented |
+| FR-7 | SRS 3.2.2 | Color codes: Green=Available, Yellow=Reserved, Red=Occupied, Grey=Dirty | `table_status` enum (Phase 1); floor plan UI (Phase 4) | Schema done |
+| FR-7 | SRS 3.2.2 | Admin marking table Dirty must auto-transition linked reservation from Seated to Completed | Status sync trigger (Phase 4) | Not yet implemented |
+| FR-8 | SRS 3.2.2 | Admin Block Date prevents all online bookings for that date | `blocked_dates` table; availability RPC filter (Phase 2) | Schema done |
+| FR-8 | SRS 3.2.2 | Bookings outside operating hours must be rejected (customer-facing validation) | Client-side + RPC validation (Phase 2/3) | Not yet implemented |
+| FR-9 | SRS 3.2.2 | No-Show auto-flag: if Confirmed reservation is not marked Seated within 15 min past start time | pg_cron / Edge Function every 5 min (Phase 6) | Not yet implemented |
+| FR-10 | SRS 3.2.1 | Customer cancel from dashboard: backend must (a) revert table to Available AND (b) trigger waitlist protocol | Cancel API route + DB trigger (Phase 3/5) | UI partial only |
+| FR-13 | SRS 3.2.2 | Admin Dashboard shows real-time connection status for Supabase, Payment Gateway, SMTP | `/api/health` stub exists; Admin UI widget (Phase 4) | API stub only |
+
+### 15.2 Non-Functional Requirement Constraints
+
+| Constraint | Source | Rule | Implementation | Status |
+|-----------|--------|------|----------------|--------|
+| PR-1 | SRS 4.1 | Customer grid and admin floor plan must load within 3 seconds over 4G/LTE | Lighthouse/performance test (Phase 7) | Not tested |
+| PR-2 | SRS 4.1 | Row-level locking resolves concurrent booking conflict within 1 second | `SELECT ... FOR UPDATE` in booking RPC (Phase 2) | Complete |
+| PR-3 | SRS 4.1 | Booking confirmation email dispatched to SMTP within 10 seconds of successful checkout | Email API timing test (Phase 7) | Not tested |
+| SAF-1 | SRS 4.2 | Supabase PITR and daily backups enabled to prevent data loss | Enable PITR in Supabase dashboard (Phase 1/DevOps) | Not verified |
+| SAF-2 | SRS 4.2 | Offline Warning banner + disable grid clicks when internet lost | React `useEffect` network listener (Phase 4) | Not started |
+| SEC-1 | SRS 4.2 | Supabase Auth + RBAC + RLS: Customers access only own UUID rows | `003_rbac_rls_policies.sql`; `middleware.ts` | Complete |
+| SEC-2 | SRS 4.2 | All traffic encrypted via HTTPS/TLS | Supabase HTTPS + hosting config verification (Phase 7) | Implicit; not verified |
+| SEC-3 / LEG-2 | SRS 4.2 / SRS 5.2 | No raw PAN stored or transmitted; simulated tokenized checkout only | `reservations.payment_token` (simulated); CheckoutModal UI | Complete |
+| DB-1 | SRS 5.1 | PostgreSQL ACID compliance via Supabase | Inherent to Supabase/PostgreSQL hosting | Complete |
+| DB-2 | SRS 5.1 | CRM data retained indefinitely unless user requests deletion | CASCADE delete chain satisfies LEG-1 Right to Erasure | Complete |
+| DB-3 | SRS 5.1 | All timestamps stored in UTC (TIMESTAMPTZ); converted to local time on client | All date/time columns TIMESTAMPTZ; `date-fns` for client conversion | Complete |
+| LEG-1 | SRS 5.2 | RA 10173: mandatory consent checkbox on register; Delete Account permanently purges all PII | `users.consent_given`; cascade delete chain; `/customer/dashboard` Delete Account button | Schema complete; UI Phase 3 |
+| LEG-2 | SRS 5.2 | PCI-DSS: no raw PAN capture, storage, or transmission during MVP | `reservations.payment_token` (token only); CheckoutModal (simulated) | Complete |
+
+### 15.3 Architecture and Design Pattern Constraints
+
+| Pattern | Source | Requirement | Implementation | Status |
+|---------|--------|-------------|----------------|--------|
+| MVC | SWDD 3.1 | Strict separation: Supabase=Model, React=View, API Routes=Controller | Folder structure Phase 0 | Complete |
+| Repository Pattern | SWDD 3.1 | All DB queries abstracted into `/services/` files; no raw queries in UI components | 5 service files (stubs) | Schema done; Phase 2-6 implementation |
+| Observer Pattern | SWDD 5.2 | Supabase Real-Time as Subject; Admin Floor Plan Grid as Observer | `supabase.channel()` subscription (Phase 4) | Not started |
+| COMET Method | SWDD 1.4 | UML Use Case, Class, Sequence diagrams produced during planning | QDR-31 (Done per Jira) | Documented |
+| 3NF | SWDD 4.1 | All tables in Third Normal Form; no partial or transitive dependencies | All 8 tables verified | Complete |
 
 ---
 
@@ -799,54 +923,86 @@ This matrix maps each business constraint from the SRS/SWDD to its database impl
 
 ### 16.1 Phase Completion Summary
 
-| Phase | Name | Status | Completion Date |
-|-------|------|--------|----------------|
-| Phase 0 | Project Scaffolding | **Complete** (Shadcn UI pending) | May 8, 2026 |
-| Phase 1 | Data Layer and Security | **Complete** | May 9, 2026 |
-| Phase 2 | Core Booking Engine | **Complete** | May 11, 2026 |
-| Phase 3 | Customer Portal Authentication | **In Progress** (Auth scaffolding done; checkout modal & dashboard pending) | May 11, 2026 |
-| Phase 4 | Admin Real-Time Dashboard | Not Started | -- |
-| Phase 5 | Waitlist and Automations | Not Started | -- |
-| Phase 6 | Admin Auxiliary Features | Not Started | -- |
+| Phase | Jira Epic | Name | Status | Completion Date |
+|-------|-----------|------|--------|----------------|
+| Phase 0 | QDR-36 | Project Scaffolding | **Complete** | May 8, 2026 |
+| Phase 1 | QDR-37 | Data Layer and Security | **Complete** | May 9, 2026 |
+| Phase 2 | QDR-40 | Core Booking Engine | **Complete (90%)** | May 11, 2026 |
+| Phase 3 | QDR-35 (sub: QDR-36, QDR-38, QDR-39) | Customer Portal | **In Progress (~30%)** | -- |
+| Phase 4 | QDR-42, QDR-43 | Admin Real-Time Dashboard | Not Started | -- |
+| Phase 5 | QDR-41, QDR-45 | Waitlist and Automations | Not Started | -- |
+| Phase 6 | QDR-44, QDR-79, QDR-80 | Admin Auxiliary Features | Not Started | -- |
+| Phase 7 | QDR-46 | QA, Testing, and Deliverables | Not Started | -- |
 
-### 16.2 Jira Timeline (QDR Board)
+### 16.2 Jira Timeline (QDR Board) -- Authoritative Mapping
 
-| Ticket | Task | Due Date | Status |
-|--------|------|----------|--------|
-| **QDR-23** | **Section 1. Planning & Analysis (Epic)** | **May 5, 2026** | **Done** |
-| QDR-24 | Elicit Stakeholder Requirements | Apr 20, 2026 | Done |
-| QDR-25 | Negotiate Scope and MVP | Apr 21, 2026 | Done |
-| QDR-26 | Software Requirements Specification (SRS) | Apr 23, 2026 | Done |
-| QDR-27 | Progress Report | Apr 24, 2026 | Done |
-| QDR-28 | SPM Document / Project Charter | Apr 25, 2026 | Done |
-| **QDR-29** | **Section 2. System Design (Epic)** | **May 12, 2026** | **Done** |
-| QDR-30 | Architectural Design (COMET) | May 1, 2026 | Done |
-| QDR-31 | Create UML Diagrams | May 2, 2026 | Done |
-| QDR-32 | Design PostgreSQL Schema | May 3, 2026 | Done |
-| QDR-33 | Design UI/UX Mockups | May 4, 2026 | Done |
-| QDR-34 | Software Design Document (SWDD) | May 5, 2026 | Done |
-| **QDR-35** | **Section 3. Development (Epic)** | **May 20, 2026** | **In Progress** |
-| QDR-36 | Setup Supabase Authentication | Apr 25, 2026 | Done |
-| QDR-37 | Configure Database Tables | Apr 28, 2026 | Done |
-| QDR-38 | Build Account Management Module | May 1, 2026 | Done |
-| QDR-39 | Build Search & Availability UI | May 4, 2026 | Done |
-| QDR-40 | Implement Booking Engine | May 9, 2026 | Done |
-| **QDR-54** | **Phase 3 - Customer Portal Authentication Setup (QDR-35 Subtask)** | **May 11, 2026** | **Done** |
-| QDR-41 | Develop Virtual Waitlist System | May 10, 2026 | To Do |
-| QDR-42 | Build Static Floor Plan Grid | May 11, 2026 | To Do |
-| QDR-43 | Implement Reservation Calendar | May 12, 2026 | To Do |
-| QDR-44 | Develop Guest CRM Table | May 13, 2026 | To Do |
-| QDR-45 | Integrate SMTP Email Server | May 14, 2026 | To Do |
-| QDR-79 | Implement Menu Management Module | TBD | To Do |
-| QDR-80 | Admin Waitlist Control Module | TBD | To Do |
-| **QDR-46** | **Section 4. Testing (Epic)** | **May 20, 2026** | **In Progress** |
-| QDR-47 | Functional & Structural Testing | Apr 30, 2026 | Done |
-| QDR-48 | UI Latency Testing (3s Target) | May 17, 2026 | To Do |
-| QDR-49 | Real-Time Concurrency Testing | May 19, 2026 | To Do |
-| QDR-50 | Verify Offline Mode Failsafe | May 20, 2026 | To Do |
-| **QDR-51** | **Section 5. Deployment (Epic)** | **May 24, 2026** | **To Do** |
-| QDR-52 | Deploy to Supabase Cloud | May 22, 2026 | To Do |
-| QDR-53 | Finalize User Manual | May 24, 2026 | To Do |
+This table mirrors the exact structure and ticket IDs from the official Jira board.
+Epics (bold) contain the child tasks listed below them.
+
+| Ticket | Task | Status |
+|--------|------|--------|
+| **QDR-23** | **Section 1. Planning & Analysis (Epic)** | **Done** |
+| QDR-24 | Elicit Stakeholder Requirements | Done |
+| QDR-25 | Negotiate Scope and MVP | Done |
+| QDR-26 | Software Requirements Specification (SRS) | Done |
+| QDR-27 | Progress Report | Done |
+| QDR-28 | SPM Document / Project Charter | Done |
+| **QDR-29** | **Section 2. System Design (Epic)** | **Done** |
+| QDR-30 | Architectural Design (COMET) | Done |
+| QDR-31 | Create UML Diagrams | Done |
+| QDR-32 | Design PostgreSQL Schema | Done |
+| QDR-33 | Design UI/UX Mockups | Done |
+| QDR-34 | Software Design Document (SWDD) | Done |
+| **QDR-35** | **Section 3. Development (Epic)** | **In Progress** |
+| QDR-36 | Setup Supabase Authentication | Done |
+|  | -- QDR-54: Implement customer login/register with RA 10173 consent checkbox (LEG-1) | Done |
+|  | -- QDR-55: Configure RBAC to separate Customer and Admin privileges (SEC-1) | Done |
+| QDR-37 | Configure Database Tables | Done |
+|  | -- QDR-56: Build PostgreSQL schema: Users, Tables, Reservations, Waitlist, Menu, CRM | Done |
+|  | -- QDR-57: Apply Row Level Security (RLS) policies | Done |
+|  | -- QDR-58: Enforce UTC timezone standardization for all date/time entries (DB-3) | Done |
+| QDR-38 | Build Account Management Module | To Do |
+|  | -- QDR-59: Build UI for updating contact info and dietary restrictions (FR-1) | To Do |
+|  | -- QDR-60: Build UI for customers to cancel upcoming reservations + backend revert (FR-10) | To Do |
+|  | -- QDR-61: Implement Delete Account to permanently purge PII/CRM data (LEG-1) | To Do |
+| QDR-39 | Build Search & Availability UI | To Do |
+|  | -- QDR-65: Wire CheckoutModal to availability results and /api/reservations/lock (FR-3) | To Do |
+|  | -- QDR-82: Display view-only digital menu alongside availability results (FR-2) | To Do |
+| QDR-40 | Implement Booking Engine | In Progress |
+|  | -- QDR-62: Write DB query for real-time table availability by Date, Time, and Pax (FR-2) | Done |
+|  | -- QDR-63: Implement table combination logic, capped at 12 Pax (FR-4) | Done |
+|  | -- QDR-64: Implement PostgreSQL 1-second row-locking mechanism (PR-2) | Done |
+|  | -- QDR-65: Integrate Simulated Payment Gateway with 5-minute timeout (FR-3) | In Progress |
+| QDR-41 | Develop Virtual Waitlist System | To Do |
+|  | -- QDR-66: Backend trigger: cancelled reservation auto-notifies next waitlist customer (FR-5) | To Do |
+|  | -- QDR-67: Implement 10-minute acceptance window timer for waitlist offers (FR-5) | To Do |
+|  | -- QDR-68: Implement 60-minute pre-closing cutoff to disable waitlist automation (FR-5) | To Do |
+| QDR-42 | Build Static Floor Plan Grid | To Do |
+|  | -- QDR-69: Build interactive grid with color-coding: Green/Yellow/Red/Grey (FR-7) | To Do |
+|  | -- QDR-70: Integrate Supabase Real-Time WebSockets for instant status updates (FR-7) | To Do |
+|  | -- QDR-71: Implement Offline Failsafe: disable grid and show warning banner (SAF-2) | To Do |
+| QDR-43 | Implement Reservation Calendar | To Do |
+|  | -- QDR-72: Build admin form for walk-in and phone reservation entry (FR-8) | To Do |
+|  | -- QDR-73: Add Block Out Dates functionality for holidays/private events (FR-8) | To Do |
+|  | -- QDR-74: Add input validation to prevent bookings outside operating hours (FR-8) | To Do |
+| QDR-44 | Develop Guest CRM Table | To Do |
+|  | -- QDR-75: Create searchable table: guest history, VIP status, allergy notes (FR-9) | To Do |
+|  | -- QDR-76: Implement automated No-Show trigger at 15 minutes past reservation time (FR-9) | To Do |
+| QDR-45 | Integrate SMTP Email Server | To Do |
+|  | -- QDR-77: Create email payloads for Booking Confirmations and Waitlist Invites (FR-6) | To Do |
+|  | -- QDR-78: Generate and attach .ics calendar invites to confirmation emails (FR-6) | To Do |
+| QDR-79 | Implement Menu Management Module | To Do |
+|  | -- QDR-81: Build Admin CRUD forms to upload/edit digital menu items (FR-11) | To Do |
+| QDR-80 | Admin Waitlist Control Module | To Do |
+|  | -- QDR-83: Build Admin UI to view, edit, and prioritize waitlist queue for VIPs (FR-12) | To Do |
+| **QDR-46** | **Section 4. Testing (Epic)** | **In Progress** |
+| QDR-47 | Functional & Structural Testing | To Do |
+| QDR-48 | UI Latency Testing (3s Target) -- PR-1 + PR-3 email latency (10s) | To Do |
+| QDR-49 | Real-Time Concurrency Testing -- PR-2 (1s row-lock resolution) | To Do |
+| QDR-50 | Verify Offline Mode Failsafe -- SAF-2, SEC-2, LEG-1, LEG-2 | To Do |
+| **QDR-51** | **Section 5. Deployment (Epic)** | **To Do** |
+| QDR-52 | Deploy to Supabase Cloud + Enable PITR (SAF-1) | To Do |
+| QDR-53 | Finalize User Manual | To Do |
 
 ---
 

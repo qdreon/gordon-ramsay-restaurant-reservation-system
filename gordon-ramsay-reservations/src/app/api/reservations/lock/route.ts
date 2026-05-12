@@ -8,6 +8,7 @@ interface LockReservationRequestBody {
   startTime?: string;
   endTime?: string;
   partySize?: number;
+  paymentToken?: string;
   specialRequests?: string;
   createdBy?: string;
 }
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
       startTime,
       endTime,
       partySize,
+      paymentToken: body.paymentToken,
       specialRequests: body.specialRequests,
       createdBy: body.createdBy,
     });

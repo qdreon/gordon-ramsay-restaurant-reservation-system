@@ -124,6 +124,9 @@ IS 'Returns available table options for a timeslot, including adjacent combinati
 -- ------------------------------------------------------------
 -- 2. Concurrency lock RPC (PR-2): reserve tables for checkout
 -- ------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, UUID);
+DROP FUNCTION IF EXISTS public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.create_pending_reservation_lock(
   p_customer_id UUID,
   p_table_ids UUID[],
@@ -131,6 +134,7 @@ CREATE OR REPLACE FUNCTION public.create_pending_reservation_lock(
   p_start_time TIMESTAMPTZ,
   p_end_time TIMESTAMPTZ,
   p_party_size INTEGER,
+  p_payment_token TEXT DEFAULT NULL,
   p_special_requests TEXT DEFAULT NULL,
   p_created_by UUID DEFAULT NULL
 )
@@ -155,6 +159,19 @@ BEGIN
   IF p_table_ids IS NULL OR cardinality(p_table_ids) = 0 THEN
     RAISE EXCEPTION 'At least one table must be selected.'
       USING ERRCODE = '22023';
+  END IF;
+
+  -- Ensure customers can only book for their own customer profile.
+  IF auth.role() = 'authenticated' THEN
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.customers c
+      WHERE c.id = p_customer_id
+        AND (c.user_id = auth.uid() OR public.is_admin())
+    ) THEN
+      RAISE EXCEPTION 'Invalid customer ownership for reservation lock.'
+        USING ERRCODE = '42501';
+    END IF;
   END IF;
 
   IF EXISTS (
@@ -216,6 +233,7 @@ BEGIN
     end_time,
     party_size,
     status,
+    payment_token,
     special_requests,
     locked_until,
     created_by
@@ -227,6 +245,7 @@ BEGIN
     p_end_time,
     p_party_size,
     'pending_payment',
+    p_payment_token,
     p_special_requests,
     v_locked_until,
     p_created_by
@@ -249,7 +268,7 @@ EXCEPTION
 END;
 $$;
 
-COMMENT ON FUNCTION public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, UUID)
+COMMENT ON FUNCTION public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, TEXT, UUID)
 IS 'Acquires row-level locks for selected tables, creates pending reservation, and sets a 5-minute checkout timeout.';
 
 -- ------------------------------------------------------------
@@ -307,9 +326,9 @@ IS 'Cancels pending reservations whose 5-minute payment lock expired and frees a
 -- 4. Function permissions
 -- ------------------------------------------------------------
 REVOKE ALL ON FUNCTION public.find_available_table_options(DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, TEXT, UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.release_expired_pending_reservations() FROM PUBLIC;
 
-GRANT EXECUTE ON FUNCTION public.find_available_table_options(DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, UUID) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.find_available_table_options(DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, TEXT, UUID) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.release_expired_pending_reservations() TO authenticated, service_role;
