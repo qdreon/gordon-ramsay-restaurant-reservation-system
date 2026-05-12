@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * layout.tsx (customer)
  * ----------------------
@@ -10,6 +12,7 @@
 
 import Link from 'next/link';
 import React from 'react';
+//import { signOut } from '@/lib/authClient';
 
 export default function CustomerLayout({
   children,
@@ -49,7 +52,7 @@ export default function CustomerLayout({
               <div className="py-2">
                 <a href="/customer/profile" className="block px-4 py-2 hover:bg-gray-100">Profile</a>
                 <hr className="my-1" />
-                <button className="block w-full text-left px-4 py-2 hover:big-red-50 text-sm -text-red-600 hover:bg-gray-100">Sign Out</button>
+                <button onClick={() => signOut()} className="block w-full text-left px-4 py-2 hover:big-red-50 text-sm -text-red-600 hover:bg-gray-100">Sign Out</button>
               </div>
             </div>
           </div>

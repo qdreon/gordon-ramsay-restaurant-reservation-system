@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, signOut } from '@/lib/authClient';
+import Link from 'next/link';
 
 /**
  * Customer Dashboard page (/customer/dashboard).
@@ -20,7 +21,7 @@ import { getCurrentUser, signOut } from '@/lib/authClient';
  */
 
 export default function CustomerDashboard() {
-  /*const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -69,31 +70,41 @@ export default function CustomerDashboard() {
         {error}
       </div>
     );
-  }*/
+  }
 
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
       <section className="space-y-4">
         <h1 className="text-3xl font-bold">Welcome to Your Account</h1>
-        <p className="text-slate-600 dark:text-slate-400">
-          Email: <span className="font-semibold">{/*userEmail*/}</span>
-        </p>
       </section>
 
       {/* Reservations Section */}
       <section className="space-y-4 rounded-lg border bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-        <h2 className="text-xl font-bold">My Reservations</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          QDR-59: Upcoming and past reservations will be displayed here.
-        </p>
-        <div className="rounded-md bg-slate-100 p-4 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-          No reservations yet.
+        <div className="flex gap-2">
+          <h2 className="text-xl font-bold mt-0.5 mb-0.5">My Reservations</h2>
+          <Link href="/customer/booking">
+            <p className="border rounded-md border-black bg-blue-500 text-white px-1">Book Reservation</p>
+          </Link>
+        </div>
+
+        <div>
+          <p className="font-bold text-slate-500">UPCOMING</p>
+          <div className="border rounded-md bg-slate-100 max-w-full py-5">
+            <ul id="UpcomingReservationsList">
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <p className="font-bold text-slate-500">PAST / CANCELLED</p>
+          <div className="border rounded-md bg-slate-100 max-w-full py-5">
+            <ul id="PastCancelledList"></ul>
+          </div>
         </div>
       </section>
 
       {/* Account Actions */}
-      {/*
       <section className="space-y-3">
         <button
           onClick={() => router.push('/')}
@@ -114,7 +125,7 @@ export default function CustomerDashboard() {
         >
           Delete Account (QDR-61)
         </button>
-      </section>*/}
+      </section>
     </div>
   );
 }
