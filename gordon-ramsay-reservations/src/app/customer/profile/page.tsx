@@ -3,7 +3,7 @@
 export default function profilePage() {
     return (
         <div className="p-6 bg-white flex flex-col gap-6">
-            <div className="flex items-start gap-6 p-8 border border-black rounded-[40px] w-full max-w-2xl shadow-sm">
+            <div className="flex items-start gap-6 p-8 border border-black rounded-[40px] max-w-full shadow-sm">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200">
                     <img className="w-full h-full object-cover" src="/avatar.png" alt="" />
                 </div>
@@ -36,7 +36,7 @@ export default function profilePage() {
                 </div>
             </div>
             
-            <div className="border border-black rounded-[40px] w-full max-w-2xl shadow-sm">
+            <div className="border border-black rounded-[40px] max-w-full shadow-sm">
                 <div className="flex justify-between items-baseline mb-2 mt-2">
                     <h1 className="ml-4 mt-1 mb-1 text-4xl font-medium">CRM</h1>
                     <button onClick={()=>{console.log("CRM Edit Not Yet Implemented")}} className="block w-15 text-left px-4 py-2 rounded-[40px] hover:bg-gray-100 ">Edit</button>
