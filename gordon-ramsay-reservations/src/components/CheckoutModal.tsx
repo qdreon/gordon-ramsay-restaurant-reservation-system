@@ -121,11 +121,14 @@ export default function CheckoutModal({
       const token = `tok_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       // Call the confirm callback (which usually calls the lock API)
+      // This will throw on error; catch block below handles it
       await onConfirm(token);
+      // If successful, onConfirm will redirect; modal will close automatically
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Checkout failed. Please try again.';
       setError(message);
       setLoading(false);
+      // Keep modal open so user can try again or see error clearly
     }
   }
 
