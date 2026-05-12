@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Clock, Users, UtensilsCrossed } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
 
@@ -73,6 +74,45 @@ export function FloorPlanManager() {
   const [tables, setTables] = React.useState<TableData[]>(initialTables);
   const [selectedTableId, setSelectedTableId] = React.useState(initialTables[0]?.id ?? '');
   const [reservations] = React.useState<Reservation[]>(initialReservations);
+
+  React.useEffect(() => {
+    // Initialize Supabase client using public env vars (client-side safe)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+    if (!url || !key) return;
+
+    const supabase = createClient(url, key);
+
+    const channel = supabase
+      .channel('public:tables')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tables' },
+        (payload) => {
+          const newRow = payload?.new as any;
+          if (!newRow || !newRow.id) return;
+
+          // Support multiple column names for status depending on schema
+          const newStatus: TableStatus | undefined = (newRow.table_status || newRow.status) as TableStatus;
+          const guestName = newRow.guest_name || newRow.guestName || undefined;
+
+          if (newStatus) {
+            setTables((current) =>
+              current.map((t) => (t.id === newRow.id ? { ...t, status: newStatus, guestName: guestName ?? t.guestName } : t))
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        // ignore cleanup errors
+      }
+    };
+  }, []);
 
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? tables[0];
   const rows = [0, 1, 2].map((rowIndex) =>
