@@ -3,6 +3,13 @@
 import * as React from 'react';
 import { Clock, Users, UtensilsCrossed } from 'lucide-react';
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 import { Button } from '@/components/ui/button';
 
 type TableStatus = 'available' | 'reserved' | 'occupied' | 'dirty';
