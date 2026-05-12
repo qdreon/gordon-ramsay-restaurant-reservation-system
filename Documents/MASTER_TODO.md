@@ -14,20 +14,23 @@
 |-------|-------|--------|-----------|
 | **Phase 0** | Project Scaffolding & Architecture Setup | ✅ COMPLETE | 100% |
 | **Phase 1** | Data Layer & Security (Supabase SQL) | ✅ COMPLETE (95%) | 95% — Missing: PITR backup setup |
-| **Phase 2** | Core Booking Engine & Concurrency (Backend / RPCs) | ✅ MOSTLY COMPLETE (90%) | 90% — Missing: pg_cron scheduler for timeout release; Table teardown trigger |
+| **Phase 2** | Core Booking Engine & Concurrency (Backend / RPCs) | ✅ **COMPLETE** | **100%** — Availability ✓; Row-lock RPC ✓; Timeout release ✓; pg_cron scheduler ✓; Table teardown trigger ✓ |
 | **Phase 3** | Customer Portal (Frontend / View & Controller) | ✅ **COMPLETE** | **100%** — Auth ✓; Availability ✓; Checkout ✓; Lock API ✓; Dashboard ✓; Account Mgmt ✓ |
 | **Phase 4** | Admin Real-Time Dashboard (Operations) | ❌ NOT STARTED | 0% |
 | **Phase 5** | Waitlist & Automations (Triggers & APIs) | ❌ NOT STARTED | 0% |
 | **Phase 6** | Admin Auxiliary Features (CRUD & CRM) | ❌ NOT STARTED | 0% |
 | **Phase 7** | QA, Testing & Final Deliverables | ❌ NOT STARTED | 0% |
 
-**Overall Project Completion: ~40%** | **Phase 3 FULLY OPERATIONAL — End-to-End Checkout Verified!**
+**Overall Project Completion: ~45%** | **Phases 0-3 Complete — Phase 2 Checkout Engine FULLY OPERATIONAL!**
 
 ### Recent Fixes & Validations (May 12, 2026)
 ✅ **Windows Build Fix:** Switched from Turbopack to Webpack (`npm run build --webpack`) -- resolves EBUSY file-lock errors  
 ✅ **Auth Profile Bug Fix:** Patched `/api/auth/register` to explicitly upsert `public.users` + `public.customers` rows via service-role  
 ✅ **End-to-End Auth Validation:** Verified registration → auto-login → profile lookup → dashboard works (test-customer-2@example.com)  
 ✅ **Middleware RBAC:** Confirmed route protection enforces `/customer/*` and `/admin/*` access control  
+✅ **Phase 3 Checkout Flow:** Verified landing page search → table selection → modal countdown → lock API → dashboard reservation display  
+✅ **Phase 2 Scheduler:** Deployed `pg_cron` extension with automated cleanup job (every 2 min)  
+✅ **Phase 2 Table Teardown:** Added trigger to revert combined tables to 'available' on reservation completion/cancellation  
 ✅ **Phase 3.3 Modal Integration (May 12):** Wired availability table selection → opens CheckoutModal with reservation details  
 ✅ **Phase 3.4 Lock API (May 12):** Wired CheckoutModal onConfirm → POST `/api/reservations/lock`, creates pending_payment reservation  
 ✅ **Phase 3.4 Error Handling (May 12):** Implemented `55P03` lock conflict → user-friendly "Table already reserved" message  
