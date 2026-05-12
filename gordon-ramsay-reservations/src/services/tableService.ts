@@ -12,6 +12,7 @@
  */
 
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServiceSupabaseClient } from '@/lib/supabaseAdmin';
 
 export interface AvailabilitySearchInput {
   reservationDate: string;
@@ -42,7 +43,31 @@ export async function findAvailableTableOptions(
     p_party_size: input.partySize,
   });
 
+  // If the anonymous/authenticated server client lacks permission to execute
+  // the RPC, fall back to a server-only service_role client if available.
   if (error) {
+    const msg = String(error.message ?? error);
+    if (msg.toLowerCase().includes('permission denied') && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const admin = createServiceSupabaseClient();
+        const { data: adminData, error: adminError } = await admin.rpc('find_available_table_options', {
+          p_reservation_date: input.reservationDate,
+          p_start_time: input.startTime,
+          p_end_time: input.endTime,
+          p_party_size: input.partySize,
+        });
+
+        if (adminError) {
+          console.error('[Table Service] admin RPC error details:', adminError);
+          throw new Error(`[Table Service] Failed to query availability (admin): ${adminError.message}`);
+        }
+
+        return (adminData ?? []) as AvailableTableOption[];
+      } catch (e) {
+        throw new Error(`[Table Service] Failed to query availability: ${String(e)}`);
+      }
+    }
+
     throw new Error(`[Table Service] Failed to query availability: ${error.message}`);
   }
 

@@ -22,15 +22,29 @@
 DROP TABLE IF EXISTS public.auditlogs CASCADE;
 DROP TABLE IF EXISTS public.crm CASCADE;
 DROP TABLE IF EXISTS public.waitlist CASCADE;
+DROP TABLE IF EXISTS public.reservation_tables CASCADE;
 DROP TABLE IF EXISTS public.reservations CASCADE;
+DROP TABLE IF EXISTS public.blocked_dates CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
 DROP TABLE IF EXISTS public.customers CASCADE;
 DROP TABLE IF EXISTS public.menu CASCADE;
 DROP TABLE IF EXISTS public.tables CASCADE;
 DROP TABLE IF EXISTS public.roles CASCADE;
 
+-- Drop auth trigger if it exists from previous runs
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
 -- Drop any existing functions from the old schema
 DROP FUNCTION IF EXISTS public.rls_auto_enable() CASCADE;
 DROP FUNCTION IF EXISTS public.apply_concurrency_lock() CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.handle_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
+DROP FUNCTION IF EXISTS public.get_customer_id() CASCADE;
+DROP FUNCTION IF EXISTS public.find_available_table_options(DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, TEXT, UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.release_expired_pending_reservations() CASCADE;
 
 -- Drop any existing enum types that might conflict
 DROP TYPE IF EXISTS public.table_status CASCADE;

@@ -1,8 +1,9 @@
 # Gordon Ramsay Restaurant Reservation System - Master Development TODO
 
-> **Tech Stack:** Next.js (App Router) | React | Tailwind CSS | Shadcn UI | Supabase (PostgreSQL, Auth, RLS, WebSockets, RPCs/Edge Functions)
+> **Tech Stack:** Next.js (App Router) | React | Tailwind CSS | Supabase (PostgreSQL, Auth, RLS, WebSockets, RPCs/Edge Functions)
 > **Methodology:** COMET Design | SOLID Principles | MVC + Repository Pattern
 > **External Integrations:** Simulated Payment Gateway (Tokenized only) | SMTP Email Provider (e.g., Resend)
+> **Jira Board:** QDR (Qdreon) -- all ticket IDs below are authoritative and match the Jira board
 
 ---
 
@@ -11,252 +12,238 @@
 Setting up the environment using MVC and Repository Pattern structures.
 
 ### Subtask 0.1: Initialize Next.js & Tailwind
-- [x] Run: `npx create-next-app@latest gordon-ramsay-reservations` (Select **App Router**, **Tailwind CSS**, **TypeScript**).
-- [x] Navigate into the folder: `cd gordon-ramsay-reservations`
+- [x] Run: `npx create-next-app@latest gordon-ramsay-reservations` (App Router, Tailwind CSS, TypeScript).
 - [x] Install Shadcn UI for modular, reusable components.
 
 ### Subtask 0.2: Backend Connection [QDR-36]
 - [x] Install dependencies: `npm install @supabase/supabase-js @supabase/ssr lucide-react date-fns`
-- [x] Set up the Supabase project online, get API keys.
+- [x] Set up the Supabase project, get API keys.
 - [x] Configure `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ### Subtask 0.3: Repository Pattern Folder Structure
-- [x] Create `/services` folder (Model layer -- database calls, e.g., `reservationService.js`).
+- [x] Create `/services` folder (Model layer -- database calls, e.g., `reservationService.ts`).
 - [x] Create `/components` folder (View layer).
 - [x] Create `/app/api` folder (Controller layer -- Next.js API routes).
 
----
-
-## PHASE 1: Data Layer & Security (Supabase SQL)
-
-Building the 3NF Database Model and RBAC Security.
-
-### Subtask 1.1: Enums & Base Tables (3NF) [QDR-37]
-
-**AI Prompt:**
-> "Phase 1, Step 1. Generate the Supabase PostgreSQL schema.
-> 1. Create Enums: `Table_Status` (Available, Reserved, Occupied, Dirty) and `Reservation_Status` (Pending, Confirmed, Seated, Completed, No-Show, Cancelled).
-> 2. Create tables with UUID primary keys: `Users` (linked to `auth.users`), `Customers` (profile/dietary info), `Tables` (capacity, status), `Menu`.
-> 3. Constraint (DB-3): Ensure all date/time columns strictly use `TIMESTAMPTZ` for UTC storage."
-
-- [x] Create `Table_Status` enum.
-- [x] Create `Reservation_Status` enum.
-- [x] Create `Users`, `Customers`, `Tables`, `Menu` tables with UUID PKs.
-- [x] Verify all date/time columns use `TIMESTAMPTZ` (UTC).
-
-### Subtask 1.2: Transactional Tables [QDR-37]
-
-- [x] Create `Reservations` table.
-- [x] Create `Waitlist` table.
-- [x] Implement Foreign Keys linking to `Customers` and `Tables` with `ON DELETE CASCADE`.
-
-### Subtask 1.3: Role-Based Access Control (RBAC) & RLS
-
-**AI Prompt:**
-> "Phase 1, Step 2. Generate the SQL for Role-Based Access Control (RBAC) and Row Level Security (RLS).
-> 1. Add a `role` column to distinguish 'Customer' and 'Restaurant Admin'.
-> 2. Write RLS policies for all tables: Customers can only SELECT, INSERT, and UPDATE rows where their user ID matches.
-> 3. Admins have full CRUD access across all tables."
-
-- [x] Add `role` column (Customer vs. Admin). [QDR-55]
-- [x] Write Supabase RLS policies: Customers can only SELECT/UPDATE their own UUID records. [QDR-57]
-- [x] Admins get full CRUD access. [QDR-57]
+### Subtask 0.4: Documentation & Traceability
+- [x] Cross-reference all FR/PR/DB/SEC/LEG identifiers against `SRS_Qdreon.pdf`, `SWDD_Qdreon.pdf`, `SPM_ProjectCharter_GRRRS_Qdreon.pdf`. (May 12, 2026)
+- [x] Create `Documents/traceability.md` with full requirements traceability matrix. (May 12, 2026)
 
 ---
 
-## PHASE 2: Core Booking Engine & Concurrency (Backend / RPCs)
+## PHASE 1: Data Layer & Security (Supabase SQL) [QDR-37]
 
-Handling the complex business logic via Supabase Remote Procedure Calls (RPCs).
+Building the 3NF Database Model and RBAC Security. **Status: COMPLETE**
 
-### Subtask 2.1: Table Availability & Combination Logic [QDR-40]
+### Subtask 1.1: Enums & Base Tables (3NF) [QDR-37 / QDR-56]
+- [x] Create `table_status` enum: available, reserved, occupied, dirty. [QDR-56]
+- [x] Create `reservation_status` enum: pending_payment, confirmed, seated, completed, no_show, cancelled. [QDR-56]
+- [x] Create `user_role` enum, `waitlist_status` enum, `menu_category` enum. [QDR-56]
+- [x] Create `users`, `customers`, `tables`, `menu` tables with UUID PKs. [QDR-56]
+- [x] Verify all date/time columns use `TIMESTAMPTZ` (UTC storage, DB-3). [QDR-58]
 
-**AI Prompt:**
-> "Phase 2, Step 1. Write the backend function (Supabase RPC) to query table availability.
-> 1. It must accept Date, Time, and Party Size (Pax).
-> 2. Constraint (FR-4): Include logic to automatically combine adjacent tables if the Party Size exceeds a single table's capacity.
-> 3. Cap this automatic table combination at a strict maximum of 12 Pax. Return the available table IDs or 'No Availability'."
+### Subtask 1.2: Transactional Tables [QDR-37 / QDR-56]
+- [x] Create `reservations` table with `locked_until` column for 5-minute checkout timeout. [QDR-56]
+- [x] Create `reservation_tables` junction table (N:M, supports FR-4 table combination). [QDR-56]
+- [x] Create `waitlist` table with `offered_at` and `expires_at` columns. [QDR-56]
+- [x] Create `blocked_dates` table for admin holiday/event blocking. [QDR-56]
+- [x] Implement Foreign Keys with `ON DELETE CASCADE` throughout. [QDR-56]
+- [x] Create 9 performance indexes on high-query columns. [QDR-56]
+- [x] Seed 15 restaurant tables with adjacency mapping (5x3 grid, 66 total seats). [QDR-56]
 
-- [x] Write Postgres RPC to query available tables for a specific Date/Time. [QDR-62]
-- [x] Implement algorithmic logic to automatically combine adjacent tables if Party Size exceeds a single table. [QDR-63]
-- [x] Cap combination at 12 Pax (FR-4). [QDR-63]
+### Subtask 1.3: Role-Based Access Control (RBAC) & RLS [QDR-55 / QDR-57]
+- [x] Implement `is_admin()` and `get_customer_id()` RLS helper functions. [QDR-55 / QDR-57]
+- [x] Write `handle_new_user()` auth signup trigger (auto-creates `users` + `customers` row). [QDR-55]
+- [x] Enable RLS on all 8 tables; write 24 RLS policies separating Customer from Admin access (SEC-1). [QDR-57]
+- [x] Grant PostgREST permissions to `anon`, `authenticated`, and `service_role`. [QDR-57]
+- [x] Configure `middleware.ts` with route protection for `/customer/*` and `/admin/*`. [QDR-55]
 
-### Subtask 2.2: Concurrency Row-Locking Engine (PR-2) [QDR-40]
+### Subtask 1.4: UTC Timezone Standardization [QDR-58]
+- [x] Enforce `TIMESTAMPTZ` on all date/time columns (DB-3). [QDR-58]
+- [x] Install `date-fns` for client-side UTC-to-local time conversion. [QDR-58]
 
-**AI Prompt:**
-> "Phase 2, Step 2. Write the PostgreSQL transaction function for the booking lock (PR-2, FR-3).
-> 1. Use PostgreSQL row-level locking (`FOR UPDATE`) to lock the selected table(s). It must resolve/reject conflicts within 1 second.
-> 2. The function must update the table status to 'Reserved' and initiate a 5-minute timeout window for the deposit checkout.
-> 3. Include the rollback logic: If the payment is not confirmed within 5 minutes, release the lock and revert the status to 'Available'."
-
-- [x] Write a Postgres transaction using `SELECT ... FOR UPDATE`. [QDR-64]
-- [x] Lock selected table row(s); reject concurrent conflicts within 1 second. [QDR-64]
-
-### Subtask 2.3: Checkout Timeout Rollback [QDR-40]
-
-- [x] Write a database trigger or edge function that automatically releases the row-lock. [QDR-65]
-- [x] Revert the table to 'Available' if the reservation is not marked 'Confirmed' within 5 minutes. [QDR-65]
-
----
-
-## PHASE 3: Customer Portal (Frontend / View & Controller)
-
-Building the user-facing web app adhering to Legal Compliance.
-
-### Subtask 3.1: Registration & Login UI [QDR-36]
-
-**AI Prompt:**
-> "Phase 3, Step 1. Build the `/login` and `/register` Next.js pages using Supabase Auth.
-> 1. Include fields for Name, Email, Password, Contact Info, and Dietary Restrictions.
-> 2. Constraint (LEG-1): The register form MUST include a mandatory consent checkbox for RA 10173 (Data Privacy Act). The form cannot submit unless checked."
-
-- [ ] Build Auth forms using Supabase Auth. [QDR-54]
-- [ ] Add mandatory checkbox for Data Privacy Act (RA 10173) consent. [QDR-54]
-
-### Subtask 3.2: Search & Menu UI [QDR-39]
-
-**AI Prompt:**
-> "Phase 3, Step 2. Build the main booking interface (`/customer/book`).
-> 1. Step 1: Input form for Date, Time, and Pax.
-> 2. Step 2: Display results from the Phase 2 availability function alongside a view-only menu.
-> 3. Step 3: A Checkout Modal for the deposit. It MUST display a visual 5-minute countdown timer.
-> 4. Constraint (LEG-2): Build a simulated, tokenized payment form. Do not capture real credit card PANs."
-
-- [ ] Build input form (Date, Time, Party Size).
-- [ ] Display results from Phase 2 Availability RPC alongside a view-only digital menu component. [QDR-82]
-
-### Subtask 3.3: Simulated Checkout Modal (FR-3 & SEC-3) [QDR-39]
-
-- [ ] Build a tokenized, simulated payment UI (do NOT capture real PANs).
-- [ ] Include a visual 5-minute countdown timer.
-- [ ] If timer hits 00:00, automatically redirect user and call backend to release the row-lock.
-
-### Subtask 3.4: Customer Dashboard & Right to Erasure [QDR-38]
-
-**AI Prompt:**
-> "Phase 3, Step 3. Build the `/customer/dashboard` page.
-> 1. Display upcoming and past reservations. Include a 'Cancel' button (disable it if within 2 hours of the booking time).
-> 2. Constraint (LEG-1): Build a prominent 'Delete Account' button. Write the backend function this triggers to perform a permanent cascade delete of the user's PII, CRM data, and Supabase Auth record."
-
-- [ ] Build UI for customers to view upcoming/past reservations. [QDR-59]
-- [ ] Implement "Cancel Booking" button (disable if within 2 hours of reservation). [QDR-60]
-- [ ] Build "Delete Account" button that triggers permanent cascade delete of PII and CRM data (LEG-1). [QDR-61]
+### Subtask 1.5: Data Backup & Recovery (SAF-1)
+- [ ] Enable Supabase Point-in-Time Recovery (PITR) in the Supabase dashboard project settings.
+- [ ] Verify daily automated backups are active.
+- [ ] Document backup retention period and recovery procedure in `documentation.md`.
 
 ---
 
-## PHASE 4: Admin Real-Time Dashboard (Operations)
+## PHASE 2: Core Booking Engine & Concurrency (Backend / RPCs) [QDR-40]
 
-Building the staff tools using the Observer Pattern.
+Handling complex business logic via Supabase Remote Procedure Calls (RPCs). **Status: COMPLETE (90%)**
 
-### Subtask 4.1: Static Floor Plan Grid UI [QDR-42]
+### Subtask 2.1: Table Availability & Combination Logic [QDR-40 / QDR-62 / QDR-63]
 
-**AI Prompt:**
-> "Phase 4, Step 1. Build the `/admin/floorplan` Visual Table Management component.
-> 1. Map the Tables database rows to a static visual grid.
-> 2. Constraint (FR-7): Apply strict color coding: Green (Available), Yellow (Reserved), Red (Occupied), Grey (Dirty).
-> 3. Connect Supabase Real-Time WebSockets so when table statuses change in the DB, the UI colors update instantly without a page refresh."
+- [x] Write `find_available_table_options()` Postgres RPC: query available tables by Date, Time, and Pax. [QDR-62]
+- [x] Include logic to auto-combine adjacent tables (single, pair, triple combinations). [QDR-63]
+- [x] Cap combination at a strict maximum of 12 Pax (FR-4). [QDR-63]
+- [x] Filter out blocked dates inside the RPC. [QDR-62]
+- [ ] Implement teardown logic: on reservation 'Completed' or 'Cancelled', dissolve all table combination links and revert combined tables to 'Available' (FR-4 full requirement). [Future subtask]
 
-- [ ] Build the interactive visual map of the restaurant tables. [QDR-69]
-- [ ] Implement strict color-coding logic: Green (Available), Yellow (Reserved), Red (Occupied), Grey (Dirty). [QDR-69]
+### Subtask 2.2: Concurrency Row-Locking Engine [QDR-40 / QDR-64]
+- [x] Write `create_pending_reservation_lock()` Postgres RPC using `SELECT ... FOR UPDATE`. [QDR-64]
+- [x] Set `lock_timeout = '1s'` -- resolves/rejects concurrent conflicts within 1 second (PR-2). [QDR-64]
+- [x] Create `pending_payment` reservation row; update table status to `reserved`. [QDR-64]
+- [x] Raises `55P03` error on conflict: downstream mapped to 'Table already reserved' message (FR-3). [QDR-64]
 
-### Subtask 4.2: Observer Pattern Integration (WebSockets) [QDR-42]
+### Subtask 2.3: Checkout Timeout Rollback [QDR-40 / QDR-65]
+- [x] Set `locked_until = now() + interval '5 minutes'` in the lock RPC. [QDR-65]
+- [x] Write `release_expired_pending_reservations()` function: batch-cancels expired locks, reverts tables to 'Available'. [QDR-65]
+- [ ] Configure pg_cron or Supabase Edge Function to invoke `release_expired_pending_reservations()` on a schedule (e.g., every 2 minutes). [QDR-65]
 
-- [ ] Implement `supabase.channel()` to subscribe to the `Tables` database. [QDR-70]
-- [ ] Ensure the Floor Plan UI updates instantly when a customer books a table, without requiring a page refresh. [QDR-70]
-
-### Subtask 4.3: Offline Failsafe (SAF-2) [QDR-42 / QDR-50]
-
-**AI Prompt:**
-> "Phase 4, Step 2. Implement the Offline Failsafe (SAF-2) for the floor plan.
-> 1. Add a network listener to the React component.
-> 2. If the internet disconnects, display a highly visible 'Offline Warning' banner.
-> 3. Disable all clickable interactions on the grid until the connection is restored."
-
-- [ ] Implement a React `useEffect` network listener. [QDR-71]
-- [ ] If internet disconnects, render an "Offline Warning" overlay and disable all clickable table actions. [QDR-71]
-
-### Subtask 4.4: Master Reservation Calendar [QDR-43]
-
-**AI Prompt:**
-> "Phase 4, Step 3. Build the `/admin/reservations` page.
-> 1. Display a list/calendar of all bookings.
-> 2. Create a form for admins to manually enter Walk-ins and Phone reservations.
-> 3. Create a 'Block Date' function so admins can close the restaurant for holidays, preventing online searches for those dates (FR-8)."
-
-- [ ] Build the List/Calendar view of all bookings.
-- [ ] Add a form for Admins to manually enter Walk-ins/Phone bookings. [QDR-72]
-- [ ] Add a "Block Date" feature to prevent online bookings for holidays. [QDR-73]
-- [ ] Add input validation to prevent bookings outside of operating hours (FR-8). [QDR-74]
+### Subtask 2.4: Service Layer Wiring (Repository Pattern)
+- [x] `tableService.ts`: `findAvailableTableOptions()` wired to availability RPC.
+- [x] `reservationService.ts`: `createPendingReservationLock()` and `releaseExpiredPendingReservations()` wired.
+- [x] `/api/availability` route: calls `findAvailableTableOptions`.
+- [x] `/api/reservations` route: calls `createPendingReservationLock`.
 
 ---
 
-## PHASE 5: Waitlist & Automations (Triggers & APIs)
+## PHASE 3: Customer Portal (Frontend / View & Controller) [QDR-35 / QDR-38 / QDR-39]
 
-Building the automated workflows.
+Building the user-facing web app adhering to Legal Compliance. **Status: IN PROGRESS (~30%)**
+
+### Subtask 3.1: Authentication -- Registration & Login [QDR-35 / QDR-54]
+- [x] Build `/auth/register` page with Supabase Auth. [QDR-54]
+- [x] Include mandatory consent checkbox for RA 10173 (Data Privacy Act -- LEG-1). [QDR-54]
+- [x] Build `/auth/login` page with email/password sign-in. [QDR-54]
+- [x] Build auth layout with gradient background. [QDR-54]
+- [x] Implement `authClient.ts`: `signUp()`, `signIn()`, `signOut()`, `getCurrentUser()`. [QDR-54]
+
+### Subtask 3.2: RBAC Verification & Testing [QDR-35 / QDR-55]
+- [x] Build comprehensive RBAC test suite (`tests/rbac/`). [QDR-55]
+- [x] Verify `npm run build` passes TypeScript checks. [QDR-55]
+- [x] Customer layout (shared header + nav for `/customer/*`). [QDR-55]
+- [x] Admin layout (shared header + nav for `/admin/*`). [QDR-55]
+
+### Subtask 3.3: Search & Availability UI [QDR-39]
+- [x] Build availability search form (Date, Time, Party Size) on the landing page (`/`). [QDR-39]
+- [x] Wire form to POST `/api/availability`; display returned table options as results. [QDR-39]
+- [ ] Wire table option selection to open `CheckoutModal` (currently results are displayed but not clickable). [QDR-39]
+- [ ] Display view-only digital menu component alongside availability results (FR-2). [QDR-82]
+
+### Subtask 3.4: Simulated Checkout Modal [QDR-39 / QDR-65]
+- [x] Build `CheckoutModal.tsx` with 5-minute countdown timer (setInterval). [QDR-39]
+- [x] Simulated payment form (card number, expiry, CVV -- no real PANs, LEG-2 / SEC-3). [QDR-39]
+- [x] Auto-close on timer expiry with error message displayed to user. [QDR-39]
+- [x] Token generation: `tok_${Date.now()}_${random}` (simulated, not real PAN). [QDR-39]
+- [ ] Wire `onConfirm(token)` callback to POST `/api/reservations/lock` endpoint. [QDR-65]
+- [ ] Handle `55P03` lock conflict error from API: display 'Table already reserved' message (FR-3). [QDR-65]
+
+### Subtask 3.5: Account Management Module [QDR-38]
+- [ ] Build `/customer/dashboard` page: display upcoming/past reservations for authenticated user. [QDR-59]
+- [ ] Build UI to update contact info and dietary restrictions (FR-1). [QDR-59]
+- [ ] Implement "Cancel Booking" button: disable if within 2 hours of reservation time. [QDR-60]
+- [ ] Build backend cancellation API route (FR-10): (a) revert table status to 'Available', (b) trigger waitlist notification protocol. [QDR-60]
+- [ ] Build "Delete Account" button: trigger permanent cascade delete of all PII, CRM data, reservations, and Supabase Auth record (LEG-1). [QDR-61]
+
+---
+
+## PHASE 4: Admin Real-Time Dashboard (Operations) [QDR-42 / QDR-43]
+
+Building staff tools using the Observer Pattern. **Status: NOT STARTED**
+
+### Subtask 4.1: Static Floor Plan Grid UI [QDR-42 / QDR-69]
+- [ ] Build the `/admin/floorplan` interactive visual grid mapped from `tables` DB rows. [QDR-69]
+- [ ] Implement strict color-coding: Green (Available), Yellow/Amber (Reserved), Red (Occupied), Grey (Dirty). [QDR-69]
+- [ ] Implement status sync: when Admin marks a table 'Dirty', auto-transition the linked reservation from 'Seated' to 'Completed' (FR-7). [QDR-69]
+
+### Subtask 4.2: Observer Pattern / WebSockets Integration [QDR-42 / QDR-70]
+- [ ] Implement `supabase.channel()` subscription to the `tables` table. [QDR-70]
+- [ ] Floor Plan UI colors update instantly on DB status change without page refresh (FR-7). [QDR-70]
+
+### Subtask 4.3: Offline Failsafe (SAF-2) [QDR-42 / QDR-71]
+- [ ] Add React `useEffect` network listener (`navigator.onLine` + `online`/`offline` events). [QDR-71]
+- [ ] If internet disconnects: render a highly visible "Offline Warning" banner. [QDR-71]
+- [ ] Disable all clickable table interactions until connection is restored. [QDR-71]
+
+### Subtask 4.4: Master Reservation Calendar [QDR-43 / QDR-72 / QDR-73 / QDR-74]
+- [ ] Build `/admin/reservations`: list/calendar view of all bookings. [QDR-72]
+- [ ] Build form for admins to manually enter walk-in and phone reservations (FR-8). [QDR-72]
+- [ ] Add "Block Date" feature to prevent online bookings for holidays/private events (FR-8). [QDR-73]
+- [ ] Add admin input validation: prevent closing time earlier than opening time (FR-8). [QDR-74]
+- [ ] Add customer-facing validation: reject booking form submissions outside operating hours (FR-8). [QDR-74]
+
+### Subtask 4.5: System Health Monitoring Dashboard Widget (FR-13)
+- [ ] Expand `/api/health` route to return individual status for Supabase, Payment Gateway, and SMTP.
+- [ ] Build Admin Dashboard System Health widget: real-time indicators for each dependency (FR-13).
+
+---
+
+## PHASE 5: Waitlist & Automations (Triggers & APIs) [QDR-41 / QDR-45]
+
+Building automated workflows. **Status: NOT STARTED**
 
 ### Subtask 5.1: Waitlist UI [QDR-41]
+- [ ] If availability RPC returns no results: display a "Join Virtual Waitlist" button. [QDR-66]
+- [ ] Implement waitlist capacity check: if queue exceeds ~50 parties for that timeslot, display "Waitlist Full" and disable the button (FR-5 / SRS U3). [QDR-66]
 
-- [ ] If Phase 2.1 returns "No Availability", display a "Join Virtual Waitlist" button on the Customer search page.
+### Subtask 5.2: Waitlist Database Trigger [QDR-41 / QDR-66 / QDR-67 / QDR-68]
+- [ ] Write a Postgres trigger: `ON UPDATE` of `reservations.status` to 'Cancelled', auto-notify next customer on the `waitlist`. [QDR-66]
+- [ ] Grant the notified customer a 10-minute acceptance window (`waitlist.expires_at = now() + interval '10 minutes'`). [QDR-67]
+- [ ] Add business logic: abort the trigger if `now()` is within 60 minutes of the restaurant's closing time (FR-5). [QDR-68]
 
-### Subtask 5.2: Waitlist Database Trigger [QDR-41]
-
-**AI Prompt:**
-> "Phase 5, Step 1. Write the Supabase Database Trigger for Waitlist Automation (FR-5).
-> 1. When a reservation status changes to 'Cancelled', query the Waitlist table for the next person for that timeslot.
-> 2. Constraint: Do NOT trigger this if the current time is within 60 minutes of the restaurant's closing time.
-> 3. Setup the logic to grant the notified waitlist customer exactly 10 minutes to accept the table before moving to the next person."
-
-- [ ] Write a Postgres Trigger: `ON UPDATE` of Reservations to 'Cancelled', automatically pop the next customer off the Waitlist. [QDR-66]
-- [ ] Add logic to abort this trigger if the current time is within 60 minutes of the restaurant's closing shift (FR-5). [QDR-68]
-- [ ] Grant 10-minute acceptance window before moving to the next person. [QDR-67]
-
-### Subtask 5.3: SMTP Email Service [QDR-45]
-
-**AI Prompt:**
-> "Phase 5, Step 3. Build the Next.js API route to integrate SMTP Email (FR-6).
-> 1. Write the dispatch logic for Booking Confirmations and Waitlist Offers.
-> 2. Generate an `.ics` calendar file containing the reservation details and attach it to the Confirmation email payload."
-
-- [ ] Create a Next.js API route integrating SMTP provider (e.g., Resend).
-- [ ] Build Booking Confirmation email (generate and attach a `.ics` calendar invite). [QDR-77 / QDR-78]
-- [ ] Build Waitlist Offer email (state explicitly that they have a 10-minute window to click the acceptance link). [QDR-77]
+### Subtask 5.3: SMTP Email Service [QDR-45 / QDR-77 / QDR-78]
+- [ ] Create a Next.js API route integrating SMTP provider (e.g., Resend). [QDR-77]
+- [ ] Build Booking Confirmation email payload (HTML + text). [QDR-77]
+- [ ] Generate and attach a `.ics` calendar invite with reservation details (FR-6). [QDR-78]
+- [ ] Build Waitlist Offer email: explicitly state the 10-minute acceptance window. [QDR-77]
 
 ---
 
-## PHASE 6: Admin Auxiliary Features (CRUD & CRM)
+## PHASE 6: Admin Auxiliary Features (CRUD & CRM) [QDR-44 / QDR-79 / QDR-80]
 
-Finalizing the management modules.
+Finalizing management modules. **Status: NOT STARTED**
 
-### Subtask 6.1: Guest CRM Interface (FR-9) [QDR-44]
+### Subtask 6.1: Guest CRM Interface (FR-9) [QDR-44 / QDR-75]
+- [ ] Build `/admin/crm`: searchable data table of customer profiles. [QDR-75]
+- [ ] Display total past visits, no-show count, VIP status, and editable allergy/staff notes per customer (FR-9). [QDR-75]
 
-**AI Prompt:**
-> "Phase 6, Step 1. Build the `/admin/crm` page (FR-9).
-> 1. Create a searchable table displaying Customer profiles.
-> 2. Display their total past visits, total no-show counts (calculated from the DB), VIP tags, and a text area for staff to read/update allergy notes."
+### Subtask 6.2: Automated No-Show Cron Job (FR-9) [QDR-44 / QDR-76]
+- [ ] Write a Supabase Edge Function or `pg_cron` job that runs every 5 minutes. [QDR-76]
+- [ ] If a reservation is 'Confirmed' and `now() > start_time + interval '15 minutes'` and status is not 'Seated': update status to 'No-Show' (FR-9). [QDR-76]
 
-- [ ] Build a searchable data table for Admins. [QDR-75]
-- [ ] Display customer history, calculate total past visits, add VIP tags, and include a text area for allergy notes. [QDR-75]
+### Subtask 6.3: Menu Management CRUD (FR-11) [QDR-79 / QDR-81 / QDR-82]
+- [ ] Build `/admin/menu`: Admin CRUD forms to upload, edit, and remove digital menu items. [QDR-81]
+- [ ] Updates instantly reflect on the Customer Portal search page (FR-11). [QDR-81]
+- [ ] Display view-only menu on Customer Portal alongside availability results (FR-2). [QDR-82]
 
-### Subtask 6.2: Automated No-Show Cron Job [QDR-44]
+### Subtask 6.4: Manual Waitlist Control (FR-12) [QDR-80 / QDR-83]
+- [ ] Build `/admin/waitlist`: Admin UI to view, prioritize, and edit waitlist queue entries. [QDR-83]
+- [ ] Allow Admin to manually bump VIP customers up the queue or remove entries (FR-12). [QDR-83]
 
-**AI Prompt:**
-> "Phase 5, Step 2. Write a Supabase Edge Function (or pg_cron job) for No-Shows (FR-9).
-> 1. The function should run frequently and check 'Confirmed' reservations.
-> 2. If the current time is 15 minutes past the scheduled reservation time and the admin has not updated the status to 'Seated', automatically change the reservation status to 'No-Show'."
+---
 
-- [ ] Write a Supabase Edge Function (or `pg_cron`). [QDR-76]
-- [ ] Schedule it to run every 5 minutes. [QDR-76]
-- [ ] If a reservation is 'Confirmed' but the time is now > 15 minutes past the start time (and the Admin hasn't marked them 'Seated'), update status to 'No-Show'. [QDR-76]
+## PHASE 7: QA, Testing & Final Deliverables [QDR-46 through QDR-53]
 
-### Subtask 6.3: Menu Management CRUD [QDR-79]
+Verification of all performance, security, and compliance requirements. **Status: NOT STARTED**
 
-**AI Prompt:**
-> "Phase 6, Step 2. Build the remaining Admin CRUD interfaces.
-> 1. `/admin/menu`: Build forms to Create, Read, Update, and Delete digital menu items (FR-11).
-> 2. `/admin/waitlist`: Build a UI to view the current waitlist queue. Add buttons allowing admins to manually prioritize (bump up) a VIP customer or remove someone from the queue (FR-12)."
+### Subtask 7.1: Functional & Structural Testing [QDR-47]
+- [ ] Execute formal Test Scripts TC-1.1 through TC-6.2 as defined in the SPM Project Charter. [QDR-47]
 
-- [ ] Build Admin forms to Create, Read, Update, and Delete digital menu items (FR-11). [QDR-81]
-- [ ] Updates will instantly reflect on the Customer Portal. [QDR-81]
+### Subtask 7.2: UI Latency Testing (PR-1) [QDR-48]
+- [ ] Run Lighthouse performance audit: verify customer availability grid and admin floor plan load within 3 seconds over 4G/LTE (PR-1). [QDR-48]
+- [ ] Measure and verify booking confirmation emails dispatched to SMTP within 10 seconds of checkout (PR-3). [QDR-48]
 
-### Subtask 6.4: Manual Waitlist Control [QDR-80]
+### Subtask 7.3: Real-Time Concurrency Testing (PR-2) [QDR-49]
+- [ ] Test concurrent booking: two users booking the same table simultaneously. Verify row-lock resolves within 1 second and second user receives 'Table already reserved' error (PR-2, FR-3). [QDR-49]
 
-- [ ] Build Admin UI to manually view, edit, and prioritize the waitlist queue for VIPs (FR-12). [QDR-83]
+### Subtask 7.4: Offline Mode & Security Verification [QDR-50]
+- [ ] Verify "Offline Warning" banner appears and grid interactions are disabled when internet is lost (SAF-2). [QDR-50]
+- [ ] Verify HTTPS/TLS is enforced on all Supabase and hosting endpoints (SEC-2). [QDR-50]
+- [ ] Verify no raw credit card PANs are stored, logged, or transmitted (LEG-2). [QDR-50]
+- [ ] Verify Delete Account permanently purges all PII, reservations, and Supabase Auth record (LEG-1). [QDR-50]
+
+### Subtask 7.5: Device & Responsiveness Testing
+- [ ] Test Admin Floor Plan on a standard touchscreen tablet (iPad -- assumed front-desk hardware per SPM).
+- [ ] Test Customer Portal on mobile, tablet, and desktop browsers.
+
+### Subtask 7.6: Deployment [QDR-51 / QDR-52]
+- [ ] Enable Supabase PITR and confirm backup configuration (SAF-1). [QDR-52]
+- [ ] Deploy frontend to production hosting platform (DigitalOcean/Azure via GitHub Student Pack). [QDR-52]
+
+### Subtask 7.7: Final Project Deliverables [QDR-53]
+- [ ] Create and maintain `Documents/defects_log.md` to track all QA bugs (per SPM Quality Plan).
+- [ ] Finalize `Documents/traceability.md` with verified SRS citations for all implemented requirements.
+- [ ] Write User Manual covering Customer Portal and Admin Dashboard workflows. [QDR-53]

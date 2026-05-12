@@ -1,3 +1,8 @@
 .agents/
 .prompts/
 *.csv
+*.md
+.next/
+gordon-ramsay-reservations/.next/
+node_modules/
+supabase/**/.temp/
