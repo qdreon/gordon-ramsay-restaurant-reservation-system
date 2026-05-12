@@ -47,18 +47,13 @@ export default function CheckoutModal({
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [isExpired, setIsExpired] = useState(false);
 
-  // Countdown timer effect
+  // Countdown while open (initial state resets when parent remounts via key)
   useEffect(() => {
-    if (!isOpen) {
-      setTimeLeft(300);
-      setIsExpired(false);
-      return;
-    }
+    if (!isOpen) return;
 
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          // Timer expired
           setIsExpired(true);
           return 0;
         }

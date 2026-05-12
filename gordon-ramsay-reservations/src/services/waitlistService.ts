@@ -266,4 +266,5 @@ class WaitlistService {
   }
 }
 
-export default new WaitlistService();
+const waitlistService = new WaitlistService();
+export default waitlistService;

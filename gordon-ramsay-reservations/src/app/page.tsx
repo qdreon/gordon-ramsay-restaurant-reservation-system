@@ -57,6 +57,8 @@ export default function Home() {
   // Checkout modal state
   const [selectedOption, setSelectedOption] = useState<AvailabilityOption | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  /** Bumps on each open so the modal remounts with a fresh countdown (avoids effect setState reset). */
+  const [checkoutModalKey, setCheckoutModalKey] = useState(0);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   // ---------------------------------------------------------------------------
@@ -157,6 +159,7 @@ export default function Home() {
   function handleSelectOption(option: AvailabilityOption) {
     setBookingError(null);
     setSelectedOption(option);
+    setCheckoutModalKey((k) => k + 1);
     setIsModalOpen(true);
   }
 
@@ -377,6 +380,7 @@ export default function Home() {
 
       {/* Checkout Modal (FR-3 / QDR-39) */}
       <CheckoutModal
+        key={checkoutModalKey}
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onConfirm={handleCheckoutConfirm}

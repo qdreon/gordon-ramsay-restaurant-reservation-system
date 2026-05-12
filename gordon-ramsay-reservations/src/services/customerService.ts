@@ -42,7 +42,7 @@ export interface ReservationRow {
   tables: { table_number: number }[];
 }
 
-export interface ReservationSummary extends ReservationRow {}
+export type ReservationSummary = ReservationRow;
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -100,16 +100,32 @@ export async function getReservationsForCustomer(customerId: string): Promise<Re
     throw new Error(`[Customer Service] Failed to fetch reservations: ${error.message}`);
   }
 
-  // Flatten nested reservation_tables -> tables -> table_number
-  return (data ?? []).map((row: any) => ({
-    ...row,
+  type TableRef = { table_number: number } | null;
+  type ReservationTableJoin = { tables: TableRef | TableRef[] | null };
+  type ReservationQueryRow = Omit<ReservationRow, 'tables'> & {
+    reservation_tables: ReservationTableJoin[] | null;
+  };
+
+  function normalizeTables(t: TableRef | TableRef[] | null): TableRef[] {
+    if (t === null) return [];
+    return Array.isArray(t) ? t : [t];
+  }
+
+  return (data ?? []).map((row: ReservationQueryRow): ReservationRow => ({
+    id: row.id,
+    reservation_date: row.reservation_date,
+    start_time: row.start_time,
+    end_time: row.end_time,
+    party_size: row.party_size,
+    status: row.status,
+    special_requests: row.special_requests,
+    locked_until: row.locked_until,
+    created_at: row.created_at,
     tables: (row.reservation_tables ?? [])
-      .map((rt: any) => rt.tables)
-      .filter((t: any) => t !== null)
-      .map((t: any) => (Array.isArray(t) ? t : [t]))
-      .flat()
-      .map((t: any) => ({ table_number: t?.table_number || 0 })),
-  })) as ReservationRow[];
+      .flatMap((rt) => normalizeTables(rt.tables))
+      .filter((t): t is { table_number: number } => t !== null)
+      .map((t) => ({ table_number: t.table_number || 0 })),
+  }));
 }
 
 /**
