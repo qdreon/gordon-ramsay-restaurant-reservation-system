@@ -87,7 +87,7 @@ function SystemLiveIndicator() {
   )
 }
 
-export function MasterCalendar() {
+function MasterCalendar() {
   const today = new Date()
   const [currentDate, setCurrentDate] = React.useState(today)
   const [selectedDate, setSelectedDate] = React.useState(today)
