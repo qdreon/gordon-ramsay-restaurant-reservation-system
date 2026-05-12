@@ -7,6 +7,4 @@ export default async function rootPage() {
   if (session) { redirect("/auth/login")};
 
   redirect("/customer/dashboard");
-
-  //test
 }
