@@ -13,6 +13,7 @@
  */
 
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServiceSupabaseClient } from '@/lib/supabaseAdmin';
 
 export interface CreateReservationLockInput {
   customerId: string;
@@ -34,11 +35,14 @@ export interface ReservationLockResult {
 /**
  * Creates a pending reservation and acquires row-level locks (PR-2).
  * The lock automatically expires after 5 minutes unless payment is confirmed.
+ *
+ * Uses service-role client to bypass RLS (admin-level operation).
  */
 export async function createPendingReservationLock(
   input: CreateReservationLockInput
 ): Promise<ReservationLockResult> {
-  const supabase = await createServerSupabaseClient();
+  // Use service-role client for admin-level RPC call
+  const supabase = createServiceSupabaseClient();
 
   const { data, error } = await supabase.rpc('create_pending_reservation_lock', {
     p_customer_id: input.customerId,

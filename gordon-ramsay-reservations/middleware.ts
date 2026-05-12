@@ -75,8 +75,9 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
-    if (!userError && userRow && (userRow as any).role) {
-      role = (userRow as any).role;
+    const row = userRow as { role: string } | null;
+    if (!userError && row?.role) {
+      role = row.role;
     }
   }
 

@@ -1,13 +1,20 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.2
-> **Last Updated:** May 12, 2026
+> **Document Version:** 1.3
+> **Last Updated:** May 12, 2026 (Phase 1-3 Complete)
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
 ---
 
 ## Revision History
+
+### [May 12, 2026] - Phase Completion: Phases 0-3 Fully Operational
+- **Phase 1 (100%):** Data layer complete; schema, RBAC, indexes, triggers, seed data all verified
+- **Phase 2 (100%):** Booking engine complete; 3 RPCs deployed; pg_cron scheduler + table teardown trigger added
+- **Phase 3 (100%):** Customer portal complete; auth, availability search, checkout modal, lock API, dashboard, account management all verified
+- **Build Status:** ✅ Production build successful (Webpack, 3.5s compile time)
+- **Project: 50% Complete** — Ready for Phase 4
 
 ### [May 12, 2026] - Gap Analysis: Cross-Reference Against SRS/SWDD/SPM
 - Cross-referenced all three authoritative documents (SRS v1.4, SWDD, SPM Project Charter) against MASTER_TODO.md.
@@ -65,10 +72,10 @@ The SRS (v1.4) and SWDD define **13 Functional Requirements** spanning the Custo
 
 | ID | Requirement | Description | Status |
 |----|-------------|-------------|--------|
-| FR-1 | Account Management | Register, login, manage profile (dietary restrictions, contact info) via Supabase Auth | Schema done (Phase 1); Auth pages done (Phase 3) |
-| FR-2 | Search and Discovery | Search table availability by date, time, party size; view-only menu before booking | Phase 3 - In Progress |
-| FR-3 | Booking Engine | Row-lock table on selection; 5-minute checkout timeout; simulated deposit; error on conflict | Phase 2 complete; UI Phase 3 In Progress |
-| FR-4 | Table Combination Logic | Auto-combine adjacent tables for large parties; hard cap at 12 Pax; teardown on completion | Schema done; RPC Phase 2 |
+| FR-1 | Account Management | Register, login, manage profile (dietary restrictions, contact info) via Supabase Auth | ✅ **COMPLETE** (Phase 3) |
+| FR-2 | Search and Discovery | Search table availability by date, time, party size; view-only menu before booking | ✅ **COMPLETE** (Phase 3) |
+| FR-3 | Booking Engine | Row-lock table on selection; 5-minute checkout timeout; simulated deposit; error on conflict | ✅ **COMPLETE** (Phase 2 + 3) |
+| FR-4 | Table Combination Logic | Auto-combine adjacent tables for large parties; hard cap at 12 Pax; teardown on completion | ✅ **COMPLETE** (Phase 2 + trigger 008) |
 | FR-5 | Waitlist Automation | Trigger on cancellation; 10-minute offer window; disable protocol 60 min before closing | Schema done; trigger Phase 5 |
 | FR-6 | Email Notifications | Booking confirmation email with .ics calendar invite; waitlist offer email | Phase 5 - Not Started |
 | FR-7 | Visual Table Management | Static interactive floor plan grid; color-coded (Green/Yellow/Red/Grey); WebSocket real-time | Phase 4 - Not Started |

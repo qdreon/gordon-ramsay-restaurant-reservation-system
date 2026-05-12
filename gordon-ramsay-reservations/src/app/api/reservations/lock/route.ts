@@ -52,6 +52,7 @@ export async function POST(req: Request) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unexpected error while creating reservation lock.';
+    console.error('[Lock API] Error:', message, error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentSession, getCurrentUser, signOut } from '@/lib/authClient';
 
@@ -32,6 +32,9 @@ export default function CustomerDashboard() {
 
   const TWO_HOURS_IN_MS = 2 * 60 * 60 * 1000;
 
+  /** Wall-clock tick for filtering/cancel rules without calling Date.now() during render. */
+  const [nowMs, setNowMs] = useState<number | null>(null);
+
   type ReservationItem = {
     id: string;
     reservation_date: string;
@@ -45,7 +48,7 @@ export default function CustomerDashboard() {
     tables: { table_number: number }[];
   };
 
-  async function loadReservations(token: string) {
+  const loadReservations = useCallback(async (token: string) => {
     const response = await fetch('/api/customer/reservations', {
       headers: {
         'Content-Type': 'application/json',
@@ -62,7 +65,16 @@ export default function CustomerDashboard() {
     }
 
     setReservations(payload.reservations ?? []);
-  }
+  }, []);
+
+  useEffect(() => {
+    function tick() {
+      setNowMs(Date.now());
+    }
+    tick();
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     async function loadUser() {
@@ -92,7 +104,7 @@ export default function CustomerDashboard() {
     }
 
     loadUser();
-  }, [router]);
+  }, [router, loadReservations]);
 
   async function handleSignOut() {
     try {
@@ -182,21 +194,21 @@ export default function CustomerDashboard() {
     return new Date(value).toLocaleString();
   }
 
-  function canCancel(reservation: ReservationItem) {
+  function canCancel(reservation: ReservationItem, currentMs: number) {
     const cancellableStatuses = ['pending_payment', 'confirmed'];
-    const msUntilStart = new Date(reservation.start_time).getTime() - Date.now();
+    const msUntilStart = new Date(reservation.start_time).getTime() - currentMs;
     return cancellableStatuses.includes(reservation.status) && msUntilStart >= TWO_HOURS_IN_MS;
   }
 
-  const now = Date.now();
+  const effectiveNow = nowMs ?? 0;
   const upcoming = reservations.filter(
-    (r) => new Date(r.start_time).getTime() >= now && r.status !== 'cancelled'
+    (r) => new Date(r.start_time).getTime() >= effectiveNow && r.status !== 'cancelled'
   );
   const past = reservations.filter(
-    (r) => new Date(r.start_time).getTime() < now || r.status === 'cancelled'
+    (r) => new Date(r.start_time).getTime() < effectiveNow || r.status === 'cancelled'
   );
 
-  if (loading) {
+  if (loading || nowMs === null) {
     return (
       <div className="flex items-center justify-center py-10">
         <div className="text-slate-600 dark:text-slate-400">Loading...</div>
@@ -259,12 +271,12 @@ export default function CustomerDashboard() {
                   <div className="mt-3">
                     <button
                       onClick={() => handleCancelReservation(reservation.id)}
-                      disabled={!canCancel(reservation) || refreshing}
+                      disabled={!canCancel(reservation, effectiveNow) || refreshing}
                       className="rounded-md border border-red-300 px-3 py-1.5 text-red-700 disabled:opacity-50 dark:border-red-700 dark:text-red-400"
                     >
                       Cancel Booking
                     </button>
-                    {!canCancel(reservation) && (
+                    {!canCancel(reservation, effectiveNow) && (
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Cancellation allowed only for pending/confirmed reservations at least 2 hours before start.
                       </p>
