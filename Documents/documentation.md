@@ -129,6 +129,10 @@ If the project remains on a free Supabase plan and PITR cannot be enabled, use a
 3. Keep a restore script ready that can replay the dump with `psql` or `supabase db push` into a fresh database.
 4. Record that this is a budget workaround and does not provide true PITR semantics.
 
+### Teardown Trigger Note
+
+Phase 2.1 table teardown is now implemented in `supabase/migrations/008_table_teardown_trigger.sql`. The trigger dissolves table combinations and returns linked tables to `available` when a reservation transitions to `completed` or `cancelled`.
+
 **Security Requirements**
 
 | ID | Requirement | Description | Status |

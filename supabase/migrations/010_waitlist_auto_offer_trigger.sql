@@ -55,9 +55,6 @@ EXCEPTION
 END;
 $$;
 
-COMMENT ON FUNCTION public.handle_waitlist_offer_on_cancellation()
-IS 'Automatically offers a table to the next waiting customer when a reservation is cancelled (FR-5 / QDR-41.3).';
-
 -- Drop existing trigger if present (safe idempotency)
 DROP TRIGGER IF EXISTS handle_waitlist_offer_on_cancellation_trigger ON public.reservations;
 
@@ -66,9 +63,6 @@ CREATE TRIGGER handle_waitlist_offer_on_cancellation_trigger
 AFTER UPDATE ON public.reservations
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_waitlist_offer_on_cancellation();
-
-COMMENT ON TRIGGER handle_waitlist_offer_on_cancellation_trigger ON public.reservations
-IS 'Trigger to handle waitlist auto-offer when reservations are cancelled.';
 
 -- ============================================================
 -- MIGRATION 10B: Phase 5 - Waitlist Offer Expiry Cleanup
@@ -84,5 +78,3 @@ SELECT cron.schedule(
   'UPDATE public.waitlist SET status = ''expired'' WHERE status = ''offered'' AND expires_at < now();'
 );
 
-COMMENT ON FUNCTION cron.schedule(text, text, text)
-IS 'Scheduled job that runs every 5 minutes to mark expired waitlist offers as expired (QDR-66).';

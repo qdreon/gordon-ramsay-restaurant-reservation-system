@@ -19,6 +19,3 @@ SELECT cron.schedule(
   '*/2 * * * *',                   -- Every 2 minutes
   'SELECT public.release_expired_pending_reservations();'
 );
-
-COMMENT ON FUNCTION cron.schedule(text, text, text)
-IS 'Scheduled job that runs every 2 minutes to automatically release expired checkout locks (QDR-65).';

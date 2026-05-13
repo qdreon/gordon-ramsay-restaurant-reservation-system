@@ -50,11 +50,11 @@
 | **3.4-ERR** | No error feedback for lock conflicts | Error message now displays in modal; user can retry | ✅ RESOLVED |
 
 ### Next Priority Tasks (Phase 4 - Admin Dashboard / Ops)
-1. **Phase 2.1 Teardown (QDR-63):** Add trigger for table combination teardown on reservation completion/cancellation  
-2. **Phase 1.5 PITR (SAF-1):** Enable Supabase Point-in-Time Recovery and verify daily backups  
-3. **Phase 4.1 Floor Plan (QDR-69):** Build `/admin/floorplan` interactive grid with color-coded status  
-4. **Phase 4.2 WebSockets (QDR-70):** Add Supabase real-time subscriptions for instant table status updates  
-5. **Phase 5.2 Waitlist Trigger (QDR-66):** Implement DB trigger to offer next waitlist customer on cancellation  
+1. **Phase 4.1 Floor Plan (QDR-69):** Finish table-status sync behavior for admin dirty/completed transitions  
+2. **Phase 6.1 Guest CRM (QDR-75):** Build searchable customer profile table for admin use  
+3. **Phase 6.2 No-Show Cron (QDR-76):** Add 5-minute no-show automation for overdue confirmations  
+4. **Phase 6.3 Menu CRUD (QDR-81):** Build admin menu upload/edit/remove workflow  
+5. **Phase 1.5 PITR (SAF-1):** Deferred on free Supabase tier; fallback backup procedure is documented in `documentation.md`  
 
 ---
 
@@ -116,8 +116,8 @@ Building the 3NF Database Model and RBAC Security. **Status: COMPLETE**
 - [x] Install `date-fns` for client-side UTC-to-local time conversion. [QDR-58]
 
 ### Subtask 1.5: Data Backup & Recovery (SAF-1)
- - [ ] Enable Supabase Point-in-Time Recovery (PITR) in the Supabase dashboard project settings.
- - [ ] Verify daily automated backups are active.
+- [ ] Enable Supabase Point-in-Time Recovery (PITR) in the Supabase dashboard project settings. **[DEFERRED: requires Supabase Pro]**
+- [ ] Verify daily automated backups are active. **[DEFERRED: requires Supabase Pro]**
 - [x] Document backup retention period and recovery procedure in `documentation.md`.
 
 ---
@@ -132,7 +132,7 @@ Handling complex business logic via Supabase Remote Procedure Calls (RPCs). **St
 - [x] Include logic to auto-combine adjacent tables (single, pair, triple combinations). [QDR-63]
 - [x] Cap combination at a strict maximum of 12 Pax (FR-4). [QDR-63]
 - [x] Filter out blocked dates inside the RPC. [QDR-62]
-- [ ] Implement teardown logic: on reservation 'Completed' or 'Cancelled', dissolve all table combination links and revert combined tables to 'Available' (FR-4 full requirement). **[HIGH PRIORITY -- Phase 2.1 Teardown Task]**
+- [x] Implement teardown logic: on reservation 'Completed' or 'Cancelled', dissolve all table combination links and revert combined tables to 'Available' (FR-4 full requirement). **[IMPLEMENTED IN `supabase/migrations/008_table_teardown_trigger.sql`] [QDR-63]**
 
 ### Subtask 2.2: Concurrency Row-Locking Engine [QDR-40 / QDR-64]
 - [x] Write `create_pending_reservation_lock()` Postgres RPC using `SELECT ... FOR UPDATE`. [QDR-64]
@@ -206,8 +206,8 @@ Building staff tools using the Observer Pattern. **Status: NOT STARTED**
 - [ ] Implement status sync: when Admin marks a table 'Dirty', auto-transition the linked reservation from 'Seated' to 'Completed' (FR-7). [QDR-69]
 
 ### Subtask 4.2: Observer Pattern / WebSockets Integration [QDR-42 / QDR-70]
-- [ ] Implement `supabase.channel()` subscription to the `tables` table. [QDR-70]
-- [ ] Floor Plan UI colors update instantly on DB status change without page refresh (FR-7). [QDR-70]
+- [x] Implement `supabase.channel()` subscription to the `tables` table. [QDR-70]
+- [x] Floor Plan UI colors update instantly on DB status change without page refresh (FR-7). [QDR-70]
 
 ### Subtask 4.3: Offline Failsafe (SAF-2) [QDR-42 / QDR-71]
 - [ ] Add React `useEffect` network listener (`navigator.onLine` + `online`/`offline` events). [QDR-71]
@@ -236,8 +236,8 @@ Building automated workflows. **Status: NOT STARTED**
 - [ ] Implement waitlist capacity check: if queue exceeds ~50 parties for that timeslot, display "Waitlist Full" and disable the button (FR-5 / SRS U3). [QDR-66]
 
 ### Subtask 5.2: Waitlist Database Trigger [QDR-41 / QDR-66 / QDR-67 / QDR-68]
-- [ ] Write a Postgres trigger: `ON UPDATE` of `reservations.status` to 'Cancelled', auto-notify next customer on the `waitlist`. [QDR-66]
-- [ ] Grant the notified customer a 10-minute acceptance window (`waitlist.expires_at = now() + interval '10 minutes'`). [QDR-67]
+- [x] Write a Postgres trigger: `ON UPDATE` of `reservations.status` to 'Cancelled', auto-notify next customer on the `waitlist`. [QDR-66]
+- [x] Grant the notified customer a 10-minute acceptance window (`waitlist.expires_at = now() + interval '10 minutes'`). [QDR-67]
 - [ ] Add business logic: abort the trigger if `now()` is within 60 minutes of the restaurant's closing time (FR-5). [QDR-68]
 
 ### Subtask 5.3: SMTP Email Service [QDR-45 / QDR-77 / QDR-78]

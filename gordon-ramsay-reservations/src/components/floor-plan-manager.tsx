@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import supabase from "@/lib/authClient"
 
 // Database enum: table_status
 type TableStatus = "available" | "reserved" | "occupied" | "dirty"
@@ -86,9 +87,11 @@ const statusLabels: Record<TableStatus, string> = {
 
 function TableComponent({
   table,
+  disabled,
   onStatusChange,
 }: {
   table: TableData
+  disabled?: boolean
   onStatusChange: (id: string, status: TableStatus) => void
 }) {
   const isCircular = table.capacity <= 4
@@ -96,33 +99,47 @@ function TableComponent({
   const shape = isCircular ? "rounded-full" : "rounded-sm"
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={`${baseSize} ${shape} ${statusColors[table.status]} flex flex-col items-center justify-center transition-all hover:scale-105 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyber focus:ring-offset-2 focus:ring-offset-background relative`}
-          style={{ fontFamily: "Arial", fontSize: "11px" }}
-        >
-          <span className="font-bold text-white">T{table.table_number}</span>
-          <span className="text-white/80">{table.capacity}p</span>
-          {table.is_combinable && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-cyber rounded-full" title="Combinable" />
-          )}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="min-w-[140px]">
-        {(Object.keys(statusColors) as TableStatus[]).map((status) => (
-          <DropdownMenuItem
-            key={status}
-            onClick={() => onStatusChange(table.id, status)}
-            className="flex items-center gap-2 cursor-pointer"
+    <div className="flex h-20 w-24 items-center justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            disabled={disabled}
+            className={`${baseSize} ${shape} ${statusColors[table.status]} relative flex flex-col items-center justify-center transition-all hover:scale-105 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyber focus:ring-offset-2 focus:ring-offset-background`}
+            style={{ fontFamily: "Arial", fontSize: "11px" }}
           >
-            <div className={`w-3 h-3 rounded-full ${statusColors[status]}`} />
-            <span>{statusLabels[status]}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <span className="font-bold text-white">T{table.table_number}</span>
+            <span className="text-white/80">{table.capacity}p</span>
+            {table.is_combinable && (
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-cyber" title="Combinable" />
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="min-w-[140px]">
+          {(Object.keys(statusColors) as TableStatus[]).map((status) => (
+            <DropdownMenuItem
+              key={status}
+              onClick={() => onStatusChange(table.id, status)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <div className={`h-3 w-3 rounded-full ${statusColors[status]}`} />
+              <span>{statusLabels[status]}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
+}
+
+function hasAvailableAdjacentTables(table: TableData, tableById: Map<string, TableData>) {
+  return table.adjacent_table_ids.some((adjacentId) => {
+    const adjacentTable = tableById.get(adjacentId)
+    return Boolean(
+      adjacentTable &&
+        adjacentTable.is_combinable &&
+        adjacentTable.status === "available"
+    )
+  })
 }
 
 function Legend() {
@@ -155,8 +172,116 @@ export function FloorPlanManager() {
   const [walkInName, setWalkInName] = React.useState("")
   const [walkInPax, setWalkInPax] = React.useState("")
   const [walkInTable, setWalkInTable] = React.useState("")
+  const [isOnline, setIsOnline] = React.useState(true)
+  const [loadingTables, setLoadingTables] = React.useState(true)
+  const [tableError, setTableError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    setIsOnline(navigator.onLine)
+
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let isMounted = true
+
+    async function loadTables() {
+      try {
+        const response = await fetch("/api/admin/tables", {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        const payload = (await response.json()) as {
+          tables?: TableData[]
+          error?: string
+        }
+
+        if (!response.ok || !payload.tables) {
+          throw new Error(payload.error ?? "Failed to load floor plan data.")
+        }
+
+        if (isMounted) {
+          setTables(payload.tables)
+          setTableError(null)
+        }
+      } catch (error) {
+        if (isMounted) {
+          setTableError(error instanceof Error ? error.message : "Failed to load floor plan data.")
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingTables(false)
+        }
+      }
+    }
+
+    loadTables()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const channel = supabase
+      .channel('public:tables')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tables' },
+        (payload) => {
+          const newRow = payload.new as Partial<TableData> | null
+          const oldRow = payload.old as Partial<TableData> | null
+
+          if (payload.eventType === 'DELETE' && oldRow?.id) {
+            setTables((current) => current.filter((table) => table.id !== oldRow.id))
+            return
+          }
+
+          if (!newRow?.id) return
+
+          setTables((current) => {
+            const nextTable: TableData = {
+              ...(current.find((table) => table.id === newRow.id) ?? {} as TableData),
+              ...newRow,
+              guestName:
+                (current.find((table) => table.id === newRow.id)?.guestName ?? undefined),
+              guestCount:
+                (current.find((table) => table.id === newRow.id)?.guestCount ?? undefined),
+            } as TableData
+
+            const exists = current.some((table) => table.id === newRow.id)
+            if (exists) {
+              return current.map((table) => (table.id === newRow.id ? nextTable : table))
+            }
+
+            return [...current, nextTable].sort((left, right) => {
+              if (left.position_y !== right.position_y) return left.position_y - right.position_y
+              return left.position_x - right.position_x
+            })
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const handleStatusChange = (id: string, status: TableStatus) => {
+    if (!isOnline) return
+
     setTables((prev) =>
       prev.map((table) => (table.id === id ? { ...table, status } : table))
     )
@@ -164,6 +289,8 @@ export function FloorPlanManager() {
 
   const handleWalkIn = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isOnline) return
+
     if (!walkInName || !walkInPax || !walkInTable) return
 
     setTables((prev) =>
@@ -183,7 +310,46 @@ export function FloorPlanManager() {
     setWalkInTable("")
   }
 
+  const handleMarkDirty = async (tableId: string) => {
+    if (!isOnline) return
+
+    try {
+      const response = await fetch(`/api/admin/tables/${tableId}/mark-dirty`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const payload = (await response.json()) as {
+        success?: boolean
+        message?: string
+        error?: string
+      }
+
+      if (!response.ok || !payload.success) {
+        console.error("Failed to mark table dirty:", payload.error ?? "Unknown error")
+        return
+      }
+
+      // Update local state: mark table as dirty
+      setTables((prev) =>
+        prev.map((table) =>
+          table.id === tableId
+            ? { ...table, status: "dirty" as TableStatus }
+            : table
+        )
+      )
+    } catch (error) {
+      console.error("Error marking table dirty:", error)
+    }
+  }
+
   const occupiedTables = tables.filter((t) => t.status === "occupied")
+  const tableById = React.useMemo(
+    () => new Map(tables.map((table) => [table.id, table])),
+    [tables]
+  )
 
   // Organize tables by position_y for the grid
   const rows = [0, 1, 2].map((rowIndex) =>
@@ -206,6 +372,24 @@ export function FloorPlanManager() {
 
         <ScrollArea className="flex-1 overflow-hidden">
           <div className="p-4 space-y-6 pb-8">
+            {!isOnline && (
+              <div className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                Offline Warning: table interactions are disabled until the connection is restored.
+              </div>
+            )}
+
+            {tableError && (
+              <div className="rounded-sm border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                {tableError}
+              </div>
+            )}
+
+            {loadingTables && (
+              <div className="rounded-sm border border-border bg-card/50 px-3 py-2 text-xs text-muted-foreground">
+                Loading floor plan data...
+              </div>
+            )}
+
             {/* Upcoming Reservations */}
             <section>
               <h2
@@ -252,6 +436,7 @@ export function FloorPlanManager() {
                   placeholder="Guest Name"
                   value={walkInName}
                   onChange={(e) => setWalkInName(e.target.value)}
+                  disabled={!isOnline}
                   className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                   style={{ fontFamily: "Arial", fontSize: "11px" }}
                 />
@@ -262,6 +447,7 @@ export function FloorPlanManager() {
                   onChange={(e) => setWalkInPax(e.target.value)}
                   min="1"
                   max="10"
+                  disabled={!isOnline}
                   className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                   style={{ fontFamily: "Arial", fontSize: "11px" }}
                 />
@@ -269,11 +455,13 @@ export function FloorPlanManager() {
                   placeholder="Table Number (e.g., T1)"
                   value={walkInTable}
                   onChange={(e) => setWalkInTable(e.target.value.toUpperCase())}
+                  disabled={!isOnline}
                   className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                   style={{ fontFamily: "Arial", fontSize: "11px" }}
                 />
                 <Button
                   type="submit"
+                  disabled={!isOnline}
                   className="w-full bg-cyber text-background hover:bg-cyber/90"
                   style={{ fontFamily: "Arial", fontSize: "11px" }}
                 >
@@ -314,11 +502,18 @@ export function FloorPlanManager() {
                           {table.guestCount || "-"}
                         </span>
                       </div>
-                      {table.is_combinable && table.adjacent_table_ids.length > 0 && (
+                      {table.is_combinable && hasAvailableAdjacentTables(table, tableById) && (
                         <div className="mt-1 text-cyber text-[10px]">
                           Can combine with adjacent tables
                         </div>
                       )}
+                      <Button
+                        onClick={() => handleMarkDirty(table.id)}
+                        disabled={!isOnline}
+                        className="mt-2 w-full bg-amber-600 text-white text-[10px] h-7 hover:bg-amber-700"
+                      >
+                        Mark Dirty
+                      </Button>
                     </div>
                   ))
                 )}
@@ -340,7 +535,7 @@ export function FloorPlanManager() {
 
         {/* Floor Plan Grid */}
         <div className="flex-1 flex items-center justify-center p-8 relative">
-          <div className="space-y-8">
+          <div className="space-y-4">
             {/* Row Labels */}
             <div className="flex items-center gap-4">
               <span
@@ -354,6 +549,7 @@ export function FloorPlanManager() {
                   <TableComponent
                     key={table.id}
                     table={table}
+                    disabled={!isOnline}
                     onStatusChange={handleStatusChange}
                   />
                 ))}
@@ -372,6 +568,7 @@ export function FloorPlanManager() {
                   <TableComponent
                     key={table.id}
                     table={table}
+                    disabled={!isOnline}
                     onStatusChange={handleStatusChange}
                   />
                 ))}
@@ -390,6 +587,7 @@ export function FloorPlanManager() {
                   <TableComponent
                     key={table.id}
                     table={table}
+                    disabled={!isOnline}
                     onStatusChange={handleStatusChange}
                   />
                 ))}
