@@ -82,3 +82,80 @@ export async function releaseExpiredPendingReservations(): Promise<number> {
 
   return Number(data ?? 0);
 }
+
+/**
+ * Fetches all reservations within a date range for the admin calendar.
+ * Used by `/admin/reservations` to display the Master Calendar.
+ */
+export async function getReservationsByDateRange(
+  startDate: string,
+  endDate: string
+): Promise<any[]> {
+  const supabase = createServiceSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('reservations')
+    .select('id, customer_id, reservation_date, start_time, end_time, party_size, status, special_requests, locked_until')
+    .gte('reservation_date', startDate)
+    .lte('reservation_date', endDate)
+    .order('reservation_date', { ascending: true })
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    throw new Error(`[Reservation Service] Failed to fetch reservations: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+/**
+ * Creates a blocked date entry to prevent online bookings.
+ * Used by admin to block holidays, private events, etc.
+ */
+export async function createBlockedDate(
+  blockedDate: string,
+  reason: string
+): Promise<string> {
+  const supabase = createServiceSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .insert({
+      blocked_date: blockedDate,
+      reason,
+      created_by: 'system',
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error(`[Reservation Service] Failed to create blocked date: ${error.message}`);
+  }
+
+  return data?.id ?? '';
+}
+
+/**
+ * Fetches all blocked dates for a given month.
+ * Used to display visual indicators on the admin calendar.
+ */
+export async function getBlockedDatesForMonth(
+  year: number,
+  month: number
+): Promise<string[]> {
+  const supabase = createServiceSupabaseClient();
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+
+  const { data, error } = await supabase
+    .from('blocked_dates')
+    .select('blocked_date')
+    .gte('blocked_date', startDate)
+    .lte('blocked_date', endDate);
+
+  if (error) {
+    throw new Error(`[Reservation Service] Failed to fetch blocked dates: ${error.message}`);
+  }
+
+  return (data ?? []).map((row: any) => row.blocked_date);
+}
