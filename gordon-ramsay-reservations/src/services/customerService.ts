@@ -271,13 +271,13 @@ export async function getReservationForCustomer(
  *   - Reverts all associated tables to 'available'.
  *   - The waitlist notification trigger (FR-5) will be added in Phase 5.
  *
- * Constraint: Only cancels reservations belonging to the given customer (RLS enforced).
+ * Constraint: The calling API route must verify ownership before invoking this helper.
  */
 export async function cancelReservation(
   reservationId: string,
   customerId: string
 ): Promise<void> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceSupabaseClient();
 
   // Step 1: Mark the reservation as cancelled.
   const { error: cancelError } = await supabase
