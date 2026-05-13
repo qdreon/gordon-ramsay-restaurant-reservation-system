@@ -19,7 +19,7 @@
 | **Phase 4** | Admin Real-Time Dashboard (Operations) | ✅ **COMPLETE** | **100%** — Floor-plan grid with realtime ✓; dirty transitions ✓; offline failsafe ✓; Master Calendar with blocked dates ✓; Operating hours validation ✓; Health monitor ✓ |
 | **Phase 5** | Waitlist & Automations (Triggers & APIs) | ✅ COMPLETE | 100% — Waitlist UI ✓; Auto-offer ✓; SMTP ✓ |
 | **Phase 6** | Admin Auxiliary Features (CRUD & CRM) | ✅ COMPLETE | 100% — CRM ✓; no-show ✓; full menu integration ✓; waitlist controls ✓ |
-| **Phase 7** | QA, Testing & Final Deliverables | ❌ NOT STARTED | 0% |
+| **Phase 7** | QA, Testing & Final Deliverables | 🟡 IN PROGRESS | 5% |
 
 **Overall Project Completion: ~95%** | **Phases 0-6 Complete; Phase 7 in progress**
 
@@ -179,7 +179,7 @@ Building the user-facing web app adhering to Legal Compliance. **Status: COMPLET
 - [x] Build availability search form (Date, Time, Party Size) on the landing page (`/`). [QDR-39]
 - [x] Wire form to POST `/api/availability`; display returned table options as results. [QDR-39]
 - [x] **Wire table option selection to open `CheckoutModal` (May 12: Verified working)** [QDR-39]
-- [ ] Display view-only digital menu component alongside availability results (FR-2). **[Future: Phase 3 Enhancement] [QDR-82]**
+- [x] Display view-only digital menu component alongside availability results (FR-2). **[IMPLEMENTED (May 13)] [QDR-82]**
 
 ### Subtask 3.4: Simulated Checkout Modal [QDR-39 / QDR-65]
 - [x] Build `CheckoutModal.tsx` with 5-minute countdown timer (setInterval). [QDR-39]
@@ -280,7 +280,7 @@ Building automated workflows. **Status: COMPLETE (100%)**
 
 ## PHASE 6: Admin Auxiliary Features (CRUD & CRM) [QDR-44 / QDR-79 / QDR-80]
 
-Finalizing management modules. **Status: PARTIAL (~30%)**
+Finalizing management modules. **Status: COMPLETE (100%)**
 
 ### Subtask 6.1: Guest CRM Interface (FR-9) [QDR-44 / QDR-75]
 - [x] Build initial `/admin/crm` UI scaffold (table layout + page shell). [QDR-75]
@@ -311,7 +311,7 @@ Finalizing management modules. **Status: PARTIAL (~30%)**
 
 ## PHASE 7: QA, Testing & Final Deliverables [QDR-46 through QDR-53]
 
-Verification of all performance, security, and compliance requirements. **Status: NOT STARTED**
+Verification of all performance, security, and compliance requirements. **Status: IN PROGRESS**
 
 ### Subtask 7.1: Functional & Structural Testing [QDR-47]
 - [ ] Execute formal Test Scripts TC-1.1 through TC-6.2 as defined in the SPM Project Charter. [QDR-47]
