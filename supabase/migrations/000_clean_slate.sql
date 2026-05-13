@@ -45,6 +45,7 @@ DROP FUNCTION IF EXISTS public.find_available_table_options(DATE, TIMESTAMPTZ, T
 DROP FUNCTION IF EXISTS public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, UUID) CASCADE;
 DROP FUNCTION IF EXISTS public.create_pending_reservation_lock(UUID, UUID[], DATE, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER, TEXT, TEXT, UUID) CASCADE;
 DROP FUNCTION IF EXISTS public.release_expired_pending_reservations() CASCADE;
+DROP FUNCTION IF EXISTS public.mark_overdue_reservations_no_show() CASCADE;
 
 -- Drop any existing enum types that might conflict
 DROP TYPE IF EXISTS public.table_status CASCADE;

@@ -29,13 +29,14 @@ Principle: Single Responsibility -- this file ONLY handles waitlist invitation l
     <div class="container">
       <h2>Waitlist Invitation</h2>
       <p>Dear {{ guestName }},</p>
-      <p>You are currently on the waitlist for <strong>{{ restaurantName }}</strong> at the following time:</p>
+      <p>A table has become available for your waitlist spot at <strong>{{ restaurantName }}</strong>.</p>
       <ul>
         <li><strong>Date:</strong> {{ requestedDate }}</li>
         <li><strong>Time:</strong> {{ requestedTime }}</li>
         <li><strong>Party Size:</strong> {{ partySize }}</li>
         <li><strong>Waitlist Position:</strong> {{ waitlistPosition }}</li>
       </ul>
+      <p><strong>This offer expires in 10 minutes.</strong> Please accept immediately to confirm your reservation.</p>
       <p>To accept this invitation and confirm your spot, please click below:</p>
       <p><a href="{{ confirmationURL }}" class="button">Accept Invitation</a></p>
       <p>If you no longer wish to remain on the waitlist, you can safely ignore this email.</p>

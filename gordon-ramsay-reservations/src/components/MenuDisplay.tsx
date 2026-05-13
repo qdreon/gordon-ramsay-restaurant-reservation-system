@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { MenuItem } from '@/services/menuService';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * MenuDisplay Component (QDR-82)
@@ -28,9 +29,14 @@ export default function MenuDisplay({ className = '' }: MenuDisplayProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchMenu() {
+    let cancelled = false;
+
+    async function fetchMenu(silent = false) {
       try {
-        setLoading(true);
+        if (!silent) {
+          setLoading(true);
+        }
+
         setError(null);
 
         const response = await fetch('/api/menu', {
@@ -47,16 +53,41 @@ export default function MenuDisplay({ className = '' }: MenuDisplayProps) {
           throw new Error(payload.error ?? 'Failed to fetch menu.');
         }
 
-        setMenuItems(payload.items ?? []);
+        if (!cancelled) {
+          setMenuItems(payload.items ?? []);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load menu.';
-        setError(message);
+        if (!cancelled) {
+          setError(message);
+        }
       } finally {
-        setLoading(false);
+        if (!silent && !cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    fetchMenu();
+    void fetchMenu();
+
+    const channel = supabase
+      .channel('public:menu')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu' }, () => {
+        void fetchMenu(true);
+      })
+      .subscribe();
+
+    const handleFocusRefresh = () => {
+      void fetchMenu(true);
+    };
+
+    window.addEventListener('focus', handleFocusRefresh);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', handleFocusRefresh);
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {

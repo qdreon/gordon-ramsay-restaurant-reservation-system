@@ -19,6 +19,13 @@ DECLARE
 BEGIN
   -- Only process if reservation is transitioning TO 'cancelled'
   IF NEW.status = 'cancelled' AND OLD.status <> 'cancelled' THEN
+    -- Abort if we are within 60 minutes of closing time (11 PM).
+    -- This prevents sending offers that cannot reasonably be accepted before close.
+    IF now()::time >= TIME '22:00' THEN
+      RAISE NOTICE 'Skipping waitlist offer because current time is within 60 minutes of closing.';
+      RETURN NEW;
+    END IF;
+
     -- Get the first waiting customer from the waitlist for this date/time/party_size
     -- Note: This is simplified. In production, might want to match on date range, not exact time.
     

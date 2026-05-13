@@ -12,6 +12,7 @@ const ADMIN_NAV_LINKS = [
   { href: '/admin/reservations', label: 'Reservations' },
   { href: '/admin/crm', label: 'Guests' },
   { href: '/admin/menu', label: 'Menu' },
+  { href: '/admin/waitlist', label: 'Waitlist' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -15,6 +15,8 @@
 
 import { createServiceSupabaseClient } from '@/lib/supabaseAdmin';
 
+export type WaitlistStatus = 'waiting' | 'offered' | 'accepted' | 'expired' | 'cancelled';
+
 export interface WaitlistEntry {
   id: string;
   customer_id: string;
@@ -22,10 +24,120 @@ export interface WaitlistEntry {
   desired_time: string; // Time as TIMESTAMPTZ
   party_size: number;
   position: number;
-  status: 'waiting' | 'offered' | 'accepted' | 'expired' | 'cancelled';
+  status: WaitlistStatus;
   offered_at: string | null;
   expires_at: string | null;
   created_at: string;
+}
+
+export interface AdminWaitlistEntry extends WaitlistEntry {
+  customer: {
+    id: string;
+    vip_status: boolean;
+    total_visits: number;
+    total_no_shows: number;
+    staff_notes: string | null;
+    user: {
+      id: string;
+      full_name: string;
+      phone: string | null;
+      email: string;
+    };
+  };
+}
+
+export interface GetAdminWaitlistFilters {
+  search?: string;
+  status?: 'all' | WaitlistStatus;
+  date?: string;
+}
+
+export interface UpdateAdminWaitlistEntryInput {
+  desired_date?: string;
+  desired_time?: string;
+  party_size?: number;
+  position?: number;
+  status?: WaitlistStatus;
+  offered_at?: string | null;
+  expires_at?: string | null;
+}
+
+function normalizeAdminWaitlistEntry(row: {
+  id: string;
+  customer_id: string;
+  desired_date: string;
+  desired_time: string;
+  party_size: number;
+  position: number;
+  status: WaitlistStatus;
+  offered_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  customers:
+    | {
+        id: string;
+        vip_status: boolean;
+        total_visits: number;
+        total_no_shows: number;
+        staff_notes: string | null;
+        users:
+          | {
+              id: string;
+              full_name: string;
+              phone: string | null;
+              email: string;
+            }
+          | Array<{
+              id: string;
+              full_name: string;
+              phone: string | null;
+              email: string;
+            }>;
+      }
+    | Array<{
+        id: string;
+        vip_status: boolean;
+        total_visits: number;
+        total_no_shows: number;
+        staff_notes: string | null;
+        users:
+          | {
+              id: string;
+              full_name: string;
+              phone: string | null;
+              email: string;
+            }
+          | Array<{
+              id: string;
+              full_name: string;
+              phone: string | null;
+              email: string;
+            }>;
+      }>;
+}): AdminWaitlistEntry {
+  const customerField = Array.isArray(row.customers) ? row.customers[0] : row.customers;
+  const userField = Array.isArray(customerField.users) ? customerField.users[0] : customerField.users;
+
+  return {
+    id: row.id,
+    customer_id: row.customer_id,
+    desired_date: row.desired_date,
+    desired_time: row.desired_time,
+    party_size: row.party_size,
+    position: row.position,
+    status: row.status,
+    offered_at: row.offered_at,
+    expires_at: row.expires_at,
+    created_at: row.created_at,
+    customer: {
+      id: customerField.id,
+      vip_status: customerField.vip_status,
+      total_visits: customerField.total_visits,
+      total_no_shows: customerField.total_no_shows,
+      staff_notes: customerField.staff_notes,
+      user: userField,
+    },
+  };
 }
 
 class WaitlistService {
@@ -100,6 +212,60 @@ class WaitlistService {
       return (data || []) as WaitlistEntry[];
     } catch (err) {
       console.error('Error fetching waitlist entries:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Get all waitlist entries for the admin queue view.
+   */
+  async getAdminWaitlistEntries(filters?: GetAdminWaitlistFilters): Promise<AdminWaitlistEntry[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('waitlist')
+        .select(
+          'id, customer_id, desired_date, desired_time, party_size, position, status, offered_at, expires_at, created_at, customers!inner(id, vip_status, total_visits, total_no_shows, staff_notes, users!inner(id, full_name, phone, email))'
+        )
+        .order('desired_date', { ascending: true })
+        .order('desired_time', { ascending: true })
+        .order('position', { ascending: true });
+
+      if (error) {
+        throw new Error(`Failed to fetch admin waitlist entries: ${error.message}`);
+      }
+
+      const normalized = (data || []).map((row) => normalizeAdminWaitlistEntry(row as Parameters<typeof normalizeAdminWaitlistEntry>[0]));
+      const search = filters?.search?.trim().toLowerCase();
+      const status = filters?.status ?? 'all';
+
+      return normalized.filter((entry) => {
+        if (filters?.date && entry.desired_date !== filters.date) {
+          return false;
+        }
+
+        if (status !== 'all' && entry.status !== status) {
+          return false;
+        }
+
+        if (!search) {
+          return true;
+        }
+
+        const searchableText = [
+          entry.customer.user.full_name,
+          entry.customer.user.email,
+          entry.customer.user.phone ?? '',
+          entry.customer.staff_notes ?? '',
+          entry.desired_date,
+          entry.desired_time,
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(search);
+      });
+    } catch (err) {
+      console.error('Error fetching admin waitlist entries:', err);
       throw err;
     }
   }
@@ -264,7 +430,96 @@ class WaitlistService {
       throw err;
     }
   }
+
+  /**
+   * Update admin-editable waitlist fields.
+   */
+  async updateAdminWaitlistEntry(
+    waitlistId: string,
+    input: UpdateAdminWaitlistEntryInput
+  ): Promise<AdminWaitlistEntry> {
+    try {
+      const payload: {
+        desired_date?: string;
+        desired_time?: string;
+        party_size?: number;
+        position?: number;
+        status?: WaitlistStatus;
+        offered_at?: string | null;
+        expires_at?: string | null;
+      } = {};
+
+      if (input.desired_date !== undefined) payload.desired_date = input.desired_date.trim();
+      if (input.desired_time !== undefined) payload.desired_time = input.desired_time.trim();
+      if (input.party_size !== undefined) payload.party_size = input.party_size;
+      if (input.position !== undefined) payload.position = input.position;
+
+      if (input.status !== undefined) {
+        payload.status = input.status;
+
+        if (input.status === 'offered') {
+          payload.offered_at = input.offered_at ?? new Date().toISOString();
+          payload.expires_at = input.expires_at ?? new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        } else {
+          payload.offered_at = input.offered_at ?? null;
+          payload.expires_at = input.expires_at ?? null;
+        }
+      }
+
+      const { error } = await this.supabase
+        .from('waitlist')
+        .update(payload)
+        .eq('id', waitlistId);
+
+      if (error) {
+        throw new Error(`Failed to update waitlist entry: ${error.message}`);
+      }
+
+      const refreshed = await this.getAdminWaitlistEntries();
+      const updated = refreshed.find((entry) => entry.id === waitlistId);
+
+      if (!updated) {
+        throw new Error('[Waitlist Service] Updated waitlist entry could not be reloaded.');
+      }
+
+      return updated;
+    } catch (err) {
+      console.error('Error updating waitlist entry:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Delete a waitlist entry from the admin queue.
+   */
+  async deleteAdminWaitlistEntry(waitlistId: string): Promise<void> {
+    try {
+      const { error } = await this.supabase.from('waitlist').delete().eq('id', waitlistId);
+
+      if (error) {
+        throw new Error(`Failed to delete waitlist entry: ${error.message}`);
+      }
+    } catch (err) {
+      console.error('Error deleting waitlist entry:', err);
+      throw err;
+    }
+  }
 }
 
 const waitlistService = new WaitlistService();
 export default waitlistService;
+
+export async function getAdminWaitlistEntries(filters?: GetAdminWaitlistFilters): Promise<AdminWaitlistEntry[]> {
+  return waitlistService.getAdminWaitlistEntries(filters);
+}
+
+export async function updateAdminWaitlistEntry(
+  waitlistId: string,
+  input: UpdateAdminWaitlistEntryInput
+): Promise<AdminWaitlistEntry> {
+  return waitlistService.updateAdminWaitlistEntry(waitlistId, input);
+}
+
+export async function deleteAdminWaitlistEntry(waitlistId: string): Promise<void> {
+  return waitlistService.deleteAdminWaitlistEntry(waitlistId);
+}

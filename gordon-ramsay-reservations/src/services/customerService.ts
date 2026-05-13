@@ -29,6 +29,25 @@ export interface CustomerProfile {
   total_no_shows: number;
 }
 
+export interface AdminCrmCustomer {
+  id: string;
+  user_id: string;
+  dietary_restrictions: string | null;
+  allergies: string | null;
+  vip_status: boolean;
+  total_visits: number;
+  total_no_shows: number;
+  staff_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  user: {
+    id: string;
+    full_name: string;
+    phone: string | null;
+    email: string;
+  };
+}
+
 export interface CustomerAccountProfile {
   customerId: string;
   userId: string;
@@ -314,4 +333,122 @@ export async function deleteCustomerAccount(userId: string): Promise<void> {
   if (error) {
     throw new Error(`[Customer Service] Failed to delete account: ${error.message}`);
   }
+}
+
+/**
+ * Fetches admin CRM rows (customers + linked user identity fields).
+ * Supports optional text search and status filtering.
+ */
+export async function getAdminCrmCustomers(filters?: {
+  search?: string;
+  status?: 'all' | 'VIP' | 'Regular' | 'Blacklisted';
+}): Promise<AdminCrmCustomer[]> {
+  const supabase = createServiceSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('customers')
+    .select(
+      'id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows, staff_notes, created_at, updated_at, users!inner(id, full_name, phone, email)'
+    )
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`[Customer Service] Failed to fetch CRM customers: ${error.message}`);
+  }
+
+  const normalized = (data ?? []).map((row) => {
+    const usersField = row.users as
+      | { id: string; full_name: string; phone: string | null; email: string }
+      | Array<{ id: string; full_name: string; phone: string | null; email: string }>;
+
+    const user = Array.isArray(usersField) ? usersField[0] : usersField;
+
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      dietary_restrictions: row.dietary_restrictions,
+      allergies: row.allergies,
+      vip_status: row.vip_status,
+      total_visits: row.total_visits,
+      total_no_shows: row.total_no_shows,
+      staff_notes: row.staff_notes,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      user,
+    } as AdminCrmCustomer;
+  });
+
+  const search = filters?.search?.trim().toLowerCase();
+  const status = filters?.status ?? 'all';
+
+  return normalized.filter((customer) => {
+    const isBlacklisted = customer.staff_notes?.toLowerCase().includes('blacklist') ?? false;
+    const customerStatus = isBlacklisted ? 'Blacklisted' : customer.vip_status ? 'VIP' : 'Regular';
+
+    const matchesStatus = status === 'all' || customerStatus === status;
+    if (!matchesStatus) return false;
+
+    if (!search) return true;
+
+    return (
+      customer.user.full_name.toLowerCase().includes(search) ||
+      customer.user.email.toLowerCase().includes(search) ||
+      (customer.user.phone ?? '').includes(search)
+    );
+  });
+}
+
+export interface UpdateAdminCrmCustomerInput {
+  dietary_restrictions?: string | null;
+  allergies?: string | null;
+  staff_notes?: string | null;
+  vip_status?: boolean;
+}
+
+/**
+ * Updates admin-editable CRM fields for a customer profile.
+ */
+export async function updateAdminCrmCustomer(
+  customerId: string,
+  input: UpdateAdminCrmCustomerInput
+): Promise<AdminCrmCustomer> {
+  const supabase = createServiceSupabaseClient();
+
+  const payload: UpdateAdminCrmCustomerInput = {};
+
+  if (input.dietary_restrictions !== undefined) {
+    payload.dietary_restrictions = input.dietary_restrictions?.trim()
+      ? input.dietary_restrictions.trim()
+      : null;
+  }
+
+  if (input.allergies !== undefined) {
+    payload.allergies = input.allergies?.trim() ? input.allergies.trim() : null;
+  }
+
+  if (input.staff_notes !== undefined) {
+    payload.staff_notes = input.staff_notes?.trim() ? input.staff_notes.trim() : null;
+  }
+
+  if (input.vip_status !== undefined) {
+    payload.vip_status = input.vip_status;
+  }
+
+  const { error } = await supabase
+    .from('customers')
+    .update(payload)
+    .eq('id', customerId);
+
+  if (error) {
+    throw new Error(`[Customer Service] Failed to update CRM customer: ${error.message}`);
+  }
+
+  const customers = await getAdminCrmCustomers();
+  const updated = customers.find((customer) => customer.id === customerId);
+
+  if (!updated) {
+    throw new Error('[Customer Service] Updated CRM customer could not be reloaded.');
+  }
+
+  return updated;
 }

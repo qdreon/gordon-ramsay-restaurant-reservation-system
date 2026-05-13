@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +39,7 @@ interface Customer {
 interface User {
   id: string
   full_name: string
-  phone: string
+  phone: string | null
   email: string
 }
 
@@ -162,20 +163,61 @@ function StatusBadge({ customer }: { customer: CustomerWithUser }) {
 }
 
 export default function GuestCrmDashboard() {
+  const [customers, setCustomers] = React.useState<CustomerWithUser[]>(mockCustomers)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [statusFilter, setStatusFilter] = React.useState<string>("all")
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [editingCustomer, setEditingCustomer] = React.useState<CustomerWithUser | null>(null)
+  const [editDietary, setEditDietary] = React.useState("")
+  const [editAllergies, setEditAllergies] = React.useState("")
+  const [editStaffNotes, setEditStaffNotes] = React.useState("")
+  const [editVip, setEditVip] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [saveError, setSaveError] = React.useState<string | null>(null)
 
-  const filteredCustomers = mockCustomers.filter((customer) => {
-    const matchesSearch =
-      customer.user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.user.phone.includes(searchQuery) ||
-      customer.user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  React.useEffect(() => {
+    let cancelled = false
 
-    const status = getCustomerStatus(customer)
-    const matchesStatus = statusFilter === "all" || status === statusFilter
+    async function loadCustomers() {
+      setLoading(true)
+      setError(null)
+      try {
+        const params = new URLSearchParams()
+        if (searchQuery.trim()) params.set("search", searchQuery.trim())
+        if (statusFilter !== "all") params.set("status", statusFilter)
 
-    return matchesSearch && matchesStatus
-  })
+        const response = await fetch(`/api/admin/crm?${params.toString()}`)
+        const payload = (await response.json()) as {
+          customers?: CustomerWithUser[]
+          error?: string
+        }
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Failed to load CRM data")
+        }
+
+        if (!cancelled) {
+          setCustomers(payload.customers ?? [])
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(requestError instanceof Error ? requestError.message : "Failed to load CRM data")
+          setCustomers(mockCustomers)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void loadCustomers()
+
+    return () => {
+      cancelled = true
+    }
+  }, [searchQuery, statusFilter])
+
+  const filteredCustomers = customers
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -187,6 +229,59 @@ export default function GuestCrmDashboard() {
 
   const formatUUID = (uuid: string) => {
     return uuid.slice(0, 8).toUpperCase()
+  }
+
+  function openEditModal(customer: CustomerWithUser) {
+    setEditingCustomer(customer)
+    setEditDietary(customer.dietary_restrictions ?? "")
+    setEditAllergies(customer.allergies ?? "")
+    setEditStaffNotes(customer.staff_notes ?? "")
+    setEditVip(customer.vip_status)
+    setSaveError(null)
+  }
+
+  async function handleSaveCustomerProfile() {
+    if (!editingCustomer) return
+
+    setSaving(true)
+    setSaveError(null)
+
+    try {
+      const response = await fetch(`/api/admin/crm/${editingCustomer.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dietary_restrictions: editDietary,
+          allergies: editAllergies,
+          staff_notes: editStaffNotes,
+          vip_status: editVip,
+        }),
+      })
+
+      const payload = (await response.json()) as {
+        customer?: CustomerWithUser
+        error?: string
+      }
+
+      if (!response.ok || !payload.customer) {
+        throw new Error(payload.error ?? "Failed to save customer profile")
+      }
+
+      setCustomers((prev) =>
+        prev.map((customer) =>
+          customer.id === payload.customer!.id ? payload.customer! : customer
+        )
+      )
+      setEditingCustomer(null)
+    } catch (requestError) {
+      setSaveError(
+        requestError instanceof Error ? requestError.message : "Failed to save customer profile"
+      )
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -265,6 +360,12 @@ export default function GuestCrmDashboard() {
 
         {/* Table Container */}
         <div className="rounded-md border border-border bg-card/50">
+          {error && (
+            <div className="px-4 py-3 font-sans text-[11px] text-destructive border-b border-border">
+              {error}
+            </div>
+          )}
+
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
@@ -316,7 +417,7 @@ export default function GuestCrmDashboard() {
                   <TableCell>
                     <div className="space-y-0.5">
                       <p className="font-sans text-[11px] text-muted-foreground">
-                        {customer.user.phone}
+                        {customer.user.phone ?? "No phone"}
                       </p>
                       <p className="font-sans text-[11px] text-muted-foreground">
                         {customer.user.email}
@@ -382,10 +483,11 @@ export default function GuestCrmDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => openEditModal(customer)}
                       className="h-7 gap-1.5 font-sans text-[11px] text-cyber hover:text-cyber hover:bg-cyber/10"
                     >
                       <User className="h-3 w-3" />
-                      View Profile
+                      Edit Profile
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -396,7 +498,7 @@ export default function GuestCrmDashboard() {
           {filteredCustomers.length === 0 && (
             <div className="py-12 text-center">
               <p className="font-sans text-[11px] text-muted-foreground">
-                No guests found matching your criteria.
+                {loading ? "Loading guests..." : "No guests found matching your criteria."}
               </p>
             </div>
           )}
@@ -405,12 +507,87 @@ export default function GuestCrmDashboard() {
         {/* Footer Stats */}
         <div className="flex items-center justify-between text-muted-foreground">
           <p className="font-sans text-[11px]">
-            Showing {filteredCustomers.length} of {mockCustomers.length} guests
+            Showing {filteredCustomers.length} of {customers.length} guests
           </p>
           <p className="font-sans text-[11px]">
-            {mockCustomers.filter((c) => c.vip_status).length} VIP members
+            {customers.filter((c) => c.vip_status).length} VIP members
           </p>
         </div>
+
+        {editingCustomer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-2xl rounded-lg border border-border bg-background p-6 shadow-xl">
+              <h2 className="font-heading text-base text-foreground">Edit Guest CRM Profile</h2>
+              <p className="mt-1 font-sans text-[11px] text-muted-foreground">
+                {editingCustomer.user.full_name} ({formatUUID(editingCustomer.id)})
+              </p>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="space-y-1">
+                  <span className="font-sans text-[11px] text-muted-foreground">Dietary Restrictions</span>
+                  <Input
+                    value={editDietary}
+                    onChange={(e) => setEditDietary(e.target.value)}
+                    className="font-sans text-[11px]"
+                    placeholder="Vegetarian, low-sodium, etc."
+                  />
+                </label>
+
+                <label className="space-y-1">
+                  <span className="font-sans text-[11px] text-muted-foreground">Allergies</span>
+                  <Input
+                    value={editAllergies}
+                    onChange={(e) => setEditAllergies(e.target.value)}
+                    className="font-sans text-[11px]"
+                    placeholder="Shellfish, peanuts, etc."
+                  />
+                </label>
+
+                <label className="space-y-1 md:col-span-2">
+                  <span className="font-sans text-[11px] text-muted-foreground">Staff Notes</span>
+                  <Textarea
+                    value={editStaffNotes}
+                    onChange={(e) => setEditStaffNotes(e.target.value)}
+                    className="min-h-24 font-sans text-[11px]"
+                    placeholder="Service notes, preferences, blacklist rationale, etc."
+                  />
+                </label>
+
+                <label className="flex items-center gap-2 md:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={editVip}
+                    onChange={(e) => setEditVip(e.target.checked)}
+                    className="h-4 w-4 accent-cyber"
+                  />
+                  <span className="font-sans text-[11px] text-muted-foreground">Mark as VIP guest</span>
+                </label>
+              </div>
+
+              {saveError && (
+                <p className="mt-4 font-sans text-[11px] text-destructive">{saveError}</p>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingCustomer(null)}
+                  className="font-sans text-[11px]"
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => void handleSaveCustomerProfile()}
+                  className="font-sans text-[11px]"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

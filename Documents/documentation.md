@@ -1,7 +1,7 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.3
-> **Last Updated:** May 12, 2026 (Phase 1-3 Complete)
+> **Document Version:** 1.4
+> **Last Updated:** May 13, 2026 (Phase 6 complete; Phase 7 QA pending)
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
@@ -42,6 +42,16 @@ Detailed commit message (saved here):
 - Add error messages for time validation in both customer and admin contexts (SAF-3)
 
 All Phase 4 subtasks now complete (100%). Build: 30 routes compiled, 0 TypeScript errors"
+
+### [May 13, 2026] - Phase 6 Completion (Waitlist Control + No-Show Automation)
+- **Summary:** Phase 6 is now complete end-to-end: admin CRM, menu CRUD, waitlist queue control, and automated no-show cron job are implemented and validated.
+- **Changes Saved:** Added `/admin/waitlist` with search, filtering, reprioritization, edit, and delete actions.
+- **Key Points:**
+  - Added admin waitlist API routes for list, update, and delete operations.
+  - Added waitlist service helpers for admin queue retrieval and queue maintenance.
+  - Added Phase 6 no-show cron migration to flag overdue confirmed reservations every 5 minutes and increment customer no-show counts.
+  - Updated admin navigation so the waitlist queue is reachable from the dashboard shell.
+  - Verified the full app build after these changes with 36 routes and no TypeScript errors.
 
 
 ### [May 12, 2026] - Phase Completion: Phases 0-3 Fully Operational
@@ -115,10 +125,10 @@ The SRS (v1.4) and SWDD define **13 Functional Requirements** spanning the Custo
 | FR-6 | Email Notifications | Booking confirmation email with .ics calendar invite; waitlist offer email | Phase 5 - Not Started |
 | FR-7 | Visual Table Management | Static interactive floor plan grid; color-coded (Green/Yellow/Red/Grey); WebSocket real-time | Phase 4 - Not Started |
 | FR-8 | Reservation Management | Admin manual walk-in/phone bookings; Block Date feature; operating hours validation | Phase 4 - Not Started |
-| FR-9 | Guest CRM | Past visit history, VIP status, no-show count, allergy notes per customer | Phase 6 - Not Started |
+| FR-9 | Guest CRM | Past visit history, VIP status, no-show count, allergy notes per customer | Phase 6 - Complete |
 | FR-10 | Booking Cancellation | Customer cancels from dashboard; backend must revert table to Available AND trigger waitlist protocol | UI Phase 3 In Progress; backend Phase 5 dependency |
-| FR-11 | Menu Management CRUD | Admin uploads, edits, removes menu items; changes reflect on Customer Portal in real-time | Phase 6 - Not Started |
-| FR-12 | Admin Waitlist Control | Admin manually views, prioritizes, edits waitlist queue for VIPs or walk-in emergencies | Phase 6 - Not Started |
+| FR-11 | Menu Management CRUD | Admin uploads, edits, removes menu items; changes reflect on Customer Portal in real-time | Phase 6 - Complete |
+| FR-12 | Admin Waitlist Control | Admin manually views, prioritizes, edits waitlist queue for VIPs or walk-in emergencies | Phase 6 - Complete |
 | FR-13 | System Health Monitoring | Admin Dashboard displays real-time connection status indicators for Supabase, Payment Gateway, SMTP | API stub `/api/health` exists; full Admin UI Phase 4 |
 
 ### 1.2 Key Non-Functional Requirements
@@ -845,7 +855,7 @@ Each service file in `src/services/` abstracts all database queries for a single
 | `menuService.ts` | Menu items CRUD | Phase 6 |
 | `waitlistService.ts` | Waitlist queue | Phase 5 |
 
-**Current Status:** All service files contain documented placeholder stubs. Implementation begins in their respective phases.
+**Current Status:** Core service files are implemented for reservations, customers, tables, menu, notifications, and waitlist; remaining work is limited to Phase 7 QA and any future enhancements.
 
 ### 12.2 API Routes (Controller Layer)
 
@@ -994,7 +1004,7 @@ This matrix maps every business constraint from the SRS (v1.4), SWDD, and SPM Pr
 | Phase 3 | QDR-35 (sub: QDR-36, QDR-38, QDR-39) | Customer Portal | **In Progress (~30%)** | -- |
 | Phase 4 | QDR-42, QDR-43 | Admin Real-Time Dashboard | Not Started | -- |
 | Phase 5 | QDR-41, QDR-45 | Waitlist and Automations | Not Started | -- |
-| Phase 6 | QDR-44, QDR-79, QDR-80 | Admin Auxiliary Features | Not Started | -- |
+| Phase 6 | QDR-44, QDR-79, QDR-80 | Admin Auxiliary Features | **Complete** | May 13, 2026 |
 | Phase 7 | QDR-46 | QA, Testing, and Deliverables | Not Started | -- |
 
 ### 16.2 Jira Timeline (QDR Board) -- Authoritative Mapping

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { sendWaitlistInvite } from '@/services/notificationService';
 import {
   cancelReservation,
   getCustomerByUserId,
   getReservationForCustomer,
 } from '@/services/customerService';
+import { createServiceSupabaseClient } from '@/lib/supabaseAdmin';
 
 interface CancelReservationBody {
   reservationId?: string;
@@ -64,6 +66,55 @@ export async function POST(req: Request) {
     }
 
     await cancelReservation(reservation.id, customer.id);
+
+    // Phase 5.3: if the cancellation caused the waitlist trigger to offer a spot,
+    // send the waitlist invitation email to the newly offered customer.
+    try {
+      const adminSupabase = createServiceSupabaseClient();
+      const { data: offeredWaitlist, error: waitlistError } = await adminSupabase
+        .from('waitlist')
+        .select('id, customer_id, desired_date, desired_time, party_size, position')
+        .eq('desired_date', reservation.reservation_date)
+        .eq('party_size', reservation.party_size)
+        .eq('status', 'offered')
+        .order('position', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (!waitlistError && offeredWaitlist) {
+        const { data: waitlistCustomer, error: customerLookupError } = await adminSupabase
+          .from('customers')
+          .select('id, user_id, users!inner(email, full_name)')
+          .eq('id', offeredWaitlist.customer_id)
+          .single();
+
+        if (!customerLookupError && waitlistCustomer) {
+          const userRecord = waitlistCustomer.users as
+            | { email?: string | null; full_name?: string | null }
+            | undefined;
+
+          if (userRecord?.email) {
+            await sendWaitlistInvite({
+              inviteId: offeredWaitlist.id,
+              guestName: userRecord.full_name || userRecord.email,
+              guestEmail: userRecord.email,
+              partySize: offeredWaitlist.party_size,
+              requestedDate: offeredWaitlist.desired_date,
+              requestedTime: new Date(offeredWaitlist.desired_time).toISOString().slice(11, 16),
+              restaurantName: process.env.RESTAURANT_NAME ?? 'Gordon Ramsay Restaurant',
+              restaurantAddress:
+                process.env.RESTAURANT_ADDRESS ?? '123 Culinary Lane, London, UK',
+              waitlistPosition: offeredWaitlist.position,
+              confirmationURL:
+                `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/customer/dashboard?waitlist=offered`,
+            });
+          }
+        }
+      }
+    } catch (emailError) {
+      console.error('[Cancellation Notification] Failed to send waitlist invitation:', emailError);
+    }
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     const message =

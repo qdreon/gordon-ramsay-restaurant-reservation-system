@@ -67,6 +67,13 @@ END:VEVENT
 END:VCALENDAR`;
 }
 
+function addMinutesToTime(time: string, minutes: number): string {
+  const [hours, mins] = time.split(':').map(Number);
+  const date = new Date();
+  date.setUTCHours(hours, mins + minutes, 0, 0);
+  return date.toISOString().slice(11, 16);
+}
+
 function loadTemplate(templateName: string): string {
   try {
     const templatePath = path.join(process.cwd(), "src", "emails", templateName);
@@ -169,6 +176,8 @@ export async function sendWaitlistInvite(invite: WaitlistNotification): Promise<
     .replace("{{ waitlistPosition }}", invite.waitlistPosition.toString())
     .replace("{{ confirmationURL }}", invite.confirmationURL);
 
+  const offerExpiresTime = addMinutesToTime(invite.requestedTime, 10);
+
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Gordon Ramsay Reservation System//EN
@@ -178,7 +187,7 @@ BEGIN:VEVENT
 UID:${invite.inviteId}@example.com
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
 DTSTART:${invite.requestedDate.replace(/-/g, "")}T${invite.requestedTime.replace(":", "")}00Z
-DTEND:${invite.requestedDate.replace(/-/g, "")}T${invite.requestedTime.replace(":", "")}00Z
+DTEND:${invite.requestedDate.replace(/-/g, "")}T${offerExpiresTime.replace(":", "")}00Z
 SUMMARY:Waitlist Invitation - ${invite.restaurantName}
 DESCRIPTION:You are invited from the waitlist for ${invite.guestName} (Party of ${invite.partySize})
 LOCATION:${invite.restaurantAddress}
@@ -200,7 +209,7 @@ END:VCALENDAR`;
     await transporter.sendMail({
       from: `"Gordon Ramsay Reservations" <${process.env.EMAIL_USER}>`,
       to: invite.guestEmail,
-      subject: "Your Waitlist Invitation",
+      subject: "Your Waitlist Spot Is Available",
       html: htmlTemplate,
       attachments: [
         {
