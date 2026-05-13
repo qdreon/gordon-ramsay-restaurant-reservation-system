@@ -1,15 +1,27 @@
 /**
  * notificationService.ts
  * -----------------------
- * Hardened notification service:
- * - Uses SMTP environment variables when available
- * - Falls back to `EMAIL_SERVICE` (e.g., Gmail) if provided
- * - Provides template fallback when file missing
+ * Notification service with optional SendGrid Web API support.
+ * - Uses SendGrid Web API when `SENDGRID_API_KEY` is present.
+ * - Falls back to SMTP (`nodemailer`) when SendGrid key is not set.
  */
 
 import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
+
+// dynamic require for SendGrid (optional dependency)
+let sgMail: any | undefined;
+try {
+  if (process.env.SENDGRID_API_KEY) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  }
+} catch (err) {
+  console.warn('[Notification] SendGrid module not available or failed to initialize:', err);
+  sgMail = undefined;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -113,6 +125,10 @@ function createTransporter() {
   );
 }
 
+function getFromAddress(): string | undefined {
+  return process.env.EMAIL_FROM ?? process.env.EMAIL_USER;
+}
+
 // ---------------------------------------------------------------------------
 // Notification Functions
 // ---------------------------------------------------------------------------
@@ -134,6 +150,38 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
 
   const icsContent = generateICS(reservation);
 
+  const fromAddress = getFromAddress();
+  if (!fromAddress) {
+    console.error("[Notification] Missing EMAIL_FROM/EMAIL_USER for sender address.");
+    return;
+  }
+
+  // Prefer SendGrid Web API when configured
+  if (sgMail) {
+    try {
+      const msg: any = {
+        to: reservation.guestEmail,
+        from: fromAddress,
+        subject: 'Your Booking Confirmation',
+        html: htmlTemplate,
+        attachments: [
+          {
+            content: Buffer.from(icsContent).toString('base64'),
+            filename: 'reservation.ics',
+            type: 'text/calendar',
+            disposition: 'attachment',
+          },
+        ],
+      };
+      await sgMail.send(msg);
+      return;
+    } catch (err) {
+      console.error('[Notification] SendGrid sendBookingConfirmation failed:', err);
+      // Fall through to SMTP fallback
+    }
+  }
+
+  // SMTP fallback
   let transporter;
   try {
     transporter = createTransporter();
@@ -144,7 +192,7 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
 
   try {
     await transporter.sendMail({
-      from: `"Gordon Ramsay Reservations" <${process.env.EMAIL_USER}>`,
+      from: fromAddress,
       to: reservation.guestEmail,
       subject: "Your Booking Confirmation",
       html: htmlTemplate,
@@ -197,6 +245,38 @@ ATTENDEE;CN=${invite.guestName};RSVP=TRUE:mailto:${invite.guestEmail}
 END:VEVENT
 END:VCALENDAR`;
 
+  const fromAddress = getFromAddress();
+  if (!fromAddress) {
+    console.error("[Notification] Missing EMAIL_FROM/EMAIL_USER for sender address.");
+    return;
+  }
+
+  // Prefer SendGrid Web API when configured
+  if (sgMail) {
+    try {
+      const msg: any = {
+        to: invite.guestEmail,
+        from: fromAddress,
+        subject: 'Your Waitlist Spot Is Available',
+        html: htmlTemplate,
+        attachments: [
+          {
+            content: Buffer.from(icsContent).toString('base64'),
+            filename: 'waitlist.ics',
+            type: 'text/calendar',
+            disposition: 'attachment',
+          },
+        ],
+      };
+      await sgMail.send(msg);
+      return;
+    } catch (err) {
+      console.error('[Notification] SendGrid sendWaitlistInvite failed:', err);
+      // Fall through to SMTP fallback
+    }
+  }
+
+  // SMTP fallback
   let transporter;
   try {
     transporter = createTransporter();
@@ -207,7 +287,7 @@ END:VCALENDAR`;
 
   try {
     await transporter.sendMail({
-      from: `"Gordon Ramsay Reservations" <${process.env.EMAIL_USER}>`,
+      from: fromAddress,
       to: invite.guestEmail,
       subject: "Your Waitlist Spot Is Available",
       html: htmlTemplate,
