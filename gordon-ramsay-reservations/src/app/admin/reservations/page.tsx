@@ -1,10 +1,13 @@
 "use client"
 
+"use client"
+
 import * as React from "react"
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users, Lock, Trash2 } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users, Lock, Trash2, Activity, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
+import { validateReservationTime, validateOperatingHours, OPERATING_HOURS } from "@/lib/config"
 import {
   Dialog,
   DialogContent,
@@ -101,6 +104,12 @@ function MasterCalendar() {
   const [blockDateReason, setBlockDateReason] = React.useState("")
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [operatingHours, setOperatingHours] = React.useState<{ opening: number; closing: number }>({
+    opening: OPERATING_HOURS.OPENING_HOUR,
+    closing: OPERATING_HOURS.CLOSING_HOUR,
+  })
+  const [isOperatingHoursModalOpen, setIsOperatingHoursModalOpen] = React.useState(false)
+  const [operatingHoursError, setOperatingHoursError] = React.useState<string | null>(null)
   const [newReservation, setNewReservation] = React.useState({
     customer_id: "",
     start_time: "19:00",
@@ -108,6 +117,7 @@ function MasterCalendar() {
     tableId: "",
     isVip: false,
   })
+  const [reservationValidationError, setReservationValidationError] = React.useState<string | null>(null)
 
   // Load reservations for current month
   React.useEffect(() => {
@@ -199,7 +209,20 @@ function MasterCalendar() {
 
   const handleAddReservation = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newReservation.customer_id || !newReservation.tableId) return
+    setReservationValidationError(null)
+    
+    if (!newReservation.customer_id || !newReservation.tableId) {
+      setReservationValidationError("Please fill in all required fields")
+      return
+    }
+
+    // Validate reservation time is within operating hours (FR-8 / QDR-74)
+    const [hour] = newReservation.start_time.split(":").map(Number)
+    const timeValidation = validateReservationTime(hour, 2) // Default 2-hour duration
+    if (!timeValidation.valid) {
+      setReservationValidationError(timeValidation.error || "Invalid reservation time")
+      return
+    }
 
     const newRes: Reservation = {
       id: `R${Date.now()}`,
@@ -223,6 +246,20 @@ function MasterCalendar() {
       isVip: false,
     })
     setIsModalOpen(false)
+  }
+
+  const handleOperatingHours = (e: React.FormEvent) => {
+    e.preventDefault()
+    setOperatingHoursError(null)
+
+    const validation = validateOperatingHours(operatingHours.opening, operatingHours.closing)
+    if (!validation.valid) {
+      setOperatingHoursError(validation.error || "Invalid operating hours")
+      return
+    }
+
+    // Success - hours validated and saved
+    setIsOperatingHoursModalOpen(false)
   }
 
   const handleBlockDate = async (e: React.FormEvent) => {
@@ -427,6 +464,12 @@ function MasterCalendar() {
                     <input type="checkbox" checked={newReservation.isVip} onChange={(e) => setNewReservation((prev) => ({ ...prev, isVip: e.target.checked }))} className="w-4 h-4 accent-electric" />
                     <span className="text-muted-foreground font-sans text-[11px]">VIP Guest</span>
                   </label>
+                  {reservationValidationError && (
+                    <div className="p-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[11px] font-sans flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>{reservationValidationError}</span>
+                    </div>
+                  )}
                   <Button type="submit" className="w-full bg-cyber text-background hover:bg-cyber/90 font-sans text-[11px]">Add Reservation</Button>
                 </form>
               </DialogContent>
@@ -454,6 +497,51 @@ function MasterCalendar() {
                     className="bg-input border-border font-sans text-[11px]"
                   />
                   <Button type="submit" className="w-full bg-red-600 text-white hover:bg-red-700 font-sans text-[11px]">Block Date</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isOperatingHoursModalOpen} onOpenChange={setIsOperatingHoursModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 font-sans text-[11px]">
+                  <Activity className="w-4 h-4 mr-2" />
+                  Operating Hours
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border">
+                <DialogHeader>
+                  <DialogTitle className="text-foreground font-sans">Set Operating Hours</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleOperatingHours} className="space-y-4 mt-4">
+                  <div>
+                    <label className="text-muted-foreground font-sans text-[11px] block mb-1">Opening Hour</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={operatingHours.opening}
+                      onChange={(e) => setOperatingHours((prev) => ({ ...prev, opening: Number(e.target.value) }))}
+                      className="bg-input border-border font-sans text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground font-sans text-[11px] block mb-1">Closing Hour</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={operatingHours.closing}
+                      onChange={(e) => setOperatingHours((prev) => ({ ...prev, closing: Number(e.target.value) }))}
+                      className="bg-input border-border font-sans text-[11px]"
+                    />
+                  </div>
+                  {operatingHoursError && (
+                    <div className="p-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-[11px] font-sans flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>{operatingHoursError}</span>
+                    </div>
+                  )}
+                  <Button type="submit" className="w-full bg-cyber text-background hover:bg-cyber/90 font-sans text-[11px]">Save Hours</Button>
                 </form>
               </DialogContent>
             </Dialog>

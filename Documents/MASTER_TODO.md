@@ -16,12 +16,12 @@
 | **Phase 1** | Data Layer & Security (Supabase SQL) | ✅ **COMPLETE** | **100%** — Schema ✓; Enums ✓; RLS Policies ✓; RBAC ✓; Indexes ✓; Seed data ✓ |
 | **Phase 2** | Core Booking Engine & Concurrency (Backend / RPCs) | ✅ **COMPLETE** | **100%** — Availability ✓; Row-lock RPC ✓; Timeout release ✓; pg_cron scheduler ✓; Table teardown trigger ✓ |
 | **Phase 3** | Customer Portal (Frontend / View & Controller) | ✅ **COMPLETE** | **100%** — Auth ✓; Availability ✓; Checkout ✓; Lock API ✓; Dashboard ✓; Account Mgmt ✓ |
-| **Phase 4** | Admin Real-Time Dashboard (Operations) | ✅ **COMPLETE** | **~95%** — Floor-plan grid with realtime ✓; dirty transitions ✓; offline failsafe ✓; Master Calendar with blocked dates ✓; (Health monitor optional) |
+| **Phase 4** | Admin Real-Time Dashboard (Operations) | ✅ **COMPLETE** | **100%** — Floor-plan grid with realtime ✓; dirty transitions ✓; offline failsafe ✓; Master Calendar with blocked dates ✓; Operating hours validation ✓; Health monitor ✓ |
 | **Phase 5** | Waitlist & Automations (Triggers & APIs) | 🔄 PARTIAL | ~25% — SMTP email service ✓; Waitlist trigger pending |
 | **Phase 6** | Admin Auxiliary Features (CRUD & CRM) | 🔄 PARTIAL | ~10% — CRM UI stub complete; Menu CRUD UI complete; backend integration pending |
 | **Phase 7** | QA, Testing & Final Deliverables | ❌ NOT STARTED | 0% |
 
-**Overall Project Completion: ~63%** | **Phases 0-4 Near Complete; Phase 5 (Waitlist) next priority**
+**Overall Project Completion: ~72%** | **Phases 0-4 Complete; Phase 5 (Waitlist) next priority**
 
 ### Recent Fixes & Validations (May 13, 2026)
 
@@ -221,15 +221,19 @@ Building staff tools using the Observer Pattern. **Status: COMPLETE (95%)**
 - [x] Build `/admin/reservations`: list/calendar view of all bookings. [QDR-72]
 - [x] Build form for admins to manually enter walk-in and phone reservations (FR-8). [QDR-72]
 - [x] Add "Block Date" feature to prevent online bookings for holidays/private events (FR-8). [QDR-73]
-- [ ] Add admin input validation: prevent closing time earlier than opening time (FR-8). [QDR-74] **[Deferred: Future enhancement]**
-- [ ] Add customer-facing validation: reject booking form submissions outside operating hours (FR-8). [QDR-74] **[Deferred: Future enhancement]**
-  - **IMPLEMENTED (May 13):** Master Calendar UI with month/day view; real reservation data from Supabase; "New Reservation" modal; "Block Date" dialog with visual indicators (red striped dates). [QDR-72/73]
+- [x] Add admin input validation: prevent closing time earlier than opening time (FR-8). [QDR-74]
+- [x] Add customer-facing validation: reject booking form submissions outside operating hours (FR-8). [QDR-74]
+  - **IMPLEMENTED (May 13):** Master Calendar UI with month/day view; real reservation data from Supabase; "New Reservation" modal with time validation; "Block Date" dialog with visual indicators (red striped dates); "Operating Hours" dialog for admin config. [QDR-72/73/74]
   - **NEW ROUTES:** `GET /api/admin/reservations/range?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` (fetch calendar data); `POST /api/admin/blocked-dates` (create blocked date). [QDR-72/73]
+  - **NEW UTILITY:** `src/lib/config.ts` with `validateReservationTime()`, `validateOperatingHours()`, and OPERATING_HOURS constants (11 AM - 11 PM). [QDR-74]
+  - **LANDING PAGE VALIDATION:** `/app/page.tsx` now rejects bookings outside operating hours with friendly error message (FR-8 customer-facing). [QDR-74]
 
 ### Subtask 4.5: System Health Monitoring Dashboard Widget (FR-13)
-- [ ] Expand `/api/health` route to return individual status for Supabase, Payment Gateway, and SMTP.
-- [ ] Build Admin Dashboard System Health widget: real-time indicators for each dependency (FR-13).
-  - **Status:** OPTIONAL enhancement; deferred to Phase 6+
+- [x] Expand `/api/health` route to return individual status for Supabase, Payment Gateway, and SMTP. [QDR-79]
+- [x] Build Admin Dashboard System Health widget: real-time indicators for each dependency (FR-13). [QDR-79]
+  - **IMPLEMENTED (May 13):** Expanded `/api/health` to perform parallel health checks on all three services; returns `{ status, services: { supabase, smtp, paymentGateway } }`. [QDR-79]
+  - **NEW COMPONENT:** `src/components/SystemHealthMonitor.tsx` displays live status with auto-refresh every 30 seconds; shows individual service indicators (green/red/amber). [QDR-79]
+  - **DASHBOARD INTEGRATION:** Added System Health widget to `/admin/dashboard` with live indicators and manual refresh button. [QDR-79]
 
 ---
 

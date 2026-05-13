@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CheckoutModal from '@/components/CheckoutModal';
 import MenuDisplay from '@/components/MenuDisplay';
+import { validateReservationTime, OPERATING_HOURS } from '@/lib/config';
 
 /**
  * Home page -- Customer availability search and booking entry point.
@@ -62,6 +63,12 @@ export default function Home() {
   const [checkoutModalKey, setCheckoutModalKey] = useState(0);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
+  // Waitlist state (Phase 5.1 / QDR-66)
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [waitlistError, setWaitlistError] = useState<string | null>(null);
+  const [waitlistCapacity, setWaitlistCapacity] = useState<number>(0);
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -104,6 +111,13 @@ export default function Home() {
     const startLocal = new Date(year, month - 1, day, hour, minute, 0);
     if (Number.isNaN(startLocal.getTime())) {
       setError('Invalid date/time selection.');
+      return;
+    }
+
+    // Validate reservation time is within operating hours (FR-8 / QDR-74)
+    const timeValidation = validateReservationTime(hour, DEFAULT_RESERVATION_HOURS);
+    if (!timeValidation.valid) {
+      setError(timeValidation.error || 'Reservation time is outside operating hours.');
       return;
     }
 
@@ -269,6 +283,106 @@ export default function Home() {
     setBookingError(null);
   }
 
+  /**
+   * Check waitlist capacity for the selected date/time/party size (QDR-66 / FR-5)
+   * Fetch current queue count; cap at ~50 parties per timeslot
+   */
+  async function checkWaitlistCapacity(): Promise<number> {
+    try {
+      // In a full implementation, would query /api/waitlist/capacity
+      // For MVP, assume we can query the waitlist count for the selected timeslot
+      const response = await fetch(
+        `/api/waitlist/capacity?date=${reservationDate}&time=${reservationTime}&party_size=${partySize}`
+      );
+      const data = await response.json();
+      return data.count ?? 0;
+    } catch {
+      // Default to 0 if query fails
+      return 0;
+    }
+  }
+
+  /**
+   * Handle "Join Waitlist" button click (QDR-66 / FR-5)
+   */
+  async function handleJoinWaitlist() {
+    setWaitlistError(null);
+    setWaitlistLoading(true);
+
+    try {
+      // Check current capacity
+      const currentCapacity = await checkWaitlistCapacity();
+      setWaitlistCapacity(currentCapacity);
+
+      // Hard cap: ~50 parties max per timeslot (FR-5)
+      if (currentCapacity >= 50) {
+        setWaitlistError('Waitlist is currently full for this time slot. Please try another time.');
+        return;
+      }
+
+      // Open modal to confirm waitlist entry
+      setIsWaitlistModalOpen(true);
+    } catch (err) {
+      setWaitlistError(
+        err instanceof Error ? err.message : 'Failed to check waitlist capacity'
+      );
+    } finally {
+      setWaitlistLoading(false);
+    }
+  }
+
+  /**
+   * Confirm joining the waitlist (QDR-66 / FR-5)
+   */
+  async function handleConfirmWaitlist() {
+    setWaitlistError(null);
+    setWaitlistLoading(true);
+
+    try {
+      // Get authenticated user
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        setIsWaitlistModalOpen(false);
+        router.push('/auth/login');
+        return;
+      }
+
+      // Call /api/waitlist/join endpoint
+      const response = await fetch('/api/waitlist/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          desired_date: reservationDate,
+          desired_time: startTimeISO,
+          party_size: partySize,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Failed to join waitlist');
+      }
+
+      // Success -- show confirmation and close modal
+      alert(
+        `Success! You've been added to the waitlist at position ${data.waitlist_entry.position}. ` +
+        `We'll notify you when a table becomes available.`
+      );
+      setIsWaitlistModalOpen(false);
+    } catch (err) {
+      setWaitlistError(err instanceof Error ? err.message : 'Failed to join waitlist');
+    } finally {
+      setWaitlistLoading(false);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -349,7 +463,27 @@ export default function Home() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {!error && options.length === 0 && hasSearched && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">No available options found.</p>
+            <div className="space-y-4">
+              <p className="text-sm text-zinc-600 dark:text-zinc-300">No available options found.</p>
+              {/* Phase 5.1: Waitlist UI (QDR-66 / FR-5) */}
+              {waitlistError && (
+                <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                  {waitlistError}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleJoinWaitlist}
+                disabled={waitlistLoading || waitlistCapacity >= 50}
+                className="w-full rounded bg-amber-600 px-4 py-2 text-white disabled:opacity-50 hover:bg-amber-700"
+              >
+                {waitlistCapacity >= 50
+                  ? 'Waitlist Full'
+                  : waitlistLoading
+                  ? 'Checking capacity...'
+                  : 'Join Virtual Waitlist'}
+              </button>
+            </div>
           )}
 
           {!error && options.length > 0 && (
@@ -400,6 +534,54 @@ export default function Home() {
             : undefined
         }
       />
+
+      {/* Waitlist Modal (Phase 5.1 / QDR-66 / FR-5) */}
+      {isWaitlistModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
+            <h2 className="text-xl font-semibold mb-4">Join the Virtual Waitlist</h2>
+
+            <div className="mb-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+              <p>
+                <span className="font-medium">Date:</span> {reservationDate}
+              </p>
+              <p>
+                <span className="font-medium">Time:</span> {reservationTime}
+              </p>
+              <p>
+                <span className="font-medium">Party Size:</span> {partySize} guests
+              </p>
+              <p className="text-xs mt-3 text-amber-600 dark:text-amber-400">
+                We'll notify you when a table becomes available. Your spot will expire if you don't accept within 10 minutes.
+              </p>
+            </div>
+
+            {waitlistError && (
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                {waitlistError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsWaitlistModalOpen(false)}
+                className="flex-1 rounded border px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmWaitlist}
+                disabled={waitlistLoading}
+                className="flex-1 rounded bg-amber-600 px-4 py-2 text-sm text-white disabled:opacity-50 hover:bg-amber-700"
+              >
+                {waitlistLoading ? 'Joining...' : 'Join Waitlist'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
