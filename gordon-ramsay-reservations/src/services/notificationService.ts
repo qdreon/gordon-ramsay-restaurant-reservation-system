@@ -10,17 +10,27 @@ import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 
-// dynamic require for SendGrid (optional dependency)
-let sgMail: any | undefined;
-try {
-  if (process.env.SENDGRID_API_KEY) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Initialize SendGrid client lazily (on first use)
+let sgMail: any | null = null;
+let sgMailInitialized = false;
+
+function initSendGrid(): void {
+  if (sgMailInitialized) return;
+  sgMailInitialized = true;
+
+  try {
+    if (process.env.SENDGRID_API_KEY) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      console.log('[Notification] SendGrid Web API initialized successfully');
+    } else {
+      console.log('[Notification] SENDGRID_API_KEY not found, will use SMTP');
+    }
+  } catch (err) {
+    console.error('[Notification] Failed to initialize SendGrid:', err);
+    sgMail = null;
   }
-} catch (err) {
-  console.warn('[Notification] SendGrid module not available or failed to initialize:', err);
-  sgMail = undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +147,8 @@ function getFromAddress(): string | undefined {
  * Sends a booking confirmation email with .ics calendar invite attached.
  */
 export async function sendBookingConfirmation(reservation: ReservationNotification): Promise<void> {
+  initSendGrid();
+  
   let htmlTemplate = loadTemplate("bookingConfirmation.html");
 
   htmlTemplate = htmlTemplate
@@ -159,6 +171,7 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
   // Prefer SendGrid Web API when configured
   if (sgMail) {
     try {
+      console.log('[Notification] Attempting SendGrid Web API send to:', reservation.guestEmail);
       const msg: any = {
         to: reservation.guestEmail,
         from: fromAddress,
@@ -174,6 +187,7 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
         ],
       };
       await sgMail.send(msg);
+      console.log('[Notification] SendGrid send successful for:', reservation.guestEmail);
       return;
     } catch (err) {
       console.error('[Notification] SendGrid sendBookingConfirmation failed:', err);
@@ -184,6 +198,7 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
   // SMTP fallback
   let transporter;
   try {
+    console.log('[Notification] Using SMTP fallback for:', reservation.guestEmail);
     transporter = createTransporter();
   } catch (err) {
     console.error("[Notification] Transporter creation failed:", err);
@@ -204,8 +219,9 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
         },
       ],
     });
+    console.log('[Notification] SMTP send successful for:', reservation.guestEmail);
   } catch (err) {
-    console.error("[Notification] sendBookingConfirmation failed:", err);
+    console.error("[Notification] sendBookingConfirmation (SMTP) failed:", err);
   }
 }
 
@@ -213,6 +229,8 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
  * Sends a waitlist invitation email with tentative .ics calendar invite attached.
  */
 export async function sendWaitlistInvite(invite: WaitlistNotification): Promise<void> {
+  initSendGrid();
+  
   let htmlTemplate = loadTemplate("waitlistInvite.html");
 
   htmlTemplate = htmlTemplate
@@ -254,6 +272,7 @@ END:VCALENDAR`;
   // Prefer SendGrid Web API when configured
   if (sgMail) {
     try {
+      console.log('[Notification] Attempting SendGrid Web API send to:', invite.guestEmail);
       const msg: any = {
         to: invite.guestEmail,
         from: fromAddress,
@@ -269,6 +288,7 @@ END:VCALENDAR`;
         ],
       };
       await sgMail.send(msg);
+      console.log('[Notification] SendGrid send successful for:', invite.guestEmail);
       return;
     } catch (err) {
       console.error('[Notification] SendGrid sendWaitlistInvite failed:', err);
@@ -279,6 +299,7 @@ END:VCALENDAR`;
   // SMTP fallback
   let transporter;
   try {
+    console.log('[Notification] Using SMTP fallback for:', invite.guestEmail);
     transporter = createTransporter();
   } catch (err) {
     console.error("[Notification] Transporter creation failed:", err);
@@ -299,7 +320,8 @@ END:VCALENDAR`;
         },
       ],
     });
+    console.log('[Notification] SMTP send successful for:', invite.guestEmail);
   } catch (err) {
-    console.error("[Notification] sendWaitlistInvite failed:", err);
+    console.error("[Notification] sendWaitlistInvite (SMTP) failed:", err);
   }
 }

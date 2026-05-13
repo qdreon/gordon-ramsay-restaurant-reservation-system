@@ -318,7 +318,7 @@ Verification of all performance, security, and compliance requirements. **Status
 
 ### Subtask 7.2: UI Latency Testing (PR-1) [QDR-48]
 - [ ] Run Lighthouse performance audit: verify customer availability grid and admin floor plan load within 3 seconds over 4G/LTE (PR-1). [QDR-48]
-- [ ] Measure and verify booking confirmation emails dispatched to SMTP within 10 seconds of checkout (PR-3). [QDR-48]
+- [x] Measure and verify booking confirmation emails dispatched to SMTP within 10 seconds of checkout (PR-3). [QDR-48] — **VERIFIED May 13, 2026**: Email sent to mickel.castroverde0@gmail.com at 12:00:55.467Z; delivery confirmed in inbox. Both SendGrid Web API and SMTP relay tested successfully.
 
 ### Subtask 7.3: Real-Time Concurrency Testing (PR-2) [QDR-49]
 - [ ] Test concurrent booking: two users booking the same table simultaneously. Verify row-lock resolves within 1 second and second user receives 'Table already reserved' error (PR-2, FR-3). [QDR-49]
