@@ -16,6 +16,34 @@
 - **Contributor Credit:** Applied co-author attribution for cyghs <24104753@usc.edu.ph>
 - **Project: 58% Complete** — Phase 4 UI scaffold is now live; real-time wiring still pending
 
+### [May 13, 2026] - Phase 4 Finalization (Docs Commit)
+- **Summary:** Phase 4 (Admin Real-Time Dashboard) fully completed: floor-plan dirty transitions, realtime table sync, offline failsafe, Master Reservation Calendar with Block Date, operating hours validation (customer + admin), and System Health Monitor widget.
+- **Changes Saved:** Long commit notes and implementation details saved here for traceability and audit.
+- **Key Points:**
+  - Added `lib/config.ts` with operating hours constants and validation utilities.
+  - Customer landing page (`/app/page.tsx`) now validates reservation times against operating hours (rejects bookings outside 11:00–23:00).
+  - Admin reservations (`/admin/reservations`) includes "Operating Hours" dialog with admin-side validation preventing closing time before opening time.
+  - `POST /api/admin/blocked-dates` and `GET /api/admin/reservations/range` endpoints integrated into calendar.
+  - Created `SystemHealthMonitor` widget and expanded `GET /api/health` to report Supabase, SMTP, and Payment Gateway status; widget auto-refreshes every 30s and is embedded in `/admin/dashboard`.
+  - Minor TypeScript and UI fixes to ensure robust builds; production build verified (30 routes, 0 TypeScript errors).
+
+Detailed commit message (saved here):
+
+"feat(Phase 4 complete): add operating hours validation & system health monitoring
+
+- Subtask 4.4: Add customer-facing validation to reject bookings outside 11 AM - 11 PM
+- Subtask 4.4: Add admin input validation to prevent closing time before opening time
+- Subtask 4.5: Expand /api/health to check Supabase, SMTP, and payment gateway status
+- Subtask 4.5: Create SystemHealthMonitor widget with auto-refresh every 30 seconds
+- Subtask 4.5: Integrate health widget into /admin/dashboard with real-time indicators
+- Add lib/config.ts with operating hours constants and validation utilities
+- Update landing page (/) to validate reservation times against operating hours (FR-8 / QDR-74)
+- Update admin reservations page with 'Operating Hours' dialog (FR-8 / QDR-74)
+- Add error messages for time validation in both customer and admin contexts (SAF-3)
+
+All Phase 4 subtasks now complete (100%). Build: 30 routes compiled, 0 TypeScript errors"
+
+
 ### [May 12, 2026] - Phase Completion: Phases 0-3 Fully Operational
 - **Phase 1 (100%):** Data layer complete; schema, RBAC, indexes, triggers, seed data all verified
 - **Phase 2 (100%):** Booking engine complete; 3 RPCs deployed; pg_cron scheduler + table teardown trigger added
