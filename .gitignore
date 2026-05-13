@@ -3,6 +3,7 @@
 .github/prompts/System Prompt.prompt.md
 *.csv
 *.md
+!Documents/defects_log.md
 .next/
 gordon-ramsay-reservations/.next/
 node_modules/
