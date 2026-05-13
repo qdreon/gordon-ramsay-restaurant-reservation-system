@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users, Lock, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
@@ -91,11 +91,16 @@ function MasterCalendar() {
   const today = new Date()
   const [currentDate, setCurrentDate] = React.useState(today)
   const [selectedDate, setSelectedDate] = React.useState(today)
-  const [reservations, setReservations] = React.useState<Reservation[]>(sampleReservations)
+  const [reservations, setReservations] = React.useState<Reservation[]>([])
+  const [blockedDates, setBlockedDates] = React.useState<string[]>([])
   const [filterVip, setFilterVip] = React.useState(false)
   const [filterLargeGroup, setFilterLargeGroup] = React.useState(false)
   const [filterStatus, setFilterStatus] = React.useState<ReservationStatus | "all">("all")
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [isBlockDateModalOpen, setIsBlockDateModalOpen] = React.useState(false)
+  const [blockDateReason, setBlockDateReason] = React.useState("")
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [newReservation, setNewReservation] = React.useState({
     customer_id: "",
     start_time: "19:00",
@@ -103,6 +108,49 @@ function MasterCalendar() {
     tableId: "",
     isVip: false,
   })
+
+  // Load reservations for current month
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const currentYear = currentDate.getFullYear()
+        const currentMonth = currentDate.getMonth()
+        const startDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`
+        const endDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-31`
+
+        const response = await fetch(`/api/admin/reservations/range?startDate=${startDate}&endDate=${endDate}`)
+        const payload = await response.json()
+
+        if (!response.ok || !payload.reservations) {
+          throw new Error(payload.error ?? 'Failed to load calendar data')
+        }
+
+        setReservations(payload.reservations.map((res: any) => ({
+          id: res.id,
+          customer_id: res.customer_id,
+          start_time: res.start_time,
+          end_time: res.end_time,
+          party_size: res.party_size,
+          tableId: "T1", // Mock; would come from reservation_tables junction
+          status: res.status as ReservationStatus,
+          isVip: false, // Would check customers.vip_status
+          reservation_date: res.reservation_date,
+          deposit_amount: 0,
+        })))
+
+        setBlockedDates(payload.blockedDates ?? [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load calendar data")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [currentDate])
 
   const currentYear = currentDate.getFullYear()
   const currentMonth = currentDate.getMonth()
@@ -177,6 +225,42 @@ function MasterCalendar() {
     setIsModalOpen(false)
   }
 
+  const handleBlockDate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!blockDateReason.trim()) return
+
+    try {
+      const selectedDateStr = formatDateKey(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate()
+      )
+
+      const response = await fetch('/api/admin/blocked-dates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          blockedDate: selectedDateStr,
+          reason: blockDateReason,
+        }),
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error ?? 'Failed to block date')
+      }
+
+      setBlockedDates((prev) => [...prev, selectedDateStr])
+      setBlockDateReason("")
+      setIsBlockDateModalOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to block date")
+    }
+  }
+
   const isToday = (day: number) => {
     return (
       day === today.getDate() &&
@@ -204,6 +288,16 @@ function MasterCalendar() {
 
   return (
     <div className="flex h-full min-h-[600px] w-full bg-background rounded-xl overflow-hidden border border-slate-200 shadow-sm dark:border-slate-800">
+      {error && (
+        <div className="absolute top-4 left-4 right-4 p-3 bg-red-500/10 border border-red-500/30 rounded-sm text-red-200 text-[11px] font-sans z-50">
+          {error}
+        </div>
+      )}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-50">
+          <p className="text-muted-foreground font-sans text-[11px]">Loading calendar data...</p>
+        </div>
+      )}
       <main className="w-[70%] flex flex-col border-r border-border">
         <header className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2 max-w-full">
@@ -250,11 +344,13 @@ function MasterCalendar() {
               const dateKey = formatDateKey(currentYear, currentMonth, day)
               const dayReservations = reservationsByDate[dateKey]
               const selected = isSelected(day)
+              const isBlocked = blockedDates.includes(dateKey)
 
               return (
-                <button key={day} onClick={() => setSelectedDate(new Date(currentYear, currentMonth, day))} className={`p-2 rounded-sm flex flex-col items-center justify-start min-h-[80px] transition-all ${selected ? "bg-cyber/20 border border-cyber" : "hover:bg-muted/50 border border-transparent"} ${isToday(day) ? "shadow-[0_0_12px_2px_rgba(6,182,212,0.4)]" : ""}`}>
-                  <span className={`font-sans text-[11px] ${isToday(day) ? "text-cyber font-bold" : "text-foreground"}`}>{day}</span>
-                  {dayReservations && (
+                <button key={day} onClick={() => setSelectedDate(new Date(currentYear, currentMonth, day))} className={`p-2 rounded-sm flex flex-col items-center justify-start min-h-[80px] transition-all ${isBlocked ? "bg-red-500/30 border-2 border-red-500" : selected ? "bg-cyber/20 border border-cyber" : "hover:bg-muted/50 border border-transparent"} ${isToday(day) ? "shadow-[0_0_12px_2px_rgba(6,182,212,0.4)]" : ""}`}>
+                  <span className={`font-sans text-[11px] ${isBlocked ? "text-red-600 font-bold" : isToday(day) ? "text-cyber font-bold" : "text-foreground"}`}>{day}</span>
+                  {isBlocked && <div className="text-red-500 text-[8px] font-bold">BLOCKED</div>}
+                  {dayReservations && !isBlocked && (
                     <div className="flex gap-1 mt-2 flex-wrap justify-center">
                       {dayReservations.confirmed > 0 && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
                       {dayReservations.seated > 0 && <div className="w-2 h-2 rounded-full bg-cyan-500" />}
@@ -310,30 +406,58 @@ function MasterCalendar() {
         </ScrollArea>
 
         <div className="p-4 border-t border-sidebar-border flex-shrink-0">
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full bg-cyber text-background hover:bg-cyber/90 font-sans text-[11px]">
-                <Plus className="w-4 h-4 mr-2" />
-                New Reservation
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-border">
-              <DialogHeader>
-                <DialogTitle className="text-foreground font-sans">New Reservation</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddReservation} className="space-y-4 mt-4">
-                <Input placeholder="Guest Name" value={newReservation.customer_id} onChange={(e) => setNewReservation((prev) => ({ ...prev, customer_id: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
-                <Input type="time" value={newReservation.start_time} onChange={(e) => setNewReservation((prev) => ({ ...prev, start_time: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
-                <Input type="number" placeholder="Pax" min="1" max="12" value={newReservation.party_size} onChange={(e) => setNewReservation((prev) => ({ ...prev, party_size: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
-                <Input placeholder="Table ID (e.g., T14)" value={newReservation.tableId} onChange={(e) => setNewReservation((prev) => ({ ...prev, tableId: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={newReservation.isVip} onChange={(e) => setNewReservation((prev) => ({ ...prev, isVip: e.target.checked }))} className="w-4 h-4 accent-electric" />
-                  <span className="text-muted-foreground font-sans text-[11px]">VIP Guest</span>
-                </label>
-                <Button type="submit" className="w-full bg-cyber text-background hover:bg-cyber/90 font-sans text-[11px]">Add Reservation</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <div className="space-y-2">
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full bg-cyber text-background hover:bg-cyber/90 font-sans text-[11px]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Reservation
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border">
+                <DialogHeader>
+                  <DialogTitle className="text-foreground font-sans">New Reservation</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddReservation} className="space-y-4 mt-4">
+                  <Input placeholder="Guest Name" value={newReservation.customer_id} onChange={(e) => setNewReservation((prev) => ({ ...prev, customer_id: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
+                  <Input type="time" value={newReservation.start_time} onChange={(e) => setNewReservation((prev) => ({ ...prev, start_time: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
+                  <Input type="number" placeholder="Pax" min="1" max="12" value={newReservation.party_size} onChange={(e) => setNewReservation((prev) => ({ ...prev, party_size: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
+                  <Input placeholder="Table ID (e.g., T14)" value={newReservation.tableId} onChange={(e) => setNewReservation((prev) => ({ ...prev, tableId: e.target.value }))} className="bg-input border-border font-sans text-[11px]" />
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={newReservation.isVip} onChange={(e) => setNewReservation((prev) => ({ ...prev, isVip: e.target.checked }))} className="w-4 h-4 accent-electric" />
+                    <span className="text-muted-foreground font-sans text-[11px]">VIP Guest</span>
+                  </label>
+                  <Button type="submit" className="w-full bg-cyber text-background hover:bg-cyber/90 font-sans text-[11px]">Add Reservation</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isBlockDateModalOpen} onOpenChange={setIsBlockDateModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 font-sans text-[11px]">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Block Date
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border">
+                <DialogHeader>
+                  <DialogTitle className="text-foreground font-sans">Block Date</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleBlockDate} className="space-y-4 mt-4">
+                  <p className="text-muted-foreground font-sans text-[11px]">
+                    Blocking: {selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                  </p>
+                  <Input
+                    placeholder="Reason (e.g., Private Event, Holiday)"
+                    value={blockDateReason}
+                    onChange={(e) => setBlockDateReason(e.target.value)}
+                    className="bg-input border-border font-sans text-[11px]"
+                  />
+                  <Button type="submit" className="w-full bg-red-600 text-white hover:bg-red-700 font-sans text-[11px]">Block Date</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </aside>
     </div>
