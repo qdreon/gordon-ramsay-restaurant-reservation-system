@@ -189,6 +189,14 @@ export default function CustomerDashboard() {
 
       const payload = (await response.json()) as { error?: string; success?: boolean };
       if (!response.ok) {
+        if (payload.error?.includes("cannot be cancelled")) {
+          setActionMessage('This reservation was already cancelled. Refreshing your reservation list.');
+          if (accessToken) {
+            await loadReservations(accessToken);
+          }
+          return;
+        }
+
         throw new Error(payload.error ?? 'Failed to cancel reservation.');
       }
 

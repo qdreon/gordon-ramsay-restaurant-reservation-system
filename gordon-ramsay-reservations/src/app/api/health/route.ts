@@ -37,15 +37,13 @@ async function checkSupabase(): Promise<'ok' | 'error'> {
 }
 
 /**
- * Checks SMTP connectivity (basic check - would connect to email service)
- * For now, simulates with a simple check
+ * Checks Mailtrap connectivity (basic check - would connect to the email service)
  */
-async function checkSMTP(): Promise<'ok' | 'error'> {
+async function checkMailtrap(): Promise<'ok' | 'error'> {
   try {
-    // In production, would attempt actual SMTP connection
-    // For MVP, we simulate success since nodemailer is configured
-    const hasNodemailer = typeof process.env.SMTP_HOST !== 'undefined' || true;
-    return hasNodemailer ? 'ok' : 'error';
+    // Mailtrap is configured and ready; no real connection needed for MVP
+    const isMailtrapConfigured = typeof process.env.MAILTRAP_API_TOKEN !== 'undefined';
+    return isMailtrapConfigured ? 'ok' : 'error';
   } catch {
     return 'error';
   }
@@ -73,15 +71,15 @@ async function checkPaymentGateway(): Promise<'ok' | 'error'> {
 export async function GET() {
   try {
     // Check all services in parallel
-    const [supabase, smtp, paymentGateway] = await Promise.all([
+    const [supabase, mailtrap, paymentGateway] = await Promise.all([
       checkSupabase(),
-      checkSMTP(),
+      checkMailtrap(),
       checkPaymentGateway(),
     ]);
 
     // Determine overall status
-    const allOk = supabase === 'ok' && smtp === 'ok' && paymentGateway === 'ok';
-    const anyError = supabase === 'error' || smtp === 'error' || paymentGateway === 'error';
+    const allOk = supabase === 'ok' && mailtrap === 'ok' && paymentGateway === 'ok';
+    const anyError = supabase === 'error' || mailtrap === 'error' || paymentGateway === 'error';
     const status = allOk ? 'ok' : anyError ? 'error' : 'degraded';
 
     return NextResponse.json({
@@ -89,7 +87,7 @@ export async function GET() {
       timestamp: new Date().toISOString(), // Always UTC (DB-3)
       services: {
         supabase,
-        smtp,
+        mailtrap,
         paymentGateway,
       },
     });
@@ -101,7 +99,7 @@ export async function GET() {
         timestamp: new Date().toISOString(),
         services: {
           supabase: 'error',
-          smtp: 'error',
+          mailtrap: 'error',
           paymentGateway: 'error',
         },
         error: error instanceof Error ? error.message : 'Health check failed',
@@ -110,3 +108,4 @@ export async function GET() {
     );
   }
 }
+

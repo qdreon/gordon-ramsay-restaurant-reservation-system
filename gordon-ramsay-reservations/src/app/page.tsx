@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import CheckoutModal from '@/components/CheckoutModal';
 import MenuDisplay from '@/components/MenuDisplay';
 import { validateReservationTime, OPERATING_HOURS } from '@/lib/config';
@@ -194,11 +195,6 @@ export default function Home() {
 
     try {
       // Resolve the current user's auth session client-side.
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {
@@ -340,11 +336,6 @@ export default function Home() {
 
     try {
       // Get authenticated user
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {

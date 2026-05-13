@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { Clock, Users, UtensilsCrossed } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabaseClient';
 
 type TableStatus = 'available' | 'reserved' | 'occupied' | 'dirty';
 
@@ -76,13 +76,6 @@ export function FloorPlanManager() {
   const [reservations] = React.useState<Reservation[]>(initialReservations);
 
   React.useEffect(() => {
-    // Initialize Supabase client using public env vars (client-side safe)
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-    if (!url || !key) return;
-
-    const supabase = createClient(url, key);
-
     const channel = supabase
       .channel('public:tables')
       .on(

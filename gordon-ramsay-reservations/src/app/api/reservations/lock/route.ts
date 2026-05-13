@@ -23,6 +23,8 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as LockReservationRequestBody;
     const { customerId, tableIds, reservationDate, startTime, endTime, partySize } = body;
+    const authHeader = req.headers.get('authorization');
+    const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
     if (
       !customerId ||
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
       const {
         data: { user },
         error: authError,
-      } = await supabase.auth.getUser();
+      } = await supabase.auth.getUser(accessToken ?? undefined);
 
       if (authError || !user || !user.email) {
         throw new Error('Unable to resolve authenticated user for booking notification.');
@@ -69,7 +71,7 @@ export async function POST(req: Request) {
         (user.user_metadata as { full_name?: string } | null)?.full_name || user.email || 'Guest';
       const guestEmail = user.email;
 
-      await sendBookingConfirmation({
+      void sendBookingConfirmation({
         reservationId: lockResult.reservation_id,
         guestName,
         guestEmail,
@@ -79,10 +81,12 @@ export async function POST(req: Request) {
         reservationEndTime: formatTimeFromIso(endTime),
         restaurantName: process.env.RESTAURANT_NAME ?? 'Gordon Ramsay Restaurant',
         restaurantAddress:
-          process.env.RESTAURANT_ADDRESS ?? '123 Culinary Lane, London, UK',
+          process.env.RESTAURANT_ADDRESS ?? 'Gordon Ramsay Restaurant, Cebu City, Philippines',
         specialRequests: body.specialRequests ?? null,
         confirmationURL:
           `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/customer/dashboard?booking=confirmed`,
+      }).catch((emailError) => {
+        console.error('[Reservation Notification] Failed to send booking confirmation:', emailError);
       });
     } catch (emailError) {
       console.error('[Reservation Notification] Failed to send booking confirmation:', emailError);

@@ -1,36 +1,86 @@
 /**
  * notificationService.ts
  * -----------------------
- * Notification service with optional SendGrid Web API support.
- * - Uses SendGrid Web API when `SENDGRID_API_KEY` is present.
- * - Falls back to SMTP (`nodemailer`) when SendGrid key is not set.
+ * Notification service for reservation and waitlist emails.
+ * Uses Mailtrap API only.
  */
 
-import nodemailer from "nodemailer";
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
 
-// Initialize SendGrid client lazily (on first use)
-let sgMail: any | null = null;
-let sgMailInitialized = false;
+let mailtrapClient: any | null = null;
+let mailtrapClientInitialized = false;
 
-function initSendGrid(): void {
-  if (sgMailInitialized) return;
-  sgMailInitialized = true;
+function initMailtrapApi(): void {
+  if (mailtrapClientInitialized) return;
+  mailtrapClientInitialized = true;
 
   try {
-    if (process.env.SENDGRID_API_KEY) {
+    if (process.env.MAILTRAP_API_TOKEN) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      console.log('[Notification] SendGrid Web API initialized successfully');
+      const { MailtrapClient } = require('mailtrap');
+      mailtrapClient = new MailtrapClient({ token: process.env.MAILTRAP_API_TOKEN });
+      console.log('[Notification] Mailtrap API initialized successfully');
     } else {
-      console.log('[Notification] SENDGRID_API_KEY not found, will use SMTP');
+      console.log('[Notification] MAILTRAP_API_TOKEN not found');
     }
   } catch (err) {
-    console.error('[Notification] Failed to initialize SendGrid:', err);
-    sgMail = null;
+    console.error('[Notification] Failed to initialize Mailtrap API:', err);
+    mailtrapClient = null;
   }
+}
+
+function getMailtrapSender(): { email: string; name?: string } | null {
+  const fromAddress = process.env.MAILTRAP_FROM ?? process.env.EMAIL_FROM;
+
+  if (!fromAddress) {
+    return null;
+  }
+
+  const match = fromAddress.match(/^\s*(?:(.*?)\s*<)?([^<>\s]+@[^<>\s]+)>?\s*$/);
+  if (!match) {
+    return { email: fromAddress };
+  }
+
+  const name = match[1]?.trim().replace(/^"|"$/g, '');
+  const email = match[2].trim();
+
+  return name ? { email, name } : { email };
+}
+
+async function sendViaMailtrapApi(
+  recipients: { email: string }[],
+  subject: string,
+  html: string,
+  text: string,
+  category: string,
+  attachments?: Array<{ content: string; filename: string; type: string }>
+): Promise<void> {
+  initMailtrapApi();
+
+  if (!mailtrapClient) {
+    throw new Error('Mailtrap API client is not configured.');
+  }
+
+  const sender = getMailtrapSender();
+  if (!sender) {
+    throw new Error('Missing MAILTRAP_FROM/EMAIL_FROM sender address.');
+  }
+
+  const payload: Record<string, unknown> = {
+    from: sender,
+    to: recipients,
+    subject,
+    html,
+    text,
+    category,
+  };
+
+  if (attachments && attachments.length > 0) {
+    payload.attachments = attachments;
+  }
+
+  await mailtrapClient.send(payload);
 }
 
 // ---------------------------------------------------------------------------
@@ -76,9 +126,9 @@ CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
 UID:${reservation.reservationId}@example.com
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
-DTSTART:${reservation.reservationDate.replace(/-/g, "")}T${reservation.reservationTime.replace(":", "")}00Z
-DTEND:${reservation.reservationDate.replace(/-/g, "")}T${reservation.reservationEndTime.replace(":", "")}00Z
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DTSTART:${reservation.reservationDate.replace(/-/g, '')}T${reservation.reservationTime.replace(':', '')}00Z
+DTEND:${reservation.reservationDate.replace(/-/g, '')}T${reservation.reservationEndTime.replace(':', '')}00Z
 SUMMARY:Reservation at ${reservation.restaurantName}
 DESCRIPTION:Booking confirmation for ${reservation.guestName} (Party of ${reservation.partySize})
 LOCATION:${reservation.restaurantAddress}
@@ -98,45 +148,12 @@ function addMinutesToTime(time: string, minutes: number): string {
 
 function loadTemplate(templateName: string): string {
   try {
-    const templatePath = path.join(process.cwd(), "src", "emails", templateName);
-    return fs.readFileSync(templatePath, "utf8");
+    const templatePath = path.join(process.cwd(), 'src', 'emails', templateName);
+    return fs.readFileSync(templatePath, 'utf8');
   } catch (err) {
     console.error(`[Notification] Template ${templateName} not found:`, err);
     return `<p>Template ${templateName} missing</p>`;
   }
-}
-
-function createTransporter() {
-  const host = process.env.EMAIL_HOST;
-  const port = process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined;
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
-  const service = process.env.EMAIL_SERVICE;
-  const secure = process.env.EMAIL_SECURE === "true";
-
-  if (host && port) {
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: secure ?? port === 465,
-      auth: user ? { user, pass } : undefined,
-    });
-  }
-
-  if (service && user) {
-    return nodemailer.createTransport({
-      service,
-      auth: { user, pass },
-    });
-  }
-
-  throw new Error(
-    "SMTP configuration missing: set EMAIL_HOST/EMAIL_PORT/EMAIL_USER/EMAIL_PASS or EMAIL_SERVICE"
-  );
-}
-
-function getFromAddress(): string | undefined {
-  return process.env.EMAIL_FROM ?? process.env.EMAIL_USER;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,81 +164,46 @@ function getFromAddress(): string | undefined {
  * Sends a booking confirmation email with .ics calendar invite attached.
  */
 export async function sendBookingConfirmation(reservation: ReservationNotification): Promise<void> {
-  initSendGrid();
-  
-  let htmlTemplate = loadTemplate("bookingConfirmation.html");
+  console.log('[Notification] sendBookingConfirmation invoked for:', reservation.guestEmail);
+  initMailtrapApi();
 
-  htmlTemplate = htmlTemplate
-    .replace("{{ guestName }}", reservation.guestName)
-    .replace("{{ restaurantName }}", reservation.restaurantName)
-    .replace("{{ reservationDate }}", reservation.reservationDate)
-    .replace("{{ reservationTime }}", reservation.reservationTime)
-    .replace("{{ partySize }}", reservation.partySize.toString())
-    .replace("{{ specialRequests }}", reservation.specialRequests ?? "None")
-    .replace("{{ confirmationURL }}", reservation.confirmationURL);
+  const htmlTemplate = loadTemplate('bookingConfirmation.html')
+    .replace('{{ guestName }}', reservation.guestName)
+    .replace('{{ restaurantName }}', reservation.restaurantName)
+    .replace('{{ reservationDate }}', reservation.reservationDate)
+    .replace('{{ reservationTime }}', reservation.reservationTime)
+    .replace('{{ partySize }}', reservation.partySize.toString())
+    .replace('{{ restaurantAddress }}', reservation.restaurantAddress)
+    .replace('{{ specialRequests }}', reservation.specialRequests ?? 'None')
+    .replace('{{ confirmationURL }}', reservation.confirmationURL);
 
   const icsContent = generateICS(reservation);
+  const fromAddress = getMailtrapSender();
 
-  const fromAddress = getFromAddress();
   if (!fromAddress) {
-    console.error("[Notification] Missing EMAIL_FROM/EMAIL_USER for sender address.");
-    return;
-  }
-
-  // Prefer SendGrid Web API when configured
-  if (sgMail) {
-    try {
-      console.log('[Notification] Attempting SendGrid Web API send to:', reservation.guestEmail);
-      const msg: any = {
-        to: reservation.guestEmail,
-        from: fromAddress,
-        subject: 'Your Booking Confirmation',
-        html: htmlTemplate,
-        attachments: [
-          {
-            content: Buffer.from(icsContent).toString('base64'),
-            filename: 'reservation.ics',
-            type: 'text/calendar',
-            disposition: 'attachment',
-          },
-        ],
-      };
-      await sgMail.send(msg);
-      console.log('[Notification] SendGrid send successful for:', reservation.guestEmail);
-      return;
-    } catch (err) {
-      console.error('[Notification] SendGrid sendBookingConfirmation failed:', err);
-      // Fall through to SMTP fallback
-    }
-  }
-
-  // SMTP fallback
-  let transporter;
-  try {
-    console.log('[Notification] Using SMTP fallback for:', reservation.guestEmail);
-    transporter = createTransporter();
-  } catch (err) {
-    console.error("[Notification] Transporter creation failed:", err);
+    console.error('[Notification] Missing MAILTRAP_FROM/EMAIL_FROM sender address.');
     return;
   }
 
   try {
-    await transporter.sendMail({
-      from: fromAddress,
-      to: reservation.guestEmail,
-      subject: "Your Booking Confirmation",
-      html: htmlTemplate,
-      attachments: [
+    console.log('[Notification] Attempting Mailtrap API send to:', reservation.guestEmail, 'from:', fromAddress.email);
+    await sendViaMailtrapApi(
+      [{ email: reservation.guestEmail }],
+      'Your Booking Confirmation',
+      htmlTemplate,
+      `Booking confirmation for ${reservation.guestName}`,
+      'Booking Confirmation',
+      [
         {
-          filename: "reservation.ics",
-          content: icsContent,
-          contentType: "text/calendar",
+          filename: 'reservation.ics',
+          content: Buffer.from(icsContent).toString('base64'),
+          type: 'text/calendar',
         },
-      ],
-    });
-    console.log('[Notification] SMTP send successful for:', reservation.guestEmail);
+      ]
+    );
+    console.log('[Notification] Mailtrap API send successful for:', reservation.guestEmail);
   } catch (err) {
-    console.error("[Notification] sendBookingConfirmation (SMTP) failed:", err);
+    console.error('[Notification] Mailtrap API sendBookingConfirmation failed:', err);
   }
 }
 
@@ -229,21 +211,19 @@ export async function sendBookingConfirmation(reservation: ReservationNotificati
  * Sends a waitlist invitation email with tentative .ics calendar invite attached.
  */
 export async function sendWaitlistInvite(invite: WaitlistNotification): Promise<void> {
-  initSendGrid();
-  
-  let htmlTemplate = loadTemplate("waitlistInvite.html");
+  console.log('[Notification] sendWaitlistInvite invoked for:', invite.guestEmail);
+  initMailtrapApi();
 
-  htmlTemplate = htmlTemplate
-    .replace("{{ guestName }}", invite.guestName)
-    .replace("{{ restaurantName }}", invite.restaurantName)
-    .replace("{{ requestedDate }}", invite.requestedDate)
-    .replace("{{ requestedTime }}", invite.requestedTime)
-    .replace("{{ partySize }}", invite.partySize.toString())
-    .replace("{{ waitlistPosition }}", invite.waitlistPosition.toString())
-    .replace("{{ confirmationURL }}", invite.confirmationURL);
+  const htmlTemplate = loadTemplate('waitlistInvite.html')
+    .replace('{{ guestName }}', invite.guestName)
+    .replace('{{ restaurantName }}', invite.restaurantName)
+    .replace('{{ requestedDate }}', invite.requestedDate)
+    .replace('{{ requestedTime }}', invite.requestedTime)
+    .replace('{{ partySize }}', invite.partySize.toString())
+    .replace('{{ waitlistPosition }}', invite.waitlistPosition.toString())
+    .replace('{{ confirmationURL }}', invite.confirmationURL);
 
   const offerExpiresTime = addMinutesToTime(invite.requestedTime, 10);
-
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Gordon Ramsay Reservation System//EN
@@ -251,9 +231,9 @@ CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
 UID:${invite.inviteId}@example.com
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
-DTSTART:${invite.requestedDate.replace(/-/g, "")}T${invite.requestedTime.replace(":", "")}00Z
-DTEND:${invite.requestedDate.replace(/-/g, "")}T${offerExpiresTime.replace(":", "")}00Z
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DTSTART:${invite.requestedDate.replace(/-/g, '')}T${invite.requestedTime.replace(':', '')}00Z
+DTEND:${invite.requestedDate.replace(/-/g, '')}T${offerExpiresTime.replace(':', '')}00Z
 SUMMARY:Waitlist Invitation - ${invite.restaurantName}
 DESCRIPTION:You are invited from the waitlist for ${invite.guestName} (Party of ${invite.partySize})
 LOCATION:${invite.restaurantAddress}
@@ -263,65 +243,30 @@ ATTENDEE;CN=${invite.guestName};RSVP=TRUE:mailto:${invite.guestEmail}
 END:VEVENT
 END:VCALENDAR`;
 
-  const fromAddress = getFromAddress();
+  const fromAddress = getMailtrapSender();
   if (!fromAddress) {
-    console.error("[Notification] Missing EMAIL_FROM/EMAIL_USER for sender address.");
-    return;
-  }
-
-  // Prefer SendGrid Web API when configured
-  if (sgMail) {
-    try {
-      console.log('[Notification] Attempting SendGrid Web API send to:', invite.guestEmail);
-      const msg: any = {
-        to: invite.guestEmail,
-        from: fromAddress,
-        subject: 'Your Waitlist Spot Is Available',
-        html: htmlTemplate,
-        attachments: [
-          {
-            content: Buffer.from(icsContent).toString('base64'),
-            filename: 'waitlist.ics',
-            type: 'text/calendar',
-            disposition: 'attachment',
-          },
-        ],
-      };
-      await sgMail.send(msg);
-      console.log('[Notification] SendGrid send successful for:', invite.guestEmail);
-      return;
-    } catch (err) {
-      console.error('[Notification] SendGrid sendWaitlistInvite failed:', err);
-      // Fall through to SMTP fallback
-    }
-  }
-
-  // SMTP fallback
-  let transporter;
-  try {
-    console.log('[Notification] Using SMTP fallback for:', invite.guestEmail);
-    transporter = createTransporter();
-  } catch (err) {
-    console.error("[Notification] Transporter creation failed:", err);
+    console.error('[Notification] Missing MAILTRAP_FROM/EMAIL_FROM sender address.');
     return;
   }
 
   try {
-    await transporter.sendMail({
-      from: fromAddress,
-      to: invite.guestEmail,
-      subject: "Your Waitlist Spot Is Available",
-      html: htmlTemplate,
-      attachments: [
+    console.log('[Notification] Attempting Mailtrap API send to:', invite.guestEmail, 'from:', fromAddress.email);
+    await sendViaMailtrapApi(
+      [{ email: invite.guestEmail }],
+      'Your Waitlist Spot Is Available',
+      htmlTemplate,
+      `Waitlist invitation for ${invite.guestName}`,
+      'Waitlist Invitation',
+      [
         {
-          filename: "waitlist.ics",
-          content: icsContent,
-          contentType: "text/calendar",
+          filename: 'waitlist.ics',
+          content: Buffer.from(icsContent).toString('base64'),
+          type: 'text/calendar',
         },
-      ],
-    });
-    console.log('[Notification] SMTP send successful for:', invite.guestEmail);
+      ]
+    );
+    console.log('[Notification] Mailtrap API send successful for:', invite.guestEmail);
   } catch (err) {
-    console.error("[Notification] sendWaitlistInvite (SMTP) failed:", err);
+    console.error('[Notification] Mailtrap API sendWaitlistInvite failed:', err);
   }
 }
