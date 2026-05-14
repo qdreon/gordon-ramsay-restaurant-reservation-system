@@ -70,10 +70,16 @@
 - SEC-1 production rerun COMPLETE: `npm run build` followed by `npm run test:e2e:prod -- --grep "SEC-1"` passed after adding `src/proxy.ts` for Next 16 Proxy registration.
 
 ### Remaining Phase 7 Tasks
-1. **SEC-2 HTTPS/TLS** (QDR-50): HTTPS redirect verified on the production domain; confirm HSTS where supported during deployment.
-2. **Device & responsiveness testing** (7.5): Manual test on tablet and mobile for customer and admin flows.
-3. **Deployment** (7.6): Supabase PITR or documented free-tier fallback + production hosting.
-4. **Finalize traceability.md** (7.7): Add final QA evidence for PR-1, PR-2, SEC-2, and responsiveness.
+#### Final Sign-Off Checklist
+- [x] PR-1 performance audit verified on the stable local production server.
+- [x] PR-2 concurrency lock resolution verified with TC-3.2.
+- [x] Responsive viewport smoke verified for mobile, tablet, and desktop widths.
+- [x] SEC-1 production-mode RBAC verification completed.
+- [x] HTTPS redirect verified on the production domain.
+- [ ] Confirm HSTS on the production domain where supported.
+- [ ] Run the free-tier manual restore drill against a non-production snapshot.
+- [ ] Confirm production hosting / backup fallback handoff notes are final.
+- [ ] Finish any last traceability wording cleanup after deployment evidence is attached.
 
 ---
 
