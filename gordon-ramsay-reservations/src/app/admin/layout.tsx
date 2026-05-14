@@ -32,6 +32,11 @@ export default function AdminLayout({
       <header className="border-b bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div className="flex w-full items-center justify-between px-6 py-4">
           <div className="flex items-center gap-8">
+            <img
+              src="/admin/GRRM-LOGO.svg"
+              alt="GRRM Logo"
+              className="h-8 w-8 rounded-sm"
+            />
             <Link href="/admin" className="text-xl font-bold font-heading">
               GRRM Admin Portal
             </Link>
