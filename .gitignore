@@ -7,4 +7,14 @@
 .next/
 gordon-ramsay-reservations/.next/
 node_modules/
+
+# Local environment secrets
+.env
+.env.local
+.env.*.local
+gordon-ramsay-reservations/.env
+gordon-ramsay-reservations/.env.local
+gordon-ramsay-reservations/.env.*.local
+!gordon-ramsay-reservations/.env.example
+
 supabase/**/.temp/

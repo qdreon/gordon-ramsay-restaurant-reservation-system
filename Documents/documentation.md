@@ -1,7 +1,7 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.6
-> **Last Updated:** May 14, 2026 (Phase 7 QA mostly verified; Phases 0-6 complete)
+> **Document Version:** 1.7
+> **Last Updated:** May 14, 2026 (Phase 7 QA mostly verified; docs synced with final sign-off checklist)
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
@@ -10,17 +10,17 @@
 ## Revision History
 
 ### [May 14, 2026] - Phase 7 QA Automation Update
-- **Project status:** Phases 0-6 remain complete; Phase 7 is now mostly verified at approximately 99% overall completion.
+- **Project status:** Phases 0-6 remain complete; Phase 7 is mostly verified at approximately 99% overall completion, with only deployment-time/manual confirmation items left.
 - **PR-1 PASS:** Lighthouse audits passed on the stable local production server for both Customer Home and Admin Dashboard with performance scores of 95 and 87, respectively, and LCP under 3 seconds on both pages.
 - **PR-2 PASS:** TC-3.2 concurrency test passed against the live app using the Playwright base URL; one request succeeded, one failed with a lock conflict, and the total resolution time was 3517ms.
 - **Responsiveness PASS:** Automated viewport smoke testing passed at mobile, tablet, and desktop widths for both `/` and `/admin/dashboard`; the floor-plan shell no longer causes horizontal overflow at narrow widths.
 - **SEC-1 PASS:** Production-mode Playwright verification passed after adding `src/proxy.ts` for Next 16 Proxy registration.
 - **SEC-2 partial verification:** Production domain serves over HTTPS and HTTP redirects to HTTPS; HSTS remains a deployment-time confirmation item.
 - **SAF-1 fallback:** Supabase PITR is documented as unavailable on the free tier, so the project now uses a documented manual backup fallback (`pg_dump` export, retention policy, and restore drill) in `documentation.md`.
-- **Next steps:** Finish the manual restore drill, confirm HSTS during deployment, complete production hosting / Supabase backup validation, and finalize the remaining traceability evidence.
+- **Next steps:** Finish the manual restore drill, confirm HSTS during deployment, complete production hosting / Supabase backup validation, and keep the final sign-off checklist in sync with MASTER_TODO.md.
 
 ### [May 13, 2026] - Phase 7 QA Progress Update (Current)
-- **Project status:** Phases 0-6 are complete; Phase 7 was in progress at approximately 65%; this has since been advanced to mostly verified.
+- **Project status:** Phases 0-6 are complete; Phase 7 was in progress at approximately 65%; this has since been advanced to mostly verified at approximately 99%.
 - **DEF-004 resolved:** Added `playwright.prod.config.ts` and `npm run test:e2e:prod` so SEC-1 RBAC tests run against `next start` production mode instead of the webpack dev server. This removes the dev-server middleware hot-reload race.
 - **DEF-005 resolved:** Updated `tests/e2e/tc3-concurrency.spec.ts` to use `SEARCH_DATE = '2030-01-15'` for the concurrency test so QA has a clean future slot.
 - **Final deliverables:** Created `Documents/USER_MANUAL.md` v1.0 and updated `Documents/defects_log.md` with DEF-001 through DEF-005.
@@ -197,6 +197,58 @@ If the project remains on a free Supabase plan and PITR cannot be enabled, use a
 3. Keep a restore script ready that can replay the dump with `psql` or `supabase db push` into a fresh database.
 4. Record that this is a budget workaround and does not provide true PITR semantics.
 5. Run a manual restore drill against a non-production snapshot and log the result, restore time, and any issues.
+
+### PITR Deferment — Decision & Runbook
+
+**Decision:** Supabase PITR will be deferred while the project remains on the free-tier (cost constraint). This is an explicit, recorded decision made to allow go-live testing and handoff without incurring paid DB costs. The team accepts that without PITR we cannot restore to an arbitrary WAL timestamp.
+
+**Implications:**
+- Recovery Point Objective (RPO): limited to the most recent successful logical dump (see Backup Schedule).
+- Recovery Time Objective (RTO): depends on size and restore procedure; target a measured RTO (example target: ≤ 60 minutes for a standard restore runbook).
+- No continuous WAL replay: point-in-time exact recovery is not available until PITR is enabled.
+
+**Backup Runbook (minimum viable)**
+1. Frequency: schedule `pg_dump` exports. Default: daily at 02:00 UTC. If business requires shorter RPO, change to hourly.
+2. Format: use `pg_dump --format=custom` for compact, restorable dumps (`.dump`).
+3. Encryption: encrypt each dump with a symmetric key (AES-256). Store the passphrase in a secrets manager (GitHub Secrets, Vault).
+4. Storage: upload encrypted dumps to a private S3/GCS bucket or use GitHub Actions artifacts (short-term). Use `BACKUP_S3_PREFIX` paths to namespace backups.
+5. Retention: keep the last N dumps (suggest 30 daily or 168 hourly). Implement rotation to delete older objects automatically.
+6. Integrity: compute and store SHA256 checksum for each dump alongside the encrypted artifact.
+7. Restore drill: quarterly (recommended) — download, decrypt, and restore to a fresh non-production database; record elapsed time and any errors.
+
+**Quick restore commands (example)**
+1. Decrypt the dump:
+
+```bash
+openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"$BACKUP_ENCRYPTION_KEY" -in grrrs-backup-2026-05-14T020000Z.dump.enc -out grrrs-backup-2026-05-14T020000Z.dump
+```
+
+2. Restore to target DB:
+
+```bash
+pg_restore --verbose --clean --no-owner --dbname="postgresql://<user>:<pass>@<host>:<port>/<db>" grrrs-backup-2026-05-14T020000Z.dump
+```
+
+3. Post-restore verification (smoke checks): connect to the restored DB and run a small verification script that checks key tables, a sample reservation, and an API smoke test against an app instance pointed at the restored DB.
+
+**Automation note:** a GitHub Actions workflow example has been added to the repository at `.github/workflows/pg_dump_backups.yml` to create encrypted dumps and upload them to S3 (or artifacts as a fallback). Configure the required secrets (`SUPABASE_DB_URL`, `BACKUP_ENCRYPTION_KEY`, `BACKUP_S3_BUCKET`, AWS creds) before enabling automated runs.
+
+**When to revisit PITR:** Enable Supabase PITR when (a) budget permits, or (b) RPO requirements tighten beyond manual-dump feasibility. Record the decision and re-evaluate during release planning.
+
+**Owners & cadence:** assign a backup owner (DevOps or lead developer). The owner must verify backups monthly and run the restore drill quarterly.
+
+### Alternatives & Options (no restore script included)
+
+If you prefer not to maintain a custom `restore.sh` in this academic project, consider these alternatives for future-proofing or for production handoff:
+
+- Enable Supabase PITR (managed WAL-based PITR) when budget allows — simplest for continuous recovery.
+- Use provider-native snapshots (e.g., DigitalOcean Managed Postgres, AWS RDS snapshots) if migrating off the free-tier; snapshots are often quicker to restore at the infrastructure level.
+- Employ a hosted backup/restore service (pgBackRest, Barman, or WAL-E) if you need automated WAL archiving and point-in-time semantics outside Supabase.
+- For ad-hoc restores in low-risk environments, the documented `pg_restore` sequence above is sufficient; capture timing and any manual steps in the project handoff notes.
+- If desired later, add a small `scripts/restore.sh` that automates fetch → decrypt → `pg_restore` for one-click restores; for now we leave this as an optional enhancement.
+
+These alternatives are recorded so stakeholders can choose a path aligned to budget, SLA, and operational capacity.
+
 
 ### Teardown Trigger Note
 
