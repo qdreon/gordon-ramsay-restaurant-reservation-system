@@ -28,6 +28,7 @@ import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const hasSupabaseEnv = Boolean(supabaseUrl && supabaseAnonKey);
 
 /**
  * Singleton Supabase client for browser-side usage.
@@ -35,4 +36,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
  * instance exists per browser context, preventing auth state corruption.
  * All queries are subject to RLS.
  */
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(
+  hasSupabaseEnv ? supabaseUrl : "http://127.0.0.1:54321",
+  hasSupabaseEnv ? supabaseAnonKey : "public-anon-key",
+);

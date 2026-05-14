@@ -11,6 +11,11 @@
 
 import { test, expect, type Page } from "@playwright/test";
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
+test.skip(!hasSupabaseEnv, "E2E TC-8 responsiveness tests require Supabase environment variables.");
+
 const ADMIN_EMAIL = "test-admin@example.com";
 const ADMIN_PASSWORD = "TestPassword123!";
 

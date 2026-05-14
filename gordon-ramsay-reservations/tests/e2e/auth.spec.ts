@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
+test.skip(!hasSupabaseEnv, "E2E auth tests require Supabase environment variables.");
+
 test.describe('Auth flows', () => {
   test('TC-1.1 Registration requires consent and redirects to dashboard', async ({ page }) => {
     await page.goto('/auth/register');

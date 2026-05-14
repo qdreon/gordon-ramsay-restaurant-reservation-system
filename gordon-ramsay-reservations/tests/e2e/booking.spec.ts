@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
+test.skip(!hasSupabaseEnv, "E2E booking tests require Supabase environment variables.");
+
 test.describe('Booking flows', () => {
   test('TC-2.1 Search availability and open CheckoutModal', async ({ page }) => {
     await page.goto('/');

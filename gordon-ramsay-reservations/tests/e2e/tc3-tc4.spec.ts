@@ -17,6 +17,11 @@
 
 import { test, expect, Browser, BrowserContext, Page } from "@playwright/test";
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
+test.skip(!hasSupabaseEnv, "E2E TC-3/TC-4 tests require Supabase environment variables.");
+
 // ---------------------------------------------------------------------------
 // Shared constants
 // ---------------------------------------------------------------------------

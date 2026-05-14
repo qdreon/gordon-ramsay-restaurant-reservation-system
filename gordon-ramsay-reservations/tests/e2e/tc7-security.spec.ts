@@ -23,6 +23,11 @@
 
 import { test, expect, type Page } from "@playwright/test";
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
+test.skip(!hasSupabaseEnv, "E2E TC-7 security tests require Supabase environment variables.");
+
 const CUSTOMER_EMAIL = "test-customer@example.com";
 const CUSTOMER_PASSWORD = "TestPassword123!";
 const ADMIN_EMAIL = "test-admin@example.com";

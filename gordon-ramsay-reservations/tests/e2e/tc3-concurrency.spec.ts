@@ -25,10 +25,6 @@ import { createClient } from "@supabase/supabase-js";
 import { test, expect } from "@playwright/test";
 
 const CUSTOMER_EMAIL = "test-customer@example.com";
-const CUSTOMER_PASSWORD = "TestPassword123!";
-const CARD_NUMBER = "4111111111111111";
-const CARD_EXPIRY = "12/25";
-const CARD_CVV = "123";
 
 // Search parameters -- a far-future date to avoid conflicts with existing data.
 // NOTE: Updated to 2030-01-15 (from 2027-06-15) after TC-3.2 was skipped on
@@ -42,7 +38,6 @@ const SEARCH_PARTY = "2";
 
 const BASE_URL =
   process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? "http://localhost:3000";
-const ASSERT_TIMEOUT = 15000;
 
 function loadDotEnvLocal(): void {
   const envPath = resolve(process.cwd(), ".env.local");
@@ -78,14 +73,21 @@ loadDotEnvLocal();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const hasSupabaseEnv = Boolean(
+  supabaseUrl && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && serviceRoleKey,
+);
+test.skip(
+  !hasSupabaseEnv,
+  "E2E TC-3.2 concurrency test requires NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.",
+);
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error("Missing Supabase environment variables for TC-3.2.");
-}
-
-const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
+const adminSupabase = createClient(
+  supabaseUrl ?? "http://127.0.0.1:54321",
+  serviceRoleKey ?? "service-role-key",
+  {
   auth: { persistSession: false },
-});
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Helpers

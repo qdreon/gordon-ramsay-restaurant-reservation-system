@@ -17,6 +17,11 @@
 
 import { test, expect } from "@playwright/test";
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
+test.skip(!hasSupabaseEnv, "E2E signout tests require Supabase environment variables.");
+
 // I use the same credentials as the RBAC test runner (rbac-test-runner.js),
 // which were verified working on May 13, 2026.
 const TEST_EMAIL = "test-customer@example.com";
