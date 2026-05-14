@@ -81,13 +81,11 @@ test.skip(
   "E2E TC-3.2 concurrency test requires NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.",
 );
 
-const adminSupabase = createClient(
-  supabaseUrl ?? "http://127.0.0.1:54321",
-  serviceRoleKey ?? "service-role-key",
-  {
-  auth: { persistSession: false },
-  },
-);
+const adminSupabase = hasSupabaseEnv
+  ? createClient(supabaseUrl!, serviceRoleKey!, {
+      auth: { persistSession: false },
+    })
+  : null;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -106,6 +104,10 @@ function buildReservationRange(reservationDate: string, reservationTime: string)
 }
 
 async function getCustomerId(email: string): Promise<string> {
+  if (!adminSupabase) {
+    throw new Error("Missing Supabase environment variables for TC-3.2.");
+  }
+
   const { data: userRow, error: userError } = await adminSupabase
     .from("users")
     .select("id")
