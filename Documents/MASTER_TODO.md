@@ -56,6 +56,7 @@
 | **3.4-ERR** | No error feedback for lock conflicts | Error message now displays in modal; user can retry | ✅ RESOLVED |
 
 ### Phase 7 Progress Update
+- QA cleanup automation (May 14): TC-6.2 menu CRUD now removes `QA Test Dish*` and `QA Delete Dish*` rows before and after the suite; Playwright config now loads `.env.local` so the service-role cleanup helper can run during E2E tests.
 - DEF-004 RESOLVED: `playwright.prod.config.ts` created; `npm run test:e2e:prod` script added. SEC-1 tests now run against production build (`next start`) to avoid the webpack dev-server middleware race.
 - DEF-005 RESOLVED: TC-3.2 concurrency test `SEARCH_DATE` updated to `2030-01-15` to ensure a clean future availability slot.
 - TC-3.2 concurrency re-run COMPLETE: direct lock-path validation passed with one success and one conflict in 818ms.
