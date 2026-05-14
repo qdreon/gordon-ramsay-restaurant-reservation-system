@@ -33,16 +33,8 @@ import { cookies } from 'next/headers';
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  // Guard clause: Fail fast if environment is misconfigured.
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      '[Supabase Server Init Error] Missing NEXT_PUBLIC_SUPABASE_URL or ' +
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local.'
-    );
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
