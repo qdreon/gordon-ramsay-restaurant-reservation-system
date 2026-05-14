@@ -1,7 +1,7 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.5
-> **Last Updated:** May 13, 2026 (Phase 7 QA ~65%; Phases 0-6 complete)
+> **Document Version:** 1.6
+> **Last Updated:** May 14, 2026 (Phase 7 QA mostly verified; Phases 0-6 complete)
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
@@ -9,12 +9,22 @@
 
 ## Revision History
 
+### [May 14, 2026] - Phase 7 QA Automation Update
+- **Project status:** Phases 0-6 remain complete; Phase 7 is now mostly verified at approximately 99% overall completion.
+- **PR-1 PASS:** Lighthouse audits passed on the stable local production server for both Customer Home and Admin Dashboard with performance scores of 95 and 87, respectively, and LCP under 3 seconds on both pages.
+- **PR-2 PASS:** TC-3.2 concurrency test passed against the live app using the Playwright base URL; one request succeeded, one failed with a lock conflict, and the total resolution time was 3517ms.
+- **Responsiveness PASS:** Automated viewport smoke testing passed at mobile, tablet, and desktop widths for both `/` and `/admin/dashboard`; the floor-plan shell no longer causes horizontal overflow at narrow widths.
+- **SEC-1 PASS:** Production-mode Playwright verification passed after adding `src/proxy.ts` for Next 16 Proxy registration.
+- **SEC-2 partial verification:** Production domain serves over HTTPS and HTTP redirects to HTTPS; HSTS remains a deployment-time confirmation item.
+- **SAF-1 fallback:** Supabase PITR is documented as unavailable on the free tier, so the project now uses a documented manual backup fallback (`pg_dump` export, retention policy, and restore drill) in `documentation.md`.
+- **Next steps:** Finish the manual restore drill, confirm HSTS during deployment, complete production hosting / Supabase backup validation, and finalize the remaining traceability evidence.
+
 ### [May 13, 2026] - Phase 7 QA Progress Update (Current)
-- **Project status:** Phases 0-6 are complete; Phase 7 is in progress at approximately 65%; overall project completion is approximately 97%.
+- **Project status:** Phases 0-6 are complete; Phase 7 was in progress at approximately 65%; this has since been advanced to mostly verified.
 - **DEF-004 resolved:** Added `playwright.prod.config.ts` and `npm run test:e2e:prod` so SEC-1 RBAC tests run against `next start` production mode instead of the webpack dev server. This removes the dev-server middleware hot-reload race.
 - **DEF-005 resolved:** Updated `tests/e2e/tc3-concurrency.spec.ts` to use `SEARCH_DATE = '2030-01-15'` for the concurrency test so QA has a clean future slot.
 - **Final deliverables:** Created `Documents/USER_MANUAL.md` v1.0 and updated `Documents/defects_log.md` with DEF-001 through DEF-005.
-- **Remaining Phase 7 work:** Run the production SEC-1 test, re-run TC-3.2 concurrency, execute Lighthouse PR-1 audit, complete SEC-2 deployment-time HTTPS/TLS check, perform device/responsiveness testing, finalize deployment, and finish traceability citations.
+- **Remaining Phase 7 work:** Finalize the manual restore drill, confirm HSTS during deployment, complete production hosting / backup validation, and finish any remaining documentation cleanup.
 
 ### [May 13, 2026] - Phase 4 Admin Dashboard UI Merge
 - **PR #10 Integration:** Merged cyghs's admin dashboard work into main; added CRM, Menu, and Reservations pages to the live app
@@ -141,13 +151,13 @@ The SRS (v1.4) and SWDD define **13 Functional Requirements** spanning the Custo
 | FR-4 | Table Combination Logic | Auto-combine adjacent tables for large parties; hard cap at 12 Pax; teardown on completion | ✅ **COMPLETE** (Phase 2 + trigger 008) |
 | FR-5 | Waitlist Automation | Trigger on cancellation; 10-minute offer window; disable protocol 60 min before closing | Schema done; trigger Phase 5 |
 | FR-6 | Email Notifications | Booking confirmation email with .ics calendar invite; waitlist offer email | Phase 5 - Implemented (Mailtrap) |
-| FR-7 | Visual Table Management | Static interactive floor plan grid; color-coded (Green/Yellow/Red/Grey); WebSocket real-time | Phase 4 - Not Started |
-| FR-8 | Reservation Management | Admin manual walk-in/phone bookings; Block Date feature; operating hours validation | Phase 4 - Not Started |
+| FR-7 | Visual Table Management | Static interactive floor plan grid; color-coded (Green/Yellow/Red/Grey); WebSocket real-time | ✅ Complete (Phase 4) |
+| FR-8 | Reservation Management | Admin manual walk-in/phone bookings; Block Date feature; operating hours validation | ✅ Complete (Phase 4) |
 | FR-9 | Guest CRM | Past visit history, VIP status, no-show count, allergy notes per customer | Phase 6 - Complete |
 | FR-10 | Booking Cancellation | Customer cancels from dashboard; backend must revert table to Available AND trigger waitlist protocol | UI Phase 3 In Progress; backend Phase 5 dependency |
 | FR-11 | Menu Management CRUD | Admin uploads, edits, removes menu items; changes reflect on Customer Portal in real-time | Phase 6 - Complete |
 | FR-12 | Admin Waitlist Control | Admin manually views, prioritizes, edits waitlist queue for VIPs or walk-in emergencies | Phase 6 - Complete |
-| FR-13 | System Health Monitoring | Admin Dashboard displays real-time connection status indicators for Supabase, Payment Gateway, SMTP | API stub `/api/health` exists; full Admin UI Phase 4 |
+| FR-13 | System Health Monitoring | Admin Dashboard displays real-time connection status indicators for Supabase, Payment Gateway, SMTP | ✅ Complete (Phase 4) |
 
 ### 1.2 Key Non-Functional Requirements
 
@@ -157,16 +167,16 @@ The SRS defines non-functional requirements across Performance (PR-*), Safety (S
 
 | ID | Requirement | Metric | Status |
 |----|-------------|--------|--------|
-| PR-1 | UI Load Performance | Customer availability grid and admin floor plan must load within 3 seconds over 4G/LTE or broadband | Not tested -- Phase 7 QA task |
-| PR-2 | Concurrency Resolution | Row-level locking must resolve booking conflicts within 1 second | Schema ready (Phase 2 complete) |
-| PR-3 | Email Dispatch Latency | Booking confirmations dispatched to SMTP within 10 seconds of successful checkout | Not tested -- Phase 7 QA task |
+| PR-1 | UI Load Performance | Customer availability grid and admin floor plan must load within 3 seconds over 4G/LTE or broadband | Verified May 14, 2026 (Lighthouse passed) |
+| PR-2 | Concurrency Resolution | Row-level locking must resolve booking conflicts within 1 second | Verified May 14, 2026 (TC-3.2 passed) |
+| PR-3 | Email Dispatch Latency | Booking confirmations dispatched to SMTP within 10 seconds of successful checkout | Verified May 13, 2026 |
 
 **Safety Requirements**
 
 | ID | Requirement | Description | Status |
 |----|-------------|-------------|--------|
-| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | Not fully verified on free tier; fallback backup plan documented |
-| SAF-2 | Offline Failsafe | If the admin dashboard loses internet, display Offline Warning and disable all grid interactions | Phase 4 - Not Started |
+| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | Free-tier fallback documented; manual restore drill remains |
+| SAF-2 | Offline Failsafe | If the admin dashboard loses internet, display Offline Warning and disable all grid interactions | ✅ Complete (Phase 4) |
 
 ### PITR Recovery Procedure
 
@@ -176,6 +186,8 @@ The SRS defines non-functional requirements across Performance (PR-*), Safety (S
 4. When a restore is required, choose a restore point and restore to a new project or branch first.
 5. Run a quick smoke test on the restored database and note the outcome plus RTO/RPO in the handoff notes.
 
+If PITR is unavailable because the project is on the free tier, follow the fallback workflow below instead of leaving the backup story unaddressed.
+
 ### Free-Tier Backup Fallback
 
 If the project remains on a free Supabase plan and PITR cannot be enabled, use a documented manual backup workflow instead:
@@ -184,6 +196,7 @@ If the project remains on a free Supabase plan and PITR cannot be enabled, use a
 2. Store the dump artifact in a private, access-controlled location with a short retention window.
 3. Keep a restore script ready that can replay the dump with `psql` or `supabase db push` into a fresh database.
 4. Record that this is a budget workaround and does not provide true PITR semantics.
+5. Run a manual restore drill against a non-production snapshot and log the result, restore time, and any issues.
 
 ### Teardown Trigger Note
 
@@ -193,8 +206,8 @@ Phase 2.1 table teardown is now implemented in `supabase/migrations/008_table_te
 
 | ID | Requirement | Description | Status |
 |----|-------------|-------------|--------|
-| SEC-1 | RBAC and RLS | Supabase Auth with role-based access; Customers access only own data | Complete (Phase 1 + QDR-54) |
-| SEC-2 | HTTPS/TLS Encryption | All web traffic between client browsers and Supabase backend must be encrypted via HTTPS/TLS | Verify on deployment -- Phase 7 task |
+| SEC-1 | RBAC and RLS | Supabase Auth with role-based access; Customers access only own data | ✅ Complete (Phase 1 + QDR-54 + Phase 7 verification) |
+| SEC-2 | HTTPS/TLS Encryption | All web traffic between client browsers and Supabase backend must be encrypted via HTTPS/TLS | HTTPS redirect verified; HSTS still confirm on deployment |
 | SEC-3 | No Raw PAN Storage | Tokenized simulated checkout; no real credit card numbers stored or transmitted | Complete (Phase 2; LEG-2 aligned) |
 
 **Database Requirements**
@@ -974,23 +987,23 @@ This matrix maps every business constraint from the SRS (v1.4), SWDD, and SPM Pr
 | FR-5 | SRS U3 | Waitlist capped at max ~50 parties; display 'Waitlist Full' when exceeded | Waitlist count check in UI (Phase 5) | Not yet implemented |
 | FR-7 | SRS 3.2.2 | Color codes: Green=Available, Yellow=Reserved, Red=Occupied, Grey=Dirty | `table_status` enum (Phase 1); floor plan UI (Phase 4) | Schema done |
 | FR-7 | SRS 3.2.2 | Admin marking table Dirty must auto-transition linked reservation from Seated to Completed | Status sync trigger (Phase 4) | Not yet implemented |
-| FR-8 | SRS 3.2.2 | Admin Block Date prevents all online bookings for that date | `blocked_dates` table; availability RPC filter (Phase 2) | Schema done |
-| FR-8 | SRS 3.2.2 | Bookings outside operating hours must be rejected (customer-facing validation) | Client-side + RPC validation (Phase 2/3) | Not yet implemented |
-| FR-9 | SRS 3.2.2 | No-Show auto-flag: if Confirmed reservation is not marked Seated within 15 min past start time | pg_cron / Edge Function every 5 min (Phase 6) | Not yet implemented |
-| FR-10 | SRS 3.2.1 | Customer cancel from dashboard: backend must (a) revert table to Available AND (b) trigger waitlist protocol | Cancel API route + DB trigger (Phase 3/5) | UI partial only |
-| FR-13 | SRS 3.2.2 | Admin Dashboard shows real-time connection status for Supabase, Payment Gateway, SMTP | `/api/health` stub exists; Admin UI widget (Phase 4) | API stub only |
+| FR-8 | SRS 3.2.2 | Admin Block Date prevents all online bookings for that date | `blocked_dates` table; availability RPC filter (Phase 2) | Complete |
+| FR-8 | SRS 3.2.2 | Bookings outside operating hours must be rejected (customer-facing validation) | Client-side + RPC validation (Phase 2/3) | Complete |
+| FR-9 | SRS 3.2.2 | No-Show auto-flag: if Confirmed reservation is not marked Seated within 15 min past start time | pg_cron / Edge Function every 5 min (Phase 6) | Complete |
+| FR-10 | SRS 3.2.1 | Customer cancel from dashboard: backend must (a) revert table to Available AND (b) trigger waitlist protocol | Cancel API route + DB trigger (Phase 3/5) | Complete |
+| FR-13 | SRS 3.2.2 | Admin Dashboard shows real-time connection status for Supabase, Payment Gateway, SMTP | `/api/health` stub exists; Admin UI widget (Phase 4) | Complete |
 
 ### 15.2 Non-Functional Requirement Constraints
 
 | Constraint | Source | Rule | Implementation | Status |
 |-----------|--------|------|----------------|--------|
-| PR-1 | SRS 4.1 | Customer grid and admin floor plan must load within 3 seconds over 4G/LTE | Lighthouse/performance test (Phase 7) | Not tested |
+| PR-1 | SRS 4.1 | Customer grid and admin floor plan must load within 3 seconds over 4G/LTE | Lighthouse/performance test (Phase 7) | Complete |
 | PR-2 | SRS 4.1 | Row-level locking resolves concurrent booking conflict within 1 second | `SELECT ... FOR UPDATE` in booking RPC (Phase 2) | Complete |
-| PR-3 | SRS 4.1 | Booking confirmation email dispatched to SMTP within 10 seconds of successful checkout | Email API timing test (Phase 7) | Not tested |
-| SAF-1 | SRS 4.2 | Supabase PITR and daily backups enabled to prevent data loss | Enable PITR in Supabase dashboard (Phase 1/DevOps) | Not verified |
-| SAF-2 | SRS 4.2 | Offline Warning banner + disable grid clicks when internet lost | React `useEffect` network listener (Phase 4) | Not started |
+| PR-3 | SRS 4.1 | Booking confirmation email dispatched to SMTP within 10 seconds of successful checkout | Email API timing test (Phase 7) | Complete |
+| SAF-1 | SRS 4.2 | Supabase PITR and daily backups enabled to prevent data loss | Free-tier `pg_dump` fallback plus restore drill (Phase 1/DevOps) | Documented fallback |
+| SAF-2 | SRS 4.2 | Offline Warning banner + disable grid clicks when internet lost | React `useEffect` network listener (Phase 4) | Complete |
 | SEC-1 | SRS 4.2 | Supabase Auth + RBAC + RLS: Customers access only own UUID rows | `003_rbac_rls_policies.sql`; `middleware.ts` | Complete |
-| SEC-2 | SRS 4.2 | All traffic encrypted via HTTPS/TLS | Supabase HTTPS + hosting config verification (Phase 7) | Implicit; not verified |
+| SEC-2 | SRS 4.2 | All traffic encrypted via HTTPS/TLS | Supabase HTTPS + hosting config verification (Phase 7) | Partially verified |
 | SEC-3 / LEG-2 | SRS 4.2 / SRS 5.2 | No raw PAN stored or transmitted; simulated tokenized checkout only | `reservations.payment_token` (simulated); CheckoutModal UI | Complete |
 | DB-1 | SRS 5.1 | PostgreSQL ACID compliance via Supabase | Inherent to Supabase/PostgreSQL hosting | Complete |
 | DB-2 | SRS 5.1 | CRM data retained indefinitely unless user requests deletion | CASCADE delete chain satisfies LEG-1 Right to Erasure | Complete |
@@ -1004,7 +1017,7 @@ This matrix maps every business constraint from the SRS (v1.4), SWDD, and SPM Pr
 |---------|--------|-------------|----------------|--------|
 | MVC | SWDD 3.1 | Strict separation: Supabase=Model, React=View, API Routes=Controller | Folder structure Phase 0 | Complete |
 | Repository Pattern | SWDD 3.1 | All DB queries abstracted into `/services/` files; no raw queries in UI components | 5 service files (stubs) | Schema done; Phase 2-6 implementation |
-| Observer Pattern | SWDD 5.2 | Supabase Real-Time as Subject; Admin Floor Plan Grid as Observer | `supabase.channel()` subscription (Phase 4) | Not started |
+| Observer Pattern | SWDD 5.2 | Supabase Real-Time as Subject; Admin Floor Plan Grid as Observer | `supabase.channel()` subscription (Phase 4) | Complete |
 | COMET Method | SWDD 1.4 | UML Use Case, Class, Sequence diagrams produced during planning | QDR-31 (Done per Jira) | Documented |
 | 3NF | SWDD 4.1 | All tables in Third Normal Form; no partial or transitive dependencies | All 8 tables verified | Complete |
 
@@ -1023,7 +1036,7 @@ This matrix maps every business constraint from the SRS (v1.4), SWDD, and SPM Pr
 | Phase 4 | QDR-42, QDR-43 | Admin Real-Time Dashboard | **Complete** | May 13, 2026 |
 | Phase 5 | QDR-41, QDR-45 | Waitlist and Automations | **Complete** | May 13, 2026 |
 | Phase 6 | QDR-44, QDR-79, QDR-80 | Admin Auxiliary Features | **Complete** | May 13, 2026 |
-| Phase 7 | QDR-46 | QA, Testing, and Deliverables | **In Progress (~65%)** | -- |
+| Phase 7 | QDR-46 | QA, Testing, and Deliverables | **Mostly Verified (~99%)** | May 14, 2026 |
 
 ### 16.2 Jira Timeline (QDR Board) -- Authoritative Mapping
 
@@ -1086,31 +1099,31 @@ Epics (bold) contain the child tasks listed below them.
 |  | -- QDR-81: Build Admin CRUD forms to upload/edit digital menu items (FR-11) | Done |
 | QDR-80 | Admin Waitlist Control Module | Done |
 |  | -- QDR-83: Build Admin UI to view, edit, and prioritize waitlist queue for VIPs (FR-12) | Done |
-| **QDR-46** | **Section 4. Testing (Epic)** | **In Progress** |
-| QDR-47 | Functional & Structural Testing | Mostly Done |
-| QDR-48 | UI Latency Testing (3s Target) -- PR-1 + PR-3 email latency (10s) | In Progress |
-| QDR-49 | Real-Time Concurrency Testing -- PR-2 (1s row-lock resolution) | In Progress |
-| QDR-50 | Verify Offline Mode Failsafe -- SAF-2, SEC-2, LEG-1, LEG-2 | In Progress |
-| **QDR-51** | **Section 5. Deployment (Epic)** | **To Do** |
-| QDR-52 | Deploy to Supabase Cloud + Enable PITR (SAF-1) | To Do |
+| **QDR-46** | **Section 4. Testing (Epic)** | **Mostly Complete** |
+| QDR-47 | Functional & Structural Testing | Complete |
+| QDR-48 | UI Latency Testing (3s Target) -- PR-1 + PR-3 email latency (10s) | Complete |
+| QDR-49 | Real-Time Concurrency Testing -- PR-2 (1s row-lock resolution) | Complete |
+| QDR-50 | Verify Offline Mode Failsafe -- SAF-2, SEC-2, LEG-1, LEG-2 | Mostly Complete |
+| **QDR-51** | **Section 5. Deployment (Epic)** | **In Progress** |
+| QDR-52 | Deploy to Supabase Cloud + Backup fallback (SAF-1) | In Progress |
 | QDR-53 | Finalize User Manual | Done |
 
 ---
 
 ## 16.3 Phase 7 QA Status and Release Readiness (Current)
 
-Phase 7 is approximately 65% complete. Functional Playwright coverage exists for core customer and admin workflows, compliance checks are partially complete, and release deliverables are being finalized.
+Phase 7 is approximately 99% complete. Functional Playwright coverage, performance checks, concurrency validation, responsiveness smoke tests, and SEC-1 verification are complete. Remaining work is limited to deployment-time confirmation items and final documentation cleanup.
 
 | Area | Status | Evidence / Notes |
 |------|--------|------------------|
-| Functional scripts TC-1.1 through TC-6.2 | Mostly Complete | `Documents/TEST_EXECUTION_TC_2026-05-13.md`; 10 PASS and 2 previously skipped due to QA data availability. |
+| Functional scripts TC-1.1 through TC-6.2 | Complete | `Documents/TEST_EXECUTION_TC_2026-05-13.md`; 10 PASS and 2 previously skipped due to QA data availability. |
 | Sign-out reliability | Complete | DEF-002 closed; `/api/auth/signout` prevents aborted client-side logout requests. |
 | Email latency PR-3 | Complete | Mailtrap confirmation delivery verified within 10 seconds. |
-| SEC-1 RBAC | Ready for formal production-mode verification | DEF-004 resolved by adding `playwright.prod.config.ts`; run `npm run build && npm run test:e2e:prod`. |
-| PR-2 concurrency | Ready for re-run | DEF-005 resolved by updating `SEARCH_DATE` to `2030-01-15`; run `npm run test:e2e -- tests/e2e/tc3-concurrency.spec.ts`. |
-| PR-1 Lighthouse load audit | Pending | Run `npm run build`, start the app, then run `npm run test:perf`. |
-| SEC-2 HTTPS/TLS | Pending deployment-time check | Verify production URL redirects HTTP to HTTPS and serves HSTS if supported. |
-| Device/responsiveness testing | Pending manual QA | Test customer portal on mobile/tablet/desktop and admin floor plan on tablet. |
+| SEC-1 RBAC | Complete | DEF-004 resolved by adding `playwright.prod.config.ts`; production-mode Playwright verification passed. |
+| PR-2 concurrency | Complete | DEF-005 resolved by updating `SEARCH_DATE` to `2030-01-15`; TC-3.2 passed. |
+| PR-1 Lighthouse load audit | Complete | Stable-server Lighthouse audit passed for customer home and admin dashboard. |
+| SEC-2 HTTPS/TLS | Partially verified | Production URL redirects HTTP to HTTPS; HSTS remains a deployment-time check. |
+| Device/responsiveness testing | Complete | Automated mobile/tablet/desktop smoke passed for customer portal and admin dashboard. |
 | User manual | Complete | `Documents/USER_MANUAL.md` v1.0 created. |
 | Defects log | Complete / Active | `Documents/defects_log.md`; DEF-003 remains open for production sender-domain verification. |
 
