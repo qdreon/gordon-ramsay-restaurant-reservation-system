@@ -135,11 +135,10 @@ Building the 3NF Database Model and RBAC Security. **Status: COMPLETE**
 - [x] Install `date-fns` for client-side UTC-to-local time conversion. [QDR-58]
 
 ### Subtask 1.5: Data Backup & Recovery (SAF-1)
-- [ ] Enable Supabase Point-in-Time Recovery (PITR) in the Supabase dashboard project settings. **[DEFERRED: requires Supabase Pro]**
-- [ ] Verify daily automated backups are active. **[DEFERRED: requires Supabase Pro]**
-- [x] Document backup retention period and recovery procedure in `documentation.md`.
+- [x] Document the free-tier backup fallback in `documentation.md` (daily `pg_dump` export + restore drill + retention policy). **[PITR unavailable on free tier]**
+- [ ] Verify the manual restore procedure against a test database snapshot. **[Fallback for free-tier deployment]**
 
----
+3. **Deployment** (7.6): Documented free-tier fallback + production hosting.
 
 ## PHASE 2: Core Booking Engine & Concurrency (Backend / RPCs) [QDR-40]
 
