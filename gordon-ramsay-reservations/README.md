@@ -2,16 +2,53 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+From this directory, install the project packages:
+
+```bash
+npm install
+```
+
+### 2. Create your local environment file
+
+Copy the committed template into a private local file:
+
+```bash
+cp .env.example .env.local
+```
+
+On Windows PowerShell, use:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Then ask the project owner for the real values and replace the placeholders in `.env.local`.
+
+Required for normal app usage:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Required for email/health checks:
+
+- `MAILTRAP_API_TOKEN`
+- `MAILTRAP_FROM` or `EMAIL_FROM`
+
+Optional metadata:
+
+- `RESTAURANT_NAME`
+- `RESTAURANT_ADDRESS`
+
+Important: never commit `.env.local`. It contains private credentials and is ignored by Git.
+
+### 3. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

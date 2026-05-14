@@ -1,0 +1,117 @@
+name: pg_dump Backups
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # daily at 02:00 UTC
+  workflow_dispatch: {}
+
+env:
+  # Default retention (days) can be overridden via repository secret or env var
+  BACKUP_RETENTION_DAYS: 30
+
+jobs:
+  backup:
+    name: Run pg_dump, encrypt, upload, rotate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client openssl jq
+
+      - name: Prepare vars
+        id: vars
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H%M%SZ")
+          BASENAME="grrrs-backup-${TIMESTAMP}.dump"
+          ENCRYPTED_BASENAME="${BASENAME}.enc"
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "BASENAME=$BASENAME" >> $GITHUB_OUTPUT
+          echo "ENCRYPTED_BASENAME=$ENCRYPTED_BASENAME" >> $GITHUB_OUTPUT
+
+      - name: Run pg_dump (custom format)
+        env:
+          # Provide a libpq connection string in the secret SUPABASE_DB_URL
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -e
+          DUMP_FILE="${{ steps.vars.outputs.BASENAME }}"
+          pg_dump --format=custom --no-owner --no-acl --file="$DUMP_FILE" "${SUPABASE_DB_URL}"
+
+      - name: Compute checksum and encrypt dump
+        env:
+          ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          DUMP_FILE="${{ steps.vars.outputs.BASENAME }}"
+          ENCRYPTED_FILE="${{ steps.vars.outputs.ENCRYPTED_BASENAME }}"
+          sha256sum "$DUMP_FILE" > "$DUMP_FILE.sha256"
+          openssl enc -aes-256-cbc -salt -pbkdf2 -pass pass:"${ENCRYPTION_KEY}" -in "$DUMP_FILE" -out "$ENCRYPTED_FILE"
+          echo "Encrypted -> $ENCRYPTED_FILE"
+
+      - name: Upload to S3 (primary)
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY && secrets.BACKUP_S3_BUCKET }}
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload encrypted dump to S3
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY && secrets.BACKUP_S3_BUCKET }}
+        run: |
+          BUCKET=${{ secrets.BACKUP_S3_BUCKET }}
+          KEY_PREFIX=${{ secrets.BACKUP_S3_PREFIX }}
+          KEY_PREFIX=${KEY_PREFIX:-backups}
+          ENCRYPTED_FILE="${{ steps.vars.outputs.ENCRYPTED_BASENAME }}"
+          aws s3 cp "$ENCRYPTED_FILE" "s3://$BUCKET/$KEY_PREFIX/$ENCRYPTED_FILE" --acl private
+
+      - name: Upload artifact (fallback)
+        if: ${{ !secrets.AWS_ACCESS_KEY_ID || !secrets.AWS_SECRET_ACCESS_KEY || !secrets.BACKUP_S3_BUCKET }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ steps.vars.outputs.TIMESTAMP }}
+          path: |
+            ${{ steps.vars.outputs.BASENAME }}
+            ${{ steps.vars.outputs.BASENAME }}.sha256
+            ${{ steps.vars.outputs.ENCRYPTED_BASENAME }}
+
+      - name: Rotate old backups in S3
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY && secrets.BACKUP_S3_BUCKET }}
+        env:
+          RETENTION_DAYS: ${{ env.BACKUP_RETENTION_DAYS }}
+        run: |
+          set -e
+          BUCKET=${{ secrets.BACKUP_S3_BUCKET }}
+          PREFIX=${{ secrets.BACKUP_S3_PREFIX }}
+          PREFIX=${PREFIX:-backups}
+          CUT_OFF=$(date -u -d "-$RETENTION_DAYS days" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "Removing objects older than $CUT_OFF in s3://$BUCKET/$PREFIX"
+          KEYS=$(aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "$PREFIX/" --query "Contents[?LastModified<='${CUT_OFF}'].Key" --output text)
+          if [ -z "$KEYS" ]; then
+            echo "No old objects to delete"
+            exit 0
+          fi
+          for key in $KEYS; do
+            echo "Deleting $key"
+            aws s3 rm "s3://$BUCKET/$key"
+          done
+
+      - name: Success message
+        run: echo "Backup created and uploaded. Timestamp: ${{ steps.vars.outputs.TIMESTAMP }}"
+
+  # Optional restore job (manual run)
+  restore:
+    name: Restore dump to target (manual)
+    runs-on: ubuntu-latest
+    needs: backup
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore instructions
+        run: |
+          echo "This workflow creates encrypted backups. To restore, fetch the desired encrypted file from S3 or artifacts, decrypt with OpenSSL using the BACKUP_ENCRYPTION_KEY, then run:\npg_restore --verbose --clean --no-owner --dbname=postgresql://<user>:<pass>@<host>:<port>/<db> <decrypted.dump>"
