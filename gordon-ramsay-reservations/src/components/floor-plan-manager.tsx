@@ -590,9 +590,9 @@ export function FloorPlanManager() {
   );
 
   return (
-    <div className="flex h-screen w-full bg-background">
+    <div className="flex h-screen w-full flex-col bg-background xl:flex-row">
       {/* Left Sidebar */}
-      <aside className="w-80 shrink-0 border-r border-border bg-sidebar flex flex-col h-screen overflow-hidden">
+      <aside className="flex h-auto w-full shrink-0 flex-col overflow-hidden border-b border-border bg-sidebar xl:h-screen xl:w-80 xl:border-b-0 xl:border-r">
         <div className="p-4 border-b border-sidebar-border shrink-0">
           <h1
             className="text-lg font-semibold text-sidebar-foreground flex items-center gap-2"
@@ -768,9 +768,9 @@ export function FloorPlanManager() {
       </aside>
 
       {/* Main Floor Plan */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex min-w-0 flex-1 flex-col">
         {/* Header with Legend */}
-        <header className="flex items-center justify-between p-4 border-b border-border">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
           <h2
             className="text-lg font-semibold text-foreground"
             style={{ fontFamily: "Arial" }}
@@ -781,8 +781,8 @@ export function FloorPlanManager() {
         </header>
 
         {/* Floor Plan Grid */}
-        <div className="flex-1 flex items-center justify-center p-8 relative">
-          <div className="space-y-4">
+        <div className="relative flex-1 items-center justify-start overflow-x-auto p-4 xl:justify-center xl:p-8">
+          <div className="min-w-max space-y-4">
             {/* Row Labels */}
             <div className="flex items-center gap-4">
               <span
