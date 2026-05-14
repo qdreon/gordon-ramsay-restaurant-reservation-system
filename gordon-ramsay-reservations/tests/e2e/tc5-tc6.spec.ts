@@ -23,6 +23,7 @@
  */
 
 import { test, expect, type Page } from "@playwright/test";
+import { createServiceSupabaseClient } from "@/lib/supabaseAdmin";
 
 // --- Shared credentials ---
 const ADMIN_EMAIL = "test-admin@example.com";
@@ -42,6 +43,28 @@ async function loginAsAdmin(page: Page): Promise<void> {
   await page.click('button[type="submit"]');
   // Wait for redirect to any admin or customer dashboard
   await expect(page).toHaveURL(/admin|customer/, { timeout: T });
+}
+
+async function removeQaMenuItems(): Promise<void> {
+  const supabase = createServiceSupabaseClient();
+
+  const { error: testDishError } = await supabase
+    .from("menu")
+    .delete()
+    .ilike("name", "QA Test Dish %");
+
+  if (testDishError) {
+    throw new Error(`Failed to clean up QA test dishes: ${testDishError.message}`);
+  }
+
+  const { error: deleteDishError } = await supabase
+    .from("menu")
+    .delete()
+    .ilike("name", "QA Delete Dish %");
+
+  if (deleteDishError) {
+    throw new Error(`Failed to clean up QA delete dishes: ${deleteDishError.message}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -311,6 +334,14 @@ test.describe("TC-6.2 Menu CRUD (FR-11)", () => {
   // I use a unique suffix so parallel runs do not collide on the same item name
   const TEST_DISH_NAME = `QA Test Dish ${Date.now()}`;
   const DELETE_DISH_NAME = `QA Delete Dish ${Date.now()}`;
+
+  test.beforeAll(async () => {
+    await removeQaMenuItems();
+  });
+
+  test.afterAll(async () => {
+    await removeQaMenuItems();
+  });
 
   test("can add a menu item and it appears in the list", async ({ page }) => {
     await loginAsAdmin(page);
