@@ -17,11 +17,28 @@ import React from "react";
 
 export const dynamic = "force-dynamic";
 
-export default function CustomerLayout({
+import { redirect } from "next/navigation";
+import { getServerAuthContext } from "@/lib/authGuards";
+
+export default async function CustomerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, profile } = await getServerAuthContext();
+
+  if (!user) {
+    redirect("/auth/login?next=/customer/dashboard");
+  }
+
+  if (profile?.role === "admin") {
+    redirect("/admin/dashboard");
+  }
+
+  if (profile?.role !== "customer") {
+    redirect("/auth/login?next=/customer/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Header Navigation */}
