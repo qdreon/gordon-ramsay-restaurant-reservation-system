@@ -69,17 +69,18 @@ export default function Home() {
   const [waitlistCapacity, setWaitlistCapacity] = useState<number>(0);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const storedTheme = window.localStorage.getItem("theme");
+    const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return storedTheme === "dark" || (!storedTheme && preferDark);
+  });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
-    const root = document.documentElement;
-    const storedTheme = window.localStorage.getItem("theme");
-    const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldUseDark = storedTheme === "dark" || (!storedTheme && preferDark);
-    root.classList.toggle("dark", shouldUseDark);
-    setIsDarkMode(shouldUseDark);
-  }, []);
+    document.documentElement.classList.toggle("dark", isDarkMode);
+    window.localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
 
   function pushToast(title: string, description: string, kind: ToastKind = "info") {
     const id = ++toastIdRef.current;
@@ -90,10 +91,7 @@ export default function Home() {
   }
 
   function toggleTheme() {
-    const next = !isDarkMode;
-    setIsDarkMode(next);
-    document.documentElement.classList.toggle("dark", next);
-    window.localStorage.setItem("theme", next ? "dark" : "light");
+    setIsDarkMode((prev) => !prev);
   }
 
   function scrollToReservation() {
@@ -206,7 +204,7 @@ export default function Home() {
       if (nextOptions.length > 0) {
         pushToast(
           "Tables found",
-          `${nextOptions.length} option${nextOptions.length > 1 ? "s" : ""} available for your request.",
+          `${nextOptions.length} option${nextOptions.length > 1 ? "s" : ""} available for your request.`,
           "success",
         );
       } else {
