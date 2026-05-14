@@ -43,6 +43,6 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "@playwright/test": "^1.39.0",
-    "lighthouse": "^11.0.0"
+    "lighthouse": "^13.3.0"
   }
 }
