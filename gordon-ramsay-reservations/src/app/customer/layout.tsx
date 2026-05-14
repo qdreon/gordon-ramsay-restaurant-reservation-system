@@ -40,24 +40,24 @@ export default async function CustomerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.1),transparent_35%),linear-gradient(180deg,#0e0e13_0%,#14141b_45%,#171720_100%)] text-zinc-100">
       {/* Header Navigation */}
-      <header className="border-b bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-black/30 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-8">
-            <Link href="/customer/dashboard" className="text-xl font-bold">
+            <Link href="/customer/dashboard" className="text-lg font-semibold text-white sm:text-xl">
               Gordon Ramsay
             </Link>
-            <nav className="hidden gap-6 md:flex">
+            <nav className="hidden gap-3 md:flex">
               <Link
                 href="/customer/dashboard"
-                className="text-sm hover:text-blue-600 dark:hover:text-blue-400"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-amber-300/40 hover:bg-white/10"
               >
                 My Reservations
               </Link>
               <Link
                 href="/"
-                className="text-sm hover:text-blue-600 dark:hover:text-blue-400"
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200 transition hover:border-amber-300/40 hover:bg-white/10"
               >
                 New Booking
               </Link>
@@ -65,15 +65,29 @@ export default async function CustomerLayout({
           </div>
           <div className="flex items-center gap-4">
             {/* Placeholder for user menu / sign-out */}
-            <span className="text-sm text-slate-600 dark:text-slate-400">
+            <span className="text-xs text-zinc-300">
               Customer Menu
             </span>
           </div>
+          <nav className="flex w-full gap-2 overflow-x-auto pb-1 md:hidden">
+            <Link
+              href="/customer/dashboard"
+              className="whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200"
+            >
+              My Reservations
+            </Link>
+            <Link
+              href="/"
+              className="whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-200"
+            >
+              New Booking
+            </Link>
+          </nav>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
     </div>
   );
 }

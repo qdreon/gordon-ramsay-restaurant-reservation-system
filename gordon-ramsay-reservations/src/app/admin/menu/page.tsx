@@ -335,13 +335,13 @@ export default function MenuManagementPage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 p-8 font-sans text-[11px] bg-background text-foreground">
+    <div className="flex w-full flex-col gap-6 rounded-3xl border border-white/10 bg-black/20 p-4 font-sans text-[11px] text-zinc-100 shadow-[0_16px_50px_rgba(0,0,0,0.3)] backdrop-blur sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold font-heading text-foreground flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-xl font-semibold font-heading text-white">
             <BookOpen className="w-5 h-5 text-bold" /> Menu Configuration
           </h1>
-          <p className="text-muted-foreground italic mt-1">
+          <p className="mt-1 text-zinc-300">
             Real-time availability and pricing controls
           </p>
         </div>
@@ -452,10 +452,10 @@ export default function MenuManagementPage() {
         </div>
       </header>
 
-      {error && <p className="text-destructive">{error}</p>}
-      {actionError && <p className="text-destructive">{actionError}</p>}
+      {error && <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-red-200">{error}</p>}
+      {actionError && <p className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-red-200">{actionError}</p>}
 
-      <div className="rounded-md border border-border bg-card">
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-border hover:bg-transparent">

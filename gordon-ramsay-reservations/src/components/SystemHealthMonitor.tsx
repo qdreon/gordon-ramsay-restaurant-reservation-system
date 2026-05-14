@@ -77,8 +77,8 @@ export function SystemHealthMonitor() {
 
   if (!health) {
     return (
-      <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center gap-2 text-sm text-zinc-300">
           <Activity className="w-4 h-4 animate-spin" />
           Loading system status...
         </div>
@@ -88,10 +88,10 @@ export function SystemHealthMonitor() {
 
   const statusColor =
     health.status === "ok"
-      ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900"
+      ? "border-emerald-400/30 bg-emerald-500/10"
       : health.status === "degraded"
-        ? "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900"
-        : "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900";
+        ? "border-amber-400/30 bg-amber-500/10"
+        : "border-red-400/30 bg-red-500/10";
 
   const statusTextColor =
     health.status === "ok"
@@ -110,7 +110,7 @@ export function SystemHealthMonitor() {
     );
 
   return (
-    <div className={`p-4 rounded-lg border ${statusColor}`}>
+    <div className={`rounded-2xl border p-4 ${statusColor}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           {statusIcon}
@@ -122,15 +122,15 @@ export function SystemHealthMonitor() {
         <button
           onClick={fetchHealth}
           disabled={loading}
-          className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors disabled:opacity-50"
+          className="rounded p-1 transition-colors hover:bg-white/10 disabled:opacity-50"
           title="Refresh status"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="flex items-center gap-2 p-2 bg-background/50 rounded text-xs">
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="flex items-center gap-2 rounded border border-white/10 bg-black/20 p-2 text-xs">
           {health.services.supabase === "ok" ? (
             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           ) : (
@@ -147,7 +147,7 @@ export function SystemHealthMonitor() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 p-2 bg-background/50 rounded text-xs">
+        <div className="flex items-center gap-2 rounded border border-white/10 bg-black/20 p-2 text-xs">
           {emailStatus === "ok" ? (
             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           ) : (
@@ -164,7 +164,7 @@ export function SystemHealthMonitor() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 p-2 bg-background/50 rounded text-xs">
+        <div className="flex items-center gap-2 rounded border border-white/10 bg-black/20 p-2 text-xs">
           {health.services.paymentGateway === "ok" ? (
             <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
           ) : (
@@ -182,7 +182,7 @@ export function SystemHealthMonitor() {
         </div>
       </div>
 
-      <div className="text-xs text-muted-foreground">
+      <div className="text-xs text-zinc-300">
         Last updated: {lastRefresh || "checking..."}
       </div>
     </div>

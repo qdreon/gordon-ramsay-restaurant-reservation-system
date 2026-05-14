@@ -370,7 +370,7 @@ export default function CustomerDashboard() {
   if (loading || nowMs === null) {
     return (
       <div className="flex items-center justify-center py-10">
-        <div className="text-slate-600 dark:text-slate-400">Loading...</div>
+        <div className="text-zinc-300">Loading...</div>
       </div>
     );
   }
@@ -384,32 +384,32 @@ export default function CustomerDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 rounded-3xl border border-white/10 bg-black/20 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.3)] backdrop-blur sm:p-6">
       {/* Welcome Section */}
       <section className="space-y-4">
-        <h1 className="text-3xl font-bold">Welcome to Your Account</h1>
-        <p className="text-slate-600 dark:text-slate-400">
+        <h1 className="text-3xl font-semibold font-heading text-white">Welcome to Your Account</h1>
+        <p className="text-zinc-300">
           Email: <span className="font-semibold">{userEmail}</span>
         </p>
       </section>
 
       {/* Profile Section */}
-      <section className="space-y-4 rounded-lg border bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+      <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
         <div className="space-y-1">
-          <h2 className="text-xl font-bold">My Profile</h2>
+          <h2 className="text-xl font-semibold text-white">My Profile</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Update your contact details and dining preferences.
           </p>
         </div>
 
         {profileMessage && (
-          <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
+          <div className="rounded-md border border-emerald-400/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
             {profileMessage}
           </div>
         )}
 
         {profileError && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+          <div className="rounded-md border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
             {profileError}
           </div>
         )}
@@ -426,7 +426,7 @@ export default function CustomerDashboard() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={savingProfile}
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
               />
             </div>
 
@@ -441,7 +441,7 @@ export default function CustomerDashboard() {
                 onChange={(e) => setPhone(e.target.value)}
                 disabled={savingProfile}
                 placeholder="+1 (555) 123-4567"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
               />
             </div>
           </div>
@@ -461,7 +461,7 @@ export default function CustomerDashboard() {
                 disabled={savingProfile}
                 rows={4}
                 placeholder="Vegetarian, halal, gluten-free, etc."
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
               />
             </div>
 
@@ -476,7 +476,7 @@ export default function CustomerDashboard() {
                 disabled={savingProfile}
                 rows={4}
                 placeholder="Peanuts, shellfish, dairy, etc."
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
               />
             </div>
           </div>
@@ -484,7 +484,7 @@ export default function CustomerDashboard() {
           <button
             type="submit"
             disabled={savingProfile}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60 dark:bg-blue-700 dark:hover:bg-blue-600"
+            className="rounded-md bg-amber-400 px-4 py-2 font-semibold text-black transition hover:bg-amber-300 disabled:opacity-60"
           >
             {savingProfile ? "Saving Profile..." : "Save Profile"}
           </button>
@@ -492,20 +492,20 @@ export default function CustomerDashboard() {
       </section>
 
       {/* Reservations Section */}
-      <section className="space-y-4 rounded-lg border bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-        <h2 className="text-xl font-bold">My Reservations</h2>
+      <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
+        <h2 className="text-xl font-semibold text-white">My Reservations</h2>
         {actionMessage && (
-          <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
+          <div className="rounded-md border border-emerald-400/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
             {actionMessage}
           </div>
         )}
 
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300">
             Upcoming
           </h3>
           {upcoming.length === 0 ? (
-            <div className="rounded-md bg-slate-100 p-4 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+            <div className="rounded-md border border-white/10 bg-white/5 p-4 text-sm text-zinc-300">
               No upcoming reservations.
             </div>
           ) : (
@@ -513,7 +513,7 @@ export default function CustomerDashboard() {
               {upcoming.map((reservation) => (
                 <li
                   key={reservation.id}
-                  className="rounded-md border p-4 text-sm"
+                  className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-100"
                 >
                   <p>
                     <span className="font-semibold">When:</span>{" "}
@@ -543,7 +543,7 @@ export default function CustomerDashboard() {
                       Cancel Booking
                     </button>
                     {!canCancel(reservation, effectiveNow) && (
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-xs text-zinc-400">
                         Cancellation allowed only for pending/confirmed
                         reservations at least 2 hours before start.
                       </p>
@@ -556,11 +556,11 @@ export default function CustomerDashboard() {
         </div>
 
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300">
             Past / Cancelled
           </h3>
           {past.length === 0 ? (
-            <div className="rounded-md bg-slate-100 p-4 text-sm text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+            <div className="rounded-md border border-white/10 bg-white/5 p-4 text-sm text-zinc-300">
               No past reservations.
             </div>
           ) : (
@@ -568,7 +568,7 @@ export default function CustomerDashboard() {
               {past.map((reservation) => (
                 <li
                   key={reservation.id}
-                  className="rounded-md border p-4 text-sm"
+                  className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-100"
                 >
                   <p>
                     <span className="font-semibold">When:</span>{" "}
@@ -593,20 +593,20 @@ export default function CustomerDashboard() {
       <section className="space-y-3">
         <button
           onClick={() => router.push("/")}
-          className="w-full rounded-md bg-blue-600 py-2 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
+          className="w-full rounded-md bg-amber-400 py-2 font-semibold text-black transition hover:bg-amber-300"
         >
           Make a New Reservation
         </button>
         <button
           onClick={handleSignOut}
-          className="w-full rounded-md border border-slate-300 py-2 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="w-full rounded-md border border-white/20 bg-white/10 py-2 text-zinc-100 transition hover:bg-white/20"
         >
           Sign Out
         </button>
         <button
           onClick={handleDeleteAccount}
           disabled={deletingAccount}
-          className="w-full rounded-md border border-red-300 py-2 text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-400"
+          className="w-full rounded-md border border-red-400/30 bg-red-500/10 py-2 text-red-200 disabled:opacity-50"
           title="QDR-61: Delete account and all associated data"
         >
           {deletingAccount ? "Deleting Account..." : "Delete Account (QDR-61)"}

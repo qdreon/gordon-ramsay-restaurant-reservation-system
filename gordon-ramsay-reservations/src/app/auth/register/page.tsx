@@ -87,18 +87,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="space-y-6 rounded-lg border bg-white p-8 shadow-md dark:border-slate-700 dark:bg-slate-800">
+    <div className="space-y-6 rounded-2xl border border-white/10 bg-black/35 p-8 text-zinc-100 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
       {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold">Create Account</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-zinc-300">
           Join Gordon Ramsay Restaurant for exclusive reservations
         </p>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+        <div className="rounded-md border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
           {error}
         </div>
       )}
@@ -117,7 +117,7 @@ export default function RegisterPage() {
             onChange={(e) => setFullName(e.target.value)}
             disabled={loading}
             placeholder="John Doe"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
             required
           />
         </div>
@@ -134,7 +134,7 @@ export default function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
             placeholder="you@example.com"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
             required
           />
         </div>
@@ -142,7 +142,7 @@ export default function RegisterPage() {
         {/* Phone Number (Optional) */}
         <div className="space-y-2">
           <label htmlFor="phone" className="text-sm font-medium">
-            Phone Number <span className="text-xs text-slate-500">(Optional)</span>
+            Phone Number <span className="text-xs text-zinc-400">(Optional)</span>
           </label>
           <input
             id="phone"
@@ -151,7 +151,7 @@ export default function RegisterPage() {
             onChange={(e) => setPhone(e.target.value)}
             disabled={loading}
             placeholder="+1 (555) 123-4567"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
           />
         </div>
 
@@ -167,10 +167,10 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
             placeholder="••••••••"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
             required
           />
-          <p className="text-xs text-slate-500">At least 8 characters</p>
+          <p className="text-xs text-zinc-400">At least 8 characters</p>
         </div>
 
         {/* Confirm Password */}
@@ -185,23 +185,23 @@ export default function RegisterPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             disabled={loading}
             placeholder="••••••••"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
             required
           />
         </div>
 
         {/* Data Privacy Consent Checkbox (LEG-1) */}
-        <div className="space-y-3 rounded-md border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+        <div className="space-y-3 rounded-md border border-amber-300/20 bg-amber-500/10 p-4">
           <label className="flex items-start gap-3">
             <input
               type="checkbox"
               checked={consentGiven}
               onChange={(e) => setConsentGiven(e.target.checked)}
               disabled={loading}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-slate-600"
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-300 focus:ring-2 focus:ring-amber-200/40 dark:border-slate-600"
               required
             />
-            <span className="text-sm">
+            <span className="text-sm text-zinc-200">
               I agree to the{' '}
               <strong>Republic Act 10173 (Data Privacy Act of the Philippines)</strong> terms
               and consent to the collection, use, and processing of my personal data as outlined
@@ -215,17 +215,17 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading || !consentGiven}
-          className="w-full rounded-md bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400 dark:bg-blue-700 dark:hover:bg-blue-600"
+          className="w-full rounded-md bg-amber-400 py-2 text-sm font-semibold text-black transition hover:bg-amber-300 disabled:opacity-60"
         >
           {loading ? 'Creating account...' : 'Create Account'}
         </button>
       </form>
 
       {/* Footer */}
-      <div className="text-center text-sm">
-        <p className="text-slate-600 dark:text-slate-400">
+      <div className="text-center text-sm text-zinc-200">
+        <p className="text-zinc-300">
           Already have an account?{' '}
-          <Link href="/auth/login" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+          <Link href="/auth/login" className="font-semibold text-amber-300 hover:underline">
             Sign in here
           </Link>
         </p>

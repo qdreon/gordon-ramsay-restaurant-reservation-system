@@ -285,11 +285,11 @@ export default function GuestCrmDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="rounded-3xl border border-white/10 bg-black/20 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.3)] backdrop-blur sm:p-6">
       <div className="mx-auto max-w-full space-y-6">
         {/* Header */}
         <div className="space-y-6">
-          <h1 className="text-lg font-semibold font-heading text-foreground flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-xl font-semibold font-heading text-white">
             <UsersRound className="w-5 h-5 text-bold" />
             Guest Database (CRM)
           </h1>
@@ -359,7 +359,7 @@ export default function GuestCrmDashboard() {
         </div>
 
         {/* Table Container */}
-        <div className="rounded-md border border-border bg-card/50">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
           {error && (
             <div className="px-4 py-3 font-sans text-[11px] text-destructive border-b border-border">
               {error}
@@ -484,7 +484,7 @@ export default function GuestCrmDashboard() {
                       variant="ghost"
                       size="sm"
                       onClick={() => openEditModal(customer)}
-                      className="h-7 gap-1.5 font-sans text-[11px] text-cyber hover:text-cyber hover:bg-cyber/10"
+                      className="h-7 gap-1.5 font-sans text-[11px] text-amber-300 hover:bg-amber-300/10 hover:text-amber-200"
                     >
                       <User className="h-3 w-3" />
                       Edit Profile
@@ -505,7 +505,7 @@ export default function GuestCrmDashboard() {
         </div>
 
         {/* Footer Stats */}
-        <div className="flex items-center justify-between text-muted-foreground">
+        <div className="flex items-center justify-between text-zinc-300">
           <p className="font-sans text-[11px]">
             Showing {filteredCustomers.length} of {customers.length} guests
           </p>

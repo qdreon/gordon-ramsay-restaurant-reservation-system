@@ -147,15 +147,15 @@ export default function CheckoutModal({
         : 'text-green-600 dark:text-green-400'; // Green: >= 2 minutes
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
-      <div className="w-full max-w-md rounded-lg border bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl backdrop-blur">
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4 dark:border-slate-700">
-          <h2 className="text-xl font-bold">Confirm Your Booking</h2>
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <h2 className="text-xl font-semibold text-white">Confirm Your Booking</h2>
           <button
             onClick={handleCancel}
             disabled={loading || isExpired}
-            className="text-slate-400 hover:text-slate-600 disabled:opacity-50 dark:hover:text-slate-300"
+            className="text-zinc-400 transition hover:text-zinc-100 disabled:opacity-50"
           >
             <X size={24} />
           </button>
@@ -164,32 +164,32 @@ export default function CheckoutModal({
         {/* Body */}
         <div className="space-y-6 px-6 py-4">
           {/* Countdown Timer */}
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 p-4 dark:bg-slate-700">
+          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Time remaining</p>
+              <p className="text-sm text-zinc-300">Time remaining</p>
               <p className={`text-2xl font-bold ${timerColor}`}>{formatTime(timeLeft)}</p>
             </div>
             {isExpired && (
               <div className="text-center">
                 <p className="text-sm font-semibold text-red-600 dark:text-red-400">EXPIRED</p>
-                <p className="text-xs text-slate-500">Session ended</p>
+                <p className="text-xs text-zinc-400">Session ended</p>
               </div>
             )}
           </div>
 
           {/* Reservation Details (if provided) */}
           {reservationDetails && (
-            <div className="space-y-2 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+            <div className="space-y-2 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
               <div className="flex justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Date:</span>
+                <span className="text-sm text-zinc-300">Date:</span>
                 <span className="text-sm font-semibold">{reservationDetails.date}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Time:</span>
+                <span className="text-sm text-zinc-300">Time:</span>
                 <span className="text-sm font-semibold">{reservationDetails.time}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Party Size:</span>
+                <span className="text-sm text-zinc-300">Party Size:</span>
                 <span className="text-sm font-semibold">{reservationDetails.party_size} guests</span>
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function CheckoutModal({
 
           {/* Error Alert */}
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+            <div className="rounded-md border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
               {error}
             </div>
           )}
@@ -216,7 +216,7 @@ export default function CheckoutModal({
                 placeholder="4111 1111 1111 1111"
                 disabled={loading || isExpired}
                 maxLength={19}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                className="mt-1 w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60 text-white"
               />
               <p className="mt-1 text-xs text-slate-500">Test: 4111 1111 1111 1111</p>
             </div>
@@ -234,7 +234,7 @@ export default function CheckoutModal({
                   placeholder="MM/YY"
                   disabled={loading || isExpired}
                   maxLength={5}
-                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                  className="mt-1 w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60 text-white"
                 />
               </div>
 
@@ -250,30 +250,30 @@ export default function CheckoutModal({
                   placeholder="123"
                   disabled={loading || isExpired}
                   maxLength={4}
-                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                  className="mt-1 w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60 text-white"
                 />
               </div>
             </div>
 
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-zinc-400">
               💳 This is a simulated payment form. No real charges will be made.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 border-t bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-700">
+        <div className="flex gap-3 border-t border-white/10 bg-black/20 px-6 py-4">
           <button
             onClick={handleCancel}
             disabled={loading || isExpired}
-            className="flex-1 rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600"
+            className="flex-1 rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-zinc-100 transition hover:bg-white/20 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={loading || isExpired}
-            className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400 dark:bg-blue-700 dark:hover:bg-blue-600"
+            className="flex-1 rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-300 disabled:opacity-60"
           >
             {loading ? 'Processing...' : 'Confirm Booking'}
           </button>

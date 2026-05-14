@@ -424,7 +424,7 @@ export default function Home() {
           <div className="hidden items-center gap-6 md:flex">
             <a href="#home" className="text-sm text-zinc-300 transition hover:text-white">Home</a>
             <a href="#dishes" className="text-sm text-zinc-300 transition hover:text-white">Featured</a>
-            <a href="#testimonials" className="text-sm text-zinc-300 transition hover:text-white">Reviews</a>
+            <a href="#restaurant-info" className="text-sm text-zinc-300 transition hover:text-white">Restaurant Info</a>
             <button
               type="button"
               onClick={scrollToReservation}
@@ -458,7 +458,7 @@ export default function Home() {
           <div id="mobile-nav" className="space-y-2 border-t border-white/10 px-4 py-4 md:hidden">
             <a href="#home" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Home</a>
             <a href="#dishes" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Featured Dishes</a>
-            <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Testimonials</a>
+            <a href="#restaurant-info" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Restaurant Info</a>
             <div className="flex gap-2 pt-2">
               <button
                 type="button"
@@ -506,8 +506,8 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-3 gap-3 text-center text-sm">
               <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                <p className="text-xl font-semibold text-amber-300">4.9</p>
-                <p className="text-zinc-400">Guest Rating</p>
+                <p className="text-xl font-semibold text-amber-300">11:00</p>
+                <p className="text-zinc-400">Opens Daily</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
                 <p className="text-xl font-semibold text-amber-300">2k+</p>
@@ -730,24 +730,24 @@ export default function Home() {
           <MenuDisplay className="self-start rounded-2xl border border-white/10 bg-black/25 p-3" />
         </section>
 
-        <section id="testimonials" className="space-y-5">
+        <section id="restaurant-info" className="space-y-5">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Testimonials</p>
-            <h2 className="font-heading text-3xl">What guests are saying</h2>
+            <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Restaurant Info</p>
+            <h2 className="font-heading text-3xl">Plan your visit</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[
               {
-                quote: "Seamless reservation flow and a world-class dining experience.",
-                author: "Alyssa T.",
+                quote: "Lapu-Lapu City, Cebu, Philippines",
+                author: "Location",
               },
               {
-                quote: "Elegant ambiance, flawless service, and unforgettable flavors.",
-                author: "Marcus L.",
+                quote: "Open daily from 11:00 to 23:00",
+                author: "Operating Hours",
               },
               {
-                quote: "From booking to dessert, every detail felt premium.",
-                author: "Rachel D.",
+                quote: "reservations@gordonramsay.example",
+                author: "Email Contact",
               },
             ].map((item) => (
               <blockquote key={item.author} className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-zinc-200">
@@ -761,9 +761,9 @@ export default function Home() {
 
       <footer className="border-t border-white/10 bg-black/30">
         <div className="mx-auto grid w-full max-w-7xl gap-3 px-4 py-6 text-sm text-zinc-300 sm:px-6 lg:grid-cols-3 lg:px-8">
-          <p><span className="font-semibold text-white">Gordon Ramsay Restaurant</span><br />68 Royal Exchange, London</p>
-          <p><span className="font-semibold text-white">Hours</span><br />Mon–Sun · 17:00–23:30</p>
-          <p><span className="font-semibold text-white">Contact</span><br />+44 20 7123 4567 · reservations@gordonramsay.example</p>
+          <p><span className="font-semibold text-white">Gordon Ramsay Restaurant</span><br />Lapu-Lapu City, Cebu, Philippines</p>
+          <p><span className="font-semibold text-white">Hours</span><br />Open Daily · 11:00–23:00</p>
+          <p><span className="font-semibold text-white">Contact</span><br />reservations@gordonramsay.example</p>
         </div>
       </footer>
 
