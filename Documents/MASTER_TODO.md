@@ -64,9 +64,10 @@
 - DEF-005 RESOLVED: TC-3.2 concurrency test `SEARCH_DATE` updated to `2030-01-15` to ensure a clean future availability slot.
 - TC-3.2 concurrency re-run COMPLETE: direct lock-path validation passed with one success and one conflict in 818ms.
 - PR-1 Lighthouse audit COMPLETE: `npm run build` and `npm run test:perf` both passed; customer home and admin dashboard performance scores were 97 and 95 with LCP under 3s.
+- QA evidence bundle attached in traceability: `Documents/TEST_EXECUTION_TC_2026-05-13.md`, `tests/lighthouse/reports/summary.json`, `tests/lighthouse/reports/customer-home.json`, and `tests/lighthouse/reports/admin-dashboard.json`.
 - User Manual COMPLETE: `Documents/USER_MANUAL.md` v1.0 written (10 sections, full Customer Portal + Admin Dashboard coverage; emoji-free/plaintext indicators).
 - Defects log COMPLETE: DEF-001 through DEF-005 documented with full root cause, resolution, verification steps, and an open-defects summary.
-- Remaining major open defect: DEF-003 (production sender-domain DMARC/SPF/DKIM verification before go-live).
+- Remaining major release item: DEF-003 is deferred for this academic/free-tier phase because the production sender domain cannot be authenticated under current constraints.
 - SEC-1 production rerun COMPLETE: `npm run build` followed by `npm run test:e2e:prod -- --grep "SEC-1"` passed after adding `src/proxy.ts` for Next 16 Proxy registration.
 
 ### Remaining Phase 7 Tasks
@@ -80,6 +81,7 @@
 - [ ] Run the free-tier manual restore drill against a non-production snapshot.
 - [ ] Confirm production hosting / backup fallback handoff notes are final.
 - [ ] Finish any last traceability wording cleanup after deployment evidence is attached.
+- [ ] Document the accepted DEF-003 deferment in the final release notes and stakeholder handoff.
 
 ---
 
@@ -358,7 +360,6 @@ Verification of all performance, security, and compliance requirements. **Status
 - [x] Test Customer Portal on mobile, tablet, and desktop browsers. -- **Automated viewport smoke passed on 390px, 820px, and 1440px widths for `/` and `/admin/dashboard`.**
 
 ### Subtask 7.6: Deployment [QDR-51 / QDR-52]
-- [ ] Enable Supabase PITR and confirm backup configuration (SAF-1). [QDR-52]
 - [ ] Enable Supabase PITR and confirm backup configuration (SAF-1). [QDR-52] — **DEFERRED**: project remains on Supabase free-tier; manual `pg_dump` runbook documented in `Documents/documentation.md` (see "PITR Deferment — Decision & Runbook").
 - [ ] Deploy frontend to production hosting platform (DigitalOcean/Azure via GitHub Student Pack). [QDR-52]
 
