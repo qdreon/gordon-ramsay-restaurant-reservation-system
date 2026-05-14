@@ -100,27 +100,31 @@ export default function MenuDisplay({ className = '' }: MenuDisplayProps) {
 
   if (loading) {
     return (
-      <div className={`rounded-lg border p-4 ${className}`}>
-        <h3 className="mb-3 text-lg font-semibold">Digital Menu</h3>
-        <div className="text-sm text-zinc-600 dark:text-zinc-400">Loading menu...</div>
+      <div className={`rounded-2xl border border-white/10 bg-black/20 p-4 backdrop-blur ${className}`}>
+        <h3 className="mb-3 text-lg font-semibold text-white">Digital Menu</h3>
+        <div className="space-y-2">
+          {[1, 2, 3].map((skeleton) => (
+            <div key={skeleton} className="h-14 animate-pulse rounded-xl border border-white/10 bg-white/10" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/20 ${className}`}>
-        <h3 className="mb-2 text-lg font-semibold text-red-700 dark:text-red-400">Menu</h3>
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      <div className={`rounded-2xl border border-red-400/30 bg-red-500/10 p-4 ${className}`}>
+        <h3 className="mb-2 text-lg font-semibold text-red-200">Menu</h3>
+        <p className="text-sm text-red-200">{error}</p>
       </div>
     );
   }
 
   if (menuItems.length === 0) {
     return (
-      <div className={`rounded-lg border p-4 ${className}`}>
-        <h3 className="mb-3 text-lg font-semibold">Digital Menu</h3>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">No menu items available.</p>
+      <div className={`rounded-2xl border border-white/10 bg-black/20 p-4 ${className}`}>
+        <h3 className="mb-3 text-lg font-semibold text-white">Digital Menu</h3>
+        <p className="text-sm text-zinc-300">No menu items available.</p>
       </div>
     );
   }
@@ -139,26 +143,26 @@ export default function MenuDisplay({ className = '' }: MenuDisplayProps) {
   );
 
   return (
-    <div className={`rounded-lg border p-4 ${className}`}>
-      <h3 className="mb-4 text-lg font-semibold">Digital Menu</h3>
+    <div className={`rounded-2xl border border-white/10 bg-black/20 p-4 ${className}`}>
+      <h3 className="mb-4 text-lg font-semibold text-white">Digital Menu</h3>
       <div className="space-y-6">
         {Object.entries(groupedItems).map(([category, items]) => (
           <div key={category}>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-amber-300">
               {formatCategoryLabel(category)}
             </h4>
             <div className="space-y-3">
               {items.map((item) => (
-                <div key={item.id} className="rounded border bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/30">
+                <div key={item.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">{item.name}</p>
+                      <p className="font-semibold text-zinc-100">{item.name}</p>
                       {item.description && (
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400">{item.description}</p>
+                        <p className="text-xs text-zinc-300">{item.description}</p>
                       )}
                     </div>
                     {item.price && (
-                      <p className="whitespace-nowrap font-semibold text-zinc-900 dark:text-zinc-100">
+                      <p className="whitespace-nowrap font-semibold text-zinc-100">
                         ${item.price.toFixed(2)}
                       </p>
                     )}

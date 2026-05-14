@@ -590,9 +590,9 @@ export function FloorPlanManager() {
   );
 
   return (
-    <div className="flex h-screen w-full flex-col bg-background xl:flex-row">
+    <div className="flex h-full min-h-[700px] w-full flex-col rounded-2xl border border-white/10 bg-black/25 xl:flex-row">
       {/* Left Sidebar */}
-      <aside className="flex h-auto w-full shrink-0 flex-col overflow-hidden border-b border-border bg-sidebar xl:h-screen xl:w-80 xl:border-b-0 xl:border-r">
+      <aside className="flex h-auto w-full shrink-0 flex-col overflow-hidden border-b border-white/10 bg-black/20 xl:h-full xl:w-80 xl:border-b-0 xl:border-r xl:border-white/10">
         <div className="p-4 border-b border-sidebar-border shrink-0">
           <h1
             className="text-lg font-semibold text-sidebar-foreground flex items-center gap-2"
@@ -770,7 +770,7 @@ export function FloorPlanManager() {
       {/* Main Floor Plan */}
       <main className="flex min-w-0 flex-1 flex-col">
         {/* Header with Legend */}
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
           <h2
             className="text-lg font-semibold text-foreground"
             style={{ fontFamily: "Arial" }}

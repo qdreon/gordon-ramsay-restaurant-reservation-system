@@ -392,7 +392,7 @@ function MasterCalendar() {
   }
 
   return (
-    <div className="flex h-full min-h-150 w-full bg-background rounded-xl overflow-hidden border border-slate-200 shadow-sm dark:border-slate-800">
+    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-black/25 shadow-sm xl:min-h-[700px] xl:flex-row">
       {error && (
         <div className="absolute top-4 left-4 right-4 p-3 bg-red-500/10 border border-red-500/30 rounded-sm text-red-200 text-[11px] font-sans z-50">
           {error}
@@ -405,9 +405,9 @@ function MasterCalendar() {
           </p>
         </div>
       )}
-      <main className="w-[70%] flex flex-col border-r border-border">
-        <header className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2 max-w-full">
+      <main className="flex w-full flex-col border-b border-white/10 xl:w-[70%] xl:border-b-0 xl:border-r xl:border-white/10">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-4">
+          <div className="flex max-w-full items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -416,7 +416,7 @@ function MasterCalendar() {
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <h2 className="text-lg font-semibold text-foreground min-w-45 text-center font-sans">
+            <h2 className="min-w-45 text-center font-sans text-lg font-semibold text-zinc-100">
               {MONTHS[currentMonth]} {currentYear}
             </h2>
             <Button
@@ -431,13 +431,13 @@ function MasterCalendar() {
               variant="outline"
               size="sm"
               onClick={goToToday}
-              className="ml-2 text-cyber border-cyber/50 hover:bg-cyber/10 font-sans text-[11px]"
+              className="ml-2 border-amber-300/40 text-amber-300 hover:bg-amber-300/10 font-sans text-[11px]"
             >
               Today
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 max-w-full">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             <Button
               variant={filterVip ? "default" : "outline"}
               size="sm"
@@ -468,11 +468,11 @@ function MasterCalendar() {
         </header>
 
         <div className="flex-1 p-4 flex flex-col">
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="mb-2 grid grid-cols-7 gap-1">
             {DAYS.map((day) => (
               <div
                 key={day}
-                className="text-center text-muted-foreground py-2 font-sans text-[11px]"
+                className="py-2 text-center font-sans text-[11px] text-zinc-300"
               >
                 {day}
               </div>
@@ -531,9 +531,9 @@ function MasterCalendar() {
         </footer>
       </main>
 
-      <aside className="w-[30%] flex flex-col h-full overflow-hidden bg-sidebar">
-        <div className="p-4 border-b border-sidebar-border shrink-0">
-          <h2 className="font-sans text-[11px] font-bold text-sidebar-foreground uppercase tracking-wider">
+      <aside className="flex h-full w-full flex-col overflow-hidden bg-black/20 xl:w-[30%]">
+        <div className="shrink-0 border-b border-white/10 p-4">
+          <h2 className="font-sans text-[11px] font-bold uppercase tracking-wider text-zinc-100">
             {selectedDate
               .toLocaleDateString("en-US", {
                 weekday: "long",
@@ -543,14 +543,14 @@ function MasterCalendar() {
               })
               .toUpperCase()}
           </h2>
-          <p className="font-sans text-[11px] text-muted-foreground mt-1">
+          <p className="mt-1 font-sans text-[11px] text-zinc-300">
             {filteredReservations.length} reservation
             {filteredReservations.length !== 1 ? "s" : ""}
           </p>
         </div>
 
         <ScrollArea className="flex-1 overflow-hidden">
-          <div className="p-4 space-y-3 pb-8">
+          <div className="space-y-3 p-4 pb-8">
             {filteredReservations.length === 0 ? (
               <p className="text-muted-foreground text-center py-8 font-sans text-[11px]">
                 No reservations for this day
@@ -559,15 +559,15 @@ function MasterCalendar() {
               filteredReservations.map((res) => (
                 <div
                   key={res.id}
-                  className={`p-3 rounded-sm border font-sans text-[11px] ${res.isVip ? "bg-electric/10 border-electric/30" : "bg-sidebar-accent border-sidebar-border"}`}
+                  className={`rounded-sm border p-3 font-sans text-[11px] ${res.isVip ? "border-amber-300/30 bg-amber-500/10" : "border-white/10 bg-white/5"}`}
                 >
                   <div className="flex items-center justify-between">
                     <span
-                      className={`font-medium ${res.isVip ? "text-electric" : "text-sidebar-foreground"}`}
+                      className={`font-medium ${res.isVip ? "text-amber-300" : "text-zinc-100"}`}
                     >
                       {res.customer_id}
                     </span>
-                    <span className="text-cyber font-mono">
+                      <span className="font-mono text-amber-300">
                       {formatTime12h(res.start_time)}
                     </span>
                   </div>
@@ -580,7 +580,7 @@ function MasterCalendar() {
                         className={`w-2 h-2 rounded-full ${statusColors[res.status]}`}
                       />
                     </div>
-                    <span className="flex items-center gap-1 text-muted-foreground">
+                    <span className="flex items-center gap-1 text-zinc-300">
                       <Users className="w-3 h-3" />
                       {res.party_size}
                     </span>
@@ -591,7 +591,7 @@ function MasterCalendar() {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-sidebar-border flex-shrink-0">
+        <div className="flex-shrink-0 border-t border-white/10 p-4">
           <div className="space-y-2">
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
@@ -816,17 +816,17 @@ function MasterCalendar() {
 
 export default function ReservationsPage() {
   return (
-    <div className="flex flex-col gap-6 p-8 w-full max-w-full mx-auto">
+    <div className="mx-auto flex w-full max-w-full flex-col gap-6 rounded-3xl border border-white/10 bg-black/20 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.3)] backdrop-blur sm:p-6">
       <header>
-        <h1 className="text-lg font-semibold font-heading text-sidebar-foreground flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-xl font-semibold font-heading text-white">
           <CalendarDays className="w-5 h-5 text-bold" />
           Master Calendar
         </h1>
-        <p className="text-sm text-slate-500 italic">
+        <p className="text-sm text-zinc-300">
           Manage all upcoming reservations
         </p>
       </header>
-      <section className="w-full h-[800px]">
+      <section className="h-[800px] w-full rounded-2xl border border-white/10 bg-white/5 p-2">
         <MasterCalendar />
       </section>
     </div>

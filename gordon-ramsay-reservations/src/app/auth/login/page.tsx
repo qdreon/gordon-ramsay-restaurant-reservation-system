@@ -50,18 +50,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="space-y-6 rounded-lg border bg-white p-8 shadow-md dark:border-slate-700 dark:bg-slate-800">
+    <div className="space-y-6 rounded-2xl border border-white/10 bg-black/35 p-8 text-zinc-100 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
       {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold">Sign In</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-zinc-300">
           Welcome back to Gordon Ramsay Restaurant
         </p>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+        <div className="rounded-md border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
           {error}
         </div>
       )}
@@ -79,7 +79,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
             placeholder="you@example.com"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
             required
           />
         </div>
@@ -95,7 +95,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
             placeholder="••••••••"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-200/20 disabled:opacity-60"
             required
           />
         </div>
@@ -103,7 +103,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400 dark:bg-blue-700 dark:hover:bg-blue-600"
+          className="w-full rounded-md bg-amber-400 py-2 text-sm font-semibold text-black transition hover:bg-amber-300 disabled:opacity-60"
         >
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
@@ -111,9 +111,9 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className="text-center text-sm">
-        <p className="text-slate-600 dark:text-slate-400">
+        <p className="text-zinc-300">
           Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+          <Link href="/auth/register" className="font-semibold text-amber-300 hover:underline">
             Sign up here
           </Link>
         </p>
