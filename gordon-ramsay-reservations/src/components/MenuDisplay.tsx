@@ -23,6 +23,14 @@ type MenuDisplayProps = {
   className?: string;
 };
 
+function formatCategoryLabel(category: string | null): string {
+  if (!category) {
+    return 'Other';
+  }
+
+  return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
 export default function MenuDisplay({ className = '' }: MenuDisplayProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +145,7 @@ export default function MenuDisplay({ className = '' }: MenuDisplayProps) {
         {Object.entries(groupedItems).map(([category, items]) => (
           <div key={category}>
             <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-300">
-              {category}
+              {formatCategoryLabel(category)}
             </h4>
             <div className="space-y-3">
               {items.map((item) => (

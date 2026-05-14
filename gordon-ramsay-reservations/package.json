@@ -9,7 +9,12 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:prod": "playwright test --config=playwright.prod.config.ts",
+    "test:perf": "node tests/lighthouse/run-lighthouse.js",
+    "test:perf:legacy": "lighthouse http://localhost:3000 --quiet --output=json --output-path=./tests/lighthouse/report.json --chrome-flags=\"--no-sandbox --headless\"",
+    "test:qa": "npm run test:e2e && npm run test:e2e:prod && npm run test:perf"
   },
   "dependencies": {
     "@remixicon/react": "^4.9.0",
@@ -36,6 +41,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@playwright/test": "^1.39.0",
+    "lighthouse": "^11.0.0"
   }
 }

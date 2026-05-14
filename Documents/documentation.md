@@ -1,13 +1,20 @@
 # Gordon Ramsay Restaurant Reservation System -- Technical Documentation
 
-> **Document Version:** 1.4
-> **Last Updated:** May 13, 2026 (Phase 6 complete; Phase 7 QA pending)
+> **Document Version:** 1.5
+> **Last Updated:** May 13, 2026 (Phase 7 QA ~65%; Phases 0-6 complete)
 > **Team:** Qdreon
 > **Course:** CPE 2201 -- Software Design and Development
 
 ---
 
 ## Revision History
+
+### [May 13, 2026] - Phase 7 QA Progress Update (Current)
+- **Project status:** Phases 0-6 are complete; Phase 7 is in progress at approximately 65%; overall project completion is approximately 97%.
+- **DEF-004 resolved:** Added `playwright.prod.config.ts` and `npm run test:e2e:prod` so SEC-1 RBAC tests run against `next start` production mode instead of the webpack dev server. This removes the dev-server middleware hot-reload race.
+- **DEF-005 resolved:** Updated `tests/e2e/tc3-concurrency.spec.ts` to use `SEARCH_DATE = '2030-01-15'` for the concurrency test so QA has a clean future slot.
+- **Final deliverables:** Created `Documents/USER_MANUAL.md` v1.0 and updated `Documents/defects_log.md` with DEF-001 through DEF-005.
+- **Remaining Phase 7 work:** Run the production SEC-1 test, re-run TC-3.2 concurrency, execute Lighthouse PR-1 audit, complete SEC-2 deployment-time HTTPS/TLS check, perform device/responsiveness testing, finalize deployment, and finish traceability citations.
 
 ### [May 13, 2026] - Phase 4 Admin Dashboard UI Merge
 - **PR #10 Integration:** Merged cyghs's admin dashboard work into main; added CRM, Menu, and Reservations pages to the live app
@@ -59,6 +66,11 @@ All Phase 4 subtasks now complete (100%). Build: 30 routes compiled, 0 TypeScrip
 - **Build State:** The app continued to build successfully after the latest changes; no new defects were introduced by the QA run.
 - **Next QA Step:** Continue with the remaining Phase 7 scripts (TC-1.1 through TC-6.2) and performance/security verification.
 
+
+### [May 13, 2026] - Mailtrap Migration & Address Update
+
+- **Mailtrap Integration (May 13, 2026):** Replaced legacy SendGrid/SMTP paths with the `mailtrap` API client in `src/services/notificationService.ts`. Booking confirmations (with `.ics` calendar attachments) and waitlist invite emails have been validated end-to-end using Mailtrap test inboxes and direct Gmail verification. The admin health widget now reports this email service as the Email check. Note: Mailtrap expects attachment MIME metadata as `type` (e.g., `text/calendar`) for `.ics` files.
+- **Address Update:** The restaurant default address was updated to `Gordon Ramsay Restaurant, Cebu City, Philippines` and relevant fallback values now read from `RESTAURANT_ADDRESS` in `.env.local`.
 
 ### [May 12, 2026] - Phase Completion: Phases 0-3 Fully Operational
 - **Phase 1 (100%):** Data layer complete; schema, RBAC, indexes, triggers, seed data all verified
@@ -128,7 +140,7 @@ The SRS (v1.4) and SWDD define **13 Functional Requirements** spanning the Custo
 | FR-3 | Booking Engine | Row-lock table on selection; 5-minute checkout timeout; simulated deposit; error on conflict | ✅ **COMPLETE** (Phase 2 + 3) |
 | FR-4 | Table Combination Logic | Auto-combine adjacent tables for large parties; hard cap at 12 Pax; teardown on completion | ✅ **COMPLETE** (Phase 2 + trigger 008) |
 | FR-5 | Waitlist Automation | Trigger on cancellation; 10-minute offer window; disable protocol 60 min before closing | Schema done; trigger Phase 5 |
-| FR-6 | Email Notifications | Booking confirmation email with .ics calendar invite; waitlist offer email | Phase 5 - Not Started |
+| FR-6 | Email Notifications | Booking confirmation email with .ics calendar invite; waitlist offer email | Phase 5 - Implemented (Mailtrap) |
 | FR-7 | Visual Table Management | Static interactive floor plan grid; color-coded (Green/Yellow/Red/Grey); WebSocket real-time | Phase 4 - Not Started |
 | FR-8 | Reservation Management | Admin manual walk-in/phone bookings; Block Date feature; operating hours validation | Phase 4 - Not Started |
 | FR-9 | Guest CRM | Past visit history, VIP status, no-show count, allergy notes per customer | Phase 6 - Complete |
@@ -1006,12 +1018,12 @@ This matrix maps every business constraint from the SRS (v1.4), SWDD, and SPM Pr
 |-------|-----------|------|--------|----------------|
 | Phase 0 | QDR-36 | Project Scaffolding | **Complete** | May 8, 2026 |
 | Phase 1 | QDR-37 | Data Layer and Security | **Complete** | May 9, 2026 |
-| Phase 2 | QDR-40 | Core Booking Engine | **Complete (90%)** | May 11, 2026 |
-| Phase 3 | QDR-35 (sub: QDR-36, QDR-38, QDR-39) | Customer Portal | **In Progress (~30%)** | -- |
-| Phase 4 | QDR-42, QDR-43 | Admin Real-Time Dashboard | Not Started | -- |
-| Phase 5 | QDR-41, QDR-45 | Waitlist and Automations | Not Started | -- |
+| Phase 2 | QDR-40 | Core Booking Engine | **Complete** | May 11, 2026 |
+| Phase 3 | QDR-35 (sub: QDR-36, QDR-38, QDR-39) | Customer Portal | **Complete** | May 12, 2026 |
+| Phase 4 | QDR-42, QDR-43 | Admin Real-Time Dashboard | **Complete** | May 13, 2026 |
+| Phase 5 | QDR-41, QDR-45 | Waitlist and Automations | **Complete** | May 13, 2026 |
 | Phase 6 | QDR-44, QDR-79, QDR-80 | Admin Auxiliary Features | **Complete** | May 13, 2026 |
-| Phase 7 | QDR-46 | QA, Testing, and Deliverables | Not Started | -- |
+| Phase 7 | QDR-46 | QA, Testing, and Deliverables | **In Progress (~65%)** | -- |
 
 ### 16.2 Jira Timeline (QDR Board) -- Authoritative Mapping
 
@@ -1040,52 +1052,69 @@ Epics (bold) contain the child tasks listed below them.
 |  | -- QDR-56: Build PostgreSQL schema: Users, Tables, Reservations, Waitlist, Menu, CRM | Done |
 |  | -- QDR-57: Apply Row Level Security (RLS) policies | Done |
 |  | -- QDR-58: Enforce UTC timezone standardization for all date/time entries (DB-3) | Done |
-| QDR-38 | Build Account Management Module | To Do |
-|  | -- QDR-59: Build UI for updating contact info and dietary restrictions (FR-1) | To Do |
-|  | -- QDR-60: Build UI for customers to cancel upcoming reservations + backend revert (FR-10) | To Do |
-|  | -- QDR-61: Implement Delete Account to permanently purge PII/CRM data (LEG-1) | To Do |
-| QDR-39 | Build Search & Availability UI | To Do |
-|  | -- QDR-65: Wire CheckoutModal to availability results and /api/reservations/lock (FR-3) | To Do |
-|  | -- QDR-82: Display view-only digital menu alongside availability results (FR-2) | To Do |
-| QDR-40 | Implement Booking Engine | In Progress |
+| QDR-38 | Build Account Management Module | Done |
+|  | -- QDR-59: Build UI for updating contact info and dietary restrictions (FR-1) | Done |
+|  | -- QDR-60: Build UI for customers to cancel upcoming reservations + backend revert (FR-10) | Done |
+|  | -- QDR-61: Implement Delete Account to permanently purge PII/CRM data (LEG-1) | Done |
+| QDR-39 | Build Search & Availability UI | Done |
+|  | -- QDR-65: Wire CheckoutModal to availability results and /api/reservations/lock (FR-3) | Done |
+|  | -- QDR-82: Display view-only digital menu alongside availability results (FR-2) | Done |
+| QDR-40 | Implement Booking Engine | Done |
 |  | -- QDR-62: Write DB query for real-time table availability by Date, Time, and Pax (FR-2) | Done |
 |  | -- QDR-63: Implement table combination logic, capped at 12 Pax (FR-4) | Done |
 |  | -- QDR-64: Implement PostgreSQL 1-second row-locking mechanism (PR-2) | Done |
-|  | -- QDR-65: Integrate Simulated Payment Gateway with 5-minute timeout (FR-3) | In Progress |
-| QDR-41 | Develop Virtual Waitlist System | To Do |
-|  | -- QDR-66: Backend trigger: cancelled reservation auto-notifies next waitlist customer (FR-5) | To Do |
-|  | -- QDR-67: Implement 10-minute acceptance window timer for waitlist offers (FR-5) | To Do |
-|  | -- QDR-68: Implement 60-minute pre-closing cutoff to disable waitlist automation (FR-5) | To Do |
-| QDR-42 | Build Static Floor Plan Grid | To Do |
-|  | -- QDR-69: Build interactive grid with color-coding: Green/Yellow/Red/Grey (FR-7) | To Do |
-|  | -- QDR-70: Integrate Supabase Real-Time WebSockets for instant status updates (FR-7) | To Do |
-|  | -- QDR-71: Implement Offline Failsafe: disable grid and show warning banner (SAF-2) | To Do |
-| QDR-43 | Implement Reservation Calendar | To Do |
-|  | -- QDR-72: Build admin form for walk-in and phone reservation entry (FR-8) | To Do |
-|  | -- QDR-73: Add Block Out Dates functionality for holidays/private events (FR-8) | To Do |
-|  | -- QDR-74: Add input validation to prevent bookings outside operating hours (FR-8) | To Do |
-| QDR-44 | Develop Guest CRM Table | To Do |
-|  | -- QDR-75: Create searchable table: guest history, VIP status, allergy notes (FR-9) | To Do |
-|  | -- QDR-76: Implement automated No-Show trigger at 15 minutes past reservation time (FR-9) | To Do |
-| QDR-45 | Integrate SMTP Email Server | To Do |
-|  | -- QDR-77: Create email payloads for Booking Confirmations and Waitlist Invites (FR-6) | To Do |
-|  | -- QDR-78: Generate and attach .ics calendar invites to confirmation emails (FR-6) | To Do |
-| QDR-79 | Implement Menu Management Module | To Do |
-|  | -- QDR-81: Build Admin CRUD forms to upload/edit digital menu items (FR-11) | To Do |
-| QDR-80 | Admin Waitlist Control Module | To Do |
-|  | -- QDR-83: Build Admin UI to view, edit, and prioritize waitlist queue for VIPs (FR-12) | To Do |
+|  | -- QDR-65: Integrate Simulated Payment Gateway with 5-minute timeout (FR-3) | Done |
+| QDR-41 | Develop Virtual Waitlist System | Done |
+|  | -- QDR-66: Backend trigger: cancelled reservation auto-notifies next waitlist customer (FR-5) | Done |
+|  | -- QDR-67: Implement 10-minute acceptance window timer for waitlist offers (FR-5) | Done |
+|  | -- QDR-68: Implement 60-minute pre-closing cutoff to disable waitlist automation (FR-5) | Done |
+| QDR-42 | Build Static Floor Plan Grid | Done |
+|  | -- QDR-69: Build interactive grid with color-coding: Green/Yellow/Red/Grey (FR-7) | Done |
+|  | -- QDR-70: Integrate Supabase Real-Time WebSockets for instant status updates (FR-7) | Done |
+|  | -- QDR-71: Implement Offline Failsafe: disable grid and show warning banner (SAF-2) | Done |
+| QDR-43 | Implement Reservation Calendar | Done |
+|  | -- QDR-72: Build admin form for walk-in and phone reservation entry (FR-8) | Done |
+|  | -- QDR-73: Add Block Out Dates functionality for holidays/private events (FR-8) | Done |
+|  | -- QDR-74: Add input validation to prevent bookings outside operating hours (FR-8) | Done |
+| QDR-44 | Develop Guest CRM Table | Done |
+|  | -- QDR-75: Create searchable table: guest history, VIP status, allergy notes (FR-9) | Done |
+|  | -- QDR-76: Implement automated No-Show trigger at 15 minutes past reservation time (FR-9) | Done |
+| QDR-45 | Integrate SMTP Email Server | Done |
+|  | -- QDR-77: Create email payloads for Booking Confirmations and Waitlist Invites (FR-6) | Done |
+|  | -- QDR-78: Generate and attach .ics calendar invites to confirmation emails (FR-6) | Done |
+| QDR-79 | Implement Menu Management Module | Done |
+|  | -- QDR-81: Build Admin CRUD forms to upload/edit digital menu items (FR-11) | Done |
+| QDR-80 | Admin Waitlist Control Module | Done |
+|  | -- QDR-83: Build Admin UI to view, edit, and prioritize waitlist queue for VIPs (FR-12) | Done |
 | **QDR-46** | **Section 4. Testing (Epic)** | **In Progress** |
-| QDR-47 | Functional & Structural Testing | To Do |
-| QDR-48 | UI Latency Testing (3s Target) -- PR-1 + PR-3 email latency (10s) | To Do |
-| QDR-49 | Real-Time Concurrency Testing -- PR-2 (1s row-lock resolution) | To Do |
-| QDR-50 | Verify Offline Mode Failsafe -- SAF-2, SEC-2, LEG-1, LEG-2 | To Do |
+| QDR-47 | Functional & Structural Testing | Mostly Done |
+| QDR-48 | UI Latency Testing (3s Target) -- PR-1 + PR-3 email latency (10s) | In Progress |
+| QDR-49 | Real-Time Concurrency Testing -- PR-2 (1s row-lock resolution) | In Progress |
+| QDR-50 | Verify Offline Mode Failsafe -- SAF-2, SEC-2, LEG-1, LEG-2 | In Progress |
 | **QDR-51** | **Section 5. Deployment (Epic)** | **To Do** |
 | QDR-52 | Deploy to Supabase Cloud + Enable PITR (SAF-1) | To Do |
-| QDR-53 | Finalize User Manual | To Do |
+| QDR-53 | Finalize User Manual | Done |
 
 ---
 
-## 16.3 Phase 3: Customer Portal -- Development Status (QDR-54 & QDR-55)
+## 16.3 Phase 7 QA Status and Release Readiness (Current)
+
+Phase 7 is approximately 65% complete. Functional Playwright coverage exists for core customer and admin workflows, compliance checks are partially complete, and release deliverables are being finalized.
+
+| Area | Status | Evidence / Notes |
+|------|--------|------------------|
+| Functional scripts TC-1.1 through TC-6.2 | Mostly Complete | `Documents/TEST_EXECUTION_TC_2026-05-13.md`; 10 PASS and 2 previously skipped due to QA data availability. |
+| Sign-out reliability | Complete | DEF-002 closed; `/api/auth/signout` prevents aborted client-side logout requests. |
+| Email latency PR-3 | Complete | Mailtrap confirmation delivery verified within 10 seconds. |
+| SEC-1 RBAC | Ready for formal production-mode verification | DEF-004 resolved by adding `playwright.prod.config.ts`; run `npm run build && npm run test:e2e:prod`. |
+| PR-2 concurrency | Ready for re-run | DEF-005 resolved by updating `SEARCH_DATE` to `2030-01-15`; run `npm run test:e2e -- tests/e2e/tc3-concurrency.spec.ts`. |
+| PR-1 Lighthouse load audit | Pending | Run `npm run build`, start the app, then run `npm run test:perf`. |
+| SEC-2 HTTPS/TLS | Pending deployment-time check | Verify production URL redirects HTTP to HTTPS and serves HSTS if supported. |
+| Device/responsiveness testing | Pending manual QA | Test customer portal on mobile/tablet/desktop and admin floor plan on tablet. |
+| User manual | Complete | `Documents/USER_MANUAL.md` v1.0 created. |
+| Defects log | Complete / Active | `Documents/defects_log.md`; DEF-003 remains open for production sender-domain verification. |
+
+## 16.4 Historical Phase 3 Customer Portal Status (Superseded)
 
 ### Completed Tasks (May 11-12, 2026)
 
@@ -1107,29 +1136,44 @@ Epics (bold) contain the child tasks listed below them.
 | **Code Quality** | All files | **Done** | Comments normalized to neutral voice; full SEC-1 compliance verified |
 | **Git Commits** | `4c8e9f4`, `929a2cb`, `eced079` | **Done** | QDR-54, test suite, and results committed to main branch |
 
-### Remaining Tasks (Phase 3 Completion)
+### Historical Remaining Tasks (Now Complete)
 
-| Task | Blocking | Priority | Details |
-|------|----------|----------|----------|
-| **QDR-39: Checkout Modal** | QDR-54+55 complete | High | 5-minute countdown timer; tokenized simulated payment UI; confirm/cancel buttons |
-| **QDR-59: Customer Dashboard Expansion** | QDR-39 complete | High | Display upcoming/past reservations; cancel button (disabled within 2 hours); delete account button |
-| **QDR-60: Reservation Cancellation** | QDR-59 complete | High | Backend cancellation logic; refund simulation; waitlist auto-promotion trigger |
-| **QDR-61: Right to Erasure** | QDR-59 complete | Medium | Delete account button; cascade delete all PII/reservations/waitlist (LEG-1) |
-| **QDR-82: Digital Menu Display** | QDR-39 complete | Medium | Show menu items alongside availability results; category filters |
+The table below is retained only as historical context from the May 11-12 Phase 3 worklog. These items are no longer active blockers; current status is tracked in Sections 16.1-16.3 above.
+
+| Task | Original Blocking Condition | Original Priority | Current Resolution |
+|------|-----------------------------|-------------------|--------------------|
+| **QDR-39: Checkout Modal** | QDR-54+55 complete | High | Complete: 5-minute countdown, simulated tokenized checkout, and lock API integration implemented. |
+| **QDR-59: Customer Dashboard Expansion** | QDR-39 complete | High | Complete: upcoming/past reservations, cancel controls, account deletion, and sign-out flow implemented. |
+| **QDR-60: Reservation Cancellation** | QDR-59 complete | High | Complete: cancellation path, table release, and waitlist follow-up supported. |
+| **QDR-61: Right to Erasure** | QDR-59 complete | Medium | Complete: Delete Account performs cascade delete of PII/reservations/waitlist and auth account. |
+| **QDR-82: Digital Menu Display** | QDR-39 complete | Medium | Complete: digital menu displays alongside customer availability/search flow; admin CRUD implemented in Phase 6. |
 
 ---
 
-## 16.4 Next Immediate Task
+## 16.5 Next Immediate Tasks
 
-### Highest Priority (Unblock Phase 3 Completion)
+### Highest Priority Phase 7 Actions
 
-**QDR-39: Build Checkout Modal** (Starting Now)
-- 5-minute countdown timer using `setInterval` and React state
-- Simulated payment form (card number, expiry, CVV placeholders)
-- Lock/confirm/cancel buttons
-- Integration with `/api/reservations/lock` endpoint
-- Target completion: May 12, 2026
-- **Dependency:** QDR-54 + QDR-55 (✅ Complete)
+1. **Run SEC-1 production RBAC verification**
+   - Command: `npm run build && npm run test:e2e:prod`
+   - Purpose: formally verify DEF-004 is closed in production mode.
+
+2. **Re-run TC-3.2 concurrency verification**
+   - Command: `npm run test:e2e -- tests/e2e/tc3-concurrency.spec.ts`
+   - Purpose: verify PR-2 lock behavior using the updated `2030-01-15` test date.
+
+3. **Run PR-1 Lighthouse performance audit**
+   - Command: `npm run build`, start the app, then run `npm run test:perf`
+   - Purpose: verify customer availability and admin dashboard load performance.
+
+4. **Complete deployment-time checks**
+   - Verify SEC-2 HTTPS/TLS on the hosted URL.
+   - Enable or document Supabase PITR status for SAF-1.
+   - Resolve DEF-003 by using a verified production sender domain.
+
+5. **Finalize traceability citations and responsiveness evidence**
+   - Update `Documents/traceability.md` with final QA evidence.
+   - Record manual device/responsiveness results for customer and admin screens.
 
 ---
 

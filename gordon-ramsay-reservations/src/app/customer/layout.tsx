@@ -6,10 +6,16 @@
  * Purpose:
  *   Renders the customer navigation header with sign-out and navigation links.
  *   Applies consistent styling across all customer-facing pages.
+ *
+ * I export `dynamic = 'force-dynamic'` so middleware RBAC enforcement fires
+ * on every request. Without this, Next.js may serve a cached static response
+ * before the middleware redirect, allowing unauthenticated access (SEC-1 / QDR-50).
  */
 
-import Link from 'next/link';
-import React from 'react';
+import Link from "next/link";
+import React from "react";
+
+export const dynamic = "force-dynamic";
 
 export default function CustomerLayout({
   children,
@@ -42,7 +48,9 @@ export default function CustomerLayout({
           </div>
           <div className="flex items-center gap-4">
             {/* Placeholder for user menu / sign-out */}
-            <span className="text-sm text-slate-600 dark:text-slate-400">Customer Menu</span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Customer Menu
+            </span>
           </div>
         </div>
       </header>

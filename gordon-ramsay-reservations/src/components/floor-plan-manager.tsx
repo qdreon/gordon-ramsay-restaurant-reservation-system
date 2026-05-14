@@ -1,67 +1,270 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Users, Clock, UtensilsCrossed, CircleDot } from "lucide-react"
+import * as React from "react";
+import { Users, Clock, UtensilsCrossed, CircleDot } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import supabase from "@/lib/authClient"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import supabase from "@/lib/authClient";
 
 // Database enum: table_status
-type TableStatus = "available" | "reserved" | "occupied" | "dirty"
+type TableStatus = "available" | "reserved" | "occupied" | "dirty";
 
 // Database schema: public.tables
 interface TableData {
-  id: string // UUID, PK
-  table_number: number // INTEGER, NOT NULL, UNIQUE
-  capacity: number // INTEGER, NOT NULL, CHECK (> 0)
-  status: TableStatus // table_status, NOT NULL, DEFAULT 'available'
-  position_x: number // INTEGER, NOT NULL, DEFAULT 0
-  position_y: number // INTEGER, NOT NULL, DEFAULT 0
-  is_combinable: boolean // BOOLEAN, NOT NULL, DEFAULT true
-  adjacent_table_ids: string[] // UUID[], DEFAULT '{}'
-  created_at: string // TIMESTAMPTZ, NOT NULL, DEFAULT now()
-  updated_at: string // TIMESTAMPTZ, NOT NULL, DEFAULT now()
+  id: string; // UUID, PK
+  table_number: number; // INTEGER, NOT NULL, UNIQUE
+  capacity: number; // INTEGER, NOT NULL, CHECK (> 0)
+  status: TableStatus; // table_status, NOT NULL, DEFAULT 'available'
+  position_x: number; // INTEGER, NOT NULL, DEFAULT 0
+  position_y: number; // INTEGER, NOT NULL, DEFAULT 0
+  is_combinable: boolean; // BOOLEAN, NOT NULL, DEFAULT true
+  adjacent_table_ids: string[]; // UUID[], DEFAULT '{}'
+  created_at: string; // TIMESTAMPTZ, NOT NULL, DEFAULT now()
+  updated_at: string; // TIMESTAMPTZ, NOT NULL, DEFAULT now()
   // Runtime state (not persisted)
-  guestName?: string
-  guestCount?: number
+  guestName?: string;
+  guestCount?: number;
 }
 
 interface Reservation {
-  id: string
-  name: string
-  time: string
-  tableId: string
-  pax: number
+  id: string;
+  name: string;
+  time: string;
+  tableId: string;
+  pax: number;
 }
 
 // Mock data matching the database schema
 const initialTables: TableData[] = [
   // Front Row (position_y: 0)
-  { id: "a1b2c3d4-0001-4000-8000-000000000001", table_number: 1, capacity: 2, status: "available", position_x: 0, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000002"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000002", table_number: 2, capacity: 2, status: "reserved", position_x: 1, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000001", "a1b2c3d4-0001-4000-8000-000000000003"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Martinez" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000003", table_number: 3, capacity: 4, status: "available", position_x: 2, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000002", "a1b2c3d4-0001-4000-8000-000000000004"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000004", table_number: 4, capacity: 4, status: "occupied", position_x: 3, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000003", "a1b2c3d4-0001-4000-8000-000000000005"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Chen", guestCount: 3 },
-  { id: "a1b2c3d4-0001-4000-8000-000000000005", table_number: 5, capacity: 4, status: "dirty", position_x: 4, position_y: 0, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000004"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000001",
+    table_number: 1,
+    capacity: 2,
+    status: "available",
+    position_x: 0,
+    position_y: 0,
+    is_combinable: true,
+    adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000002"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000002",
+    table_number: 2,
+    capacity: 2,
+    status: "reserved",
+    position_x: 1,
+    position_y: 0,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000001",
+      "a1b2c3d4-0001-4000-8000-000000000003",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Martinez",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000003",
+    table_number: 3,
+    capacity: 4,
+    status: "available",
+    position_x: 2,
+    position_y: 0,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000002",
+      "a1b2c3d4-0001-4000-8000-000000000004",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000004",
+    table_number: 4,
+    capacity: 4,
+    status: "occupied",
+    position_x: 3,
+    position_y: 0,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000003",
+      "a1b2c3d4-0001-4000-8000-000000000005",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Chen",
+    guestCount: 3,
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000005",
+    table_number: 5,
+    capacity: 4,
+    status: "dirty",
+    position_x: 4,
+    position_y: 0,
+    is_combinable: true,
+    adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000004"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
   // Middle Row (position_y: 1)
-  { id: "a1b2c3d4-0001-4000-8000-000000000006", table_number: 6, capacity: 2, status: "occupied", position_x: 0, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000007"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Smith", guestCount: 2 },
-  { id: "a1b2c3d4-0001-4000-8000-000000000007", table_number: 7, capacity: 2, status: "available", position_x: 1, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000006", "a1b2c3d4-0001-4000-8000-000000000008"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000008", table_number: 8, capacity: 4, status: "reserved", position_x: 2, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000007", "a1b2c3d4-0001-4000-8000-000000000009"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Johnson" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000009", table_number: 9, capacity: 4, status: "available", position_x: 3, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000008", "a1b2c3d4-0001-4000-8000-000000000010"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000010", table_number: 10, capacity: 4, status: "occupied", position_x: 4, position_y: 1, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000009"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Williams", guestCount: 4 },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000006",
+    table_number: 6,
+    capacity: 2,
+    status: "occupied",
+    position_x: 0,
+    position_y: 1,
+    is_combinable: true,
+    adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000007"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Smith",
+    guestCount: 2,
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000007",
+    table_number: 7,
+    capacity: 2,
+    status: "available",
+    position_x: 1,
+    position_y: 1,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000006",
+      "a1b2c3d4-0001-4000-8000-000000000008",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000008",
+    table_number: 8,
+    capacity: 4,
+    status: "reserved",
+    position_x: 2,
+    position_y: 1,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000007",
+      "a1b2c3d4-0001-4000-8000-000000000009",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Johnson",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000009",
+    table_number: 9,
+    capacity: 4,
+    status: "available",
+    position_x: 3,
+    position_y: 1,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000008",
+      "a1b2c3d4-0001-4000-8000-000000000010",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000010",
+    table_number: 10,
+    capacity: 4,
+    status: "occupied",
+    position_x: 4,
+    position_y: 1,
+    is_combinable: true,
+    adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000009"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Williams",
+    guestCount: 4,
+  },
   // Back Row (position_y: 2)
-  { id: "a1b2c3d4-0001-4000-8000-000000000011", table_number: 11, capacity: 6, status: "available", position_x: 0, position_y: 2, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000012"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000012", table_number: 12, capacity: 6, status: "reserved", position_x: 1, position_y: 2, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000011", "a1b2c3d4-0001-4000-8000-000000000013"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Davis" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000013", table_number: 13, capacity: 6, status: "occupied", position_x: 2, position_y: 2, is_combinable: true, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000012", "a1b2c3d4-0001-4000-8000-000000000014"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z", guestName: "Brown", guestCount: 5 },
-  { id: "a1b2c3d4-0001-4000-8000-000000000014", table_number: 14, capacity: 8, status: "available", position_x: 3, position_y: 2, is_combinable: false, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000013", "a1b2c3d4-0001-4000-8000-000000000015"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "a1b2c3d4-0001-4000-8000-000000000015", table_number: 15, capacity: 8, status: "dirty", position_x: 4, position_y: 2, is_combinable: false, adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000014"], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-]
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000011",
+    table_number: 11,
+    capacity: 6,
+    status: "available",
+    position_x: 0,
+    position_y: 2,
+    is_combinable: true,
+    adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000012"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000012",
+    table_number: 12,
+    capacity: 6,
+    status: "reserved",
+    position_x: 1,
+    position_y: 2,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000011",
+      "a1b2c3d4-0001-4000-8000-000000000013",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Davis",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000013",
+    table_number: 13,
+    capacity: 6,
+    status: "occupied",
+    position_x: 2,
+    position_y: 2,
+    is_combinable: true,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000012",
+      "a1b2c3d4-0001-4000-8000-000000000014",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+    guestName: "Brown",
+    guestCount: 5,
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000014",
+    table_number: 14,
+    capacity: 8,
+    status: "available",
+    position_x: 3,
+    position_y: 2,
+    is_combinable: false,
+    adjacent_table_ids: [
+      "a1b2c3d4-0001-4000-8000-000000000013",
+      "a1b2c3d4-0001-4000-8000-000000000015",
+    ],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "a1b2c3d4-0001-4000-8000-000000000015",
+    table_number: 15,
+    capacity: 8,
+    status: "dirty",
+    position_x: 4,
+    position_y: 2,
+    is_combinable: false,
+    adjacent_table_ids: ["a1b2c3d4-0001-4000-8000-000000000014"],
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+];
 
 const initialReservations: Reservation[] = [
   { id: "R1", name: "Martinez", time: "18:30", tableId: "T2", pax: 2 },
@@ -69,34 +272,34 @@ const initialReservations: Reservation[] = [
   { id: "R3", name: "Davis", time: "19:30", tableId: "T12", pax: 6 },
   { id: "R4", name: "Anderson", time: "20:00", tableId: "T14", pax: 7 },
   { id: "R5", name: "Taylor", time: "20:30", tableId: "T3", pax: 3 },
-]
+];
 
 const statusColors: Record<TableStatus, string> = {
   available: "bg-emerald-500",
   reserved: "bg-amber-500",
   occupied: "bg-red-500",
   dirty: "bg-slate-500",
-}
+};
 
 const statusLabels: Record<TableStatus, string> = {
   available: "Available",
   reserved: "Reserved",
   occupied: "Occupied",
   dirty: "Dirty",
-}
+};
 
 function TableComponent({
   table,
   disabled,
   onStatusChange,
 }: {
-  table: TableData
-  disabled?: boolean
-  onStatusChange: (id: string, status: TableStatus) => void
+  table: TableData;
+  disabled?: boolean;
+  onStatusChange: (id: string, status: TableStatus) => void;
 }) {
-  const isCircular = table.capacity <= 4
-  const baseSize = isCircular ? "w-16 h-16" : "w-24 h-14"
-  const shape = isCircular ? "rounded-full" : "rounded-sm"
+  const isCircular = table.capacity <= 4;
+  const baseSize = isCircular ? "w-16 h-16" : "w-24 h-14";
+  const shape = isCircular ? "rounded-full" : "rounded-sm";
 
   return (
     <div className="flex h-20 w-24 items-center justify-center">
@@ -110,11 +313,14 @@ function TableComponent({
             <span className="font-bold text-white">T{table.table_number}</span>
             <span className="text-white/80">{table.capacity}p</span>
             {table.is_combinable && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-cyber" title="Combinable" />
+              <span
+                className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-cyber"
+                title="Combinable"
+              />
             )}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="min-w-[140px]">
+        <DropdownMenuContent align="center" className="min-w-35">
           {(Object.keys(statusColors) as TableStatus[]).map((status) => (
             <DropdownMenuItem
               key={status}
@@ -128,71 +334,81 @@ function TableComponent({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  )
+  );
 }
 
-function hasAvailableAdjacentTables(table: TableData, tableById: Map<string, TableData>) {
+function hasAvailableAdjacentTables(
+  table: TableData,
+  tableById: Map<string, TableData>,
+) {
   return table.adjacent_table_ids.some((adjacentId) => {
-    const adjacentTable = tableById.get(adjacentId)
+    const adjacentTable = tableById.get(adjacentId);
     return Boolean(
       adjacentTable &&
-        adjacentTable.is_combinable &&
-        adjacentTable.status === "available"
-    )
-  })
+      adjacentTable.is_combinable &&
+      adjacentTable.status === "available",
+    );
+  });
 }
 
 function Legend() {
   return (
     <div className="flex items-center gap-4 px-4 py-2 bg-card/50 backdrop-blur-sm rounded-sm border border-border">
       {(Object.keys(statusColors) as TableStatus[]).map((status) => (
-        <div key={status} className="flex items-center gap-2" style={{ fontFamily: "Arial", fontSize: "11px" }}>
+        <div
+          key={status}
+          className="flex items-center gap-2"
+          style={{ fontFamily: "Arial", fontSize: "11px" }}
+        >
           <div className={`w-3 h-3 rounded-full ${statusColors[status]}`} />
           <span className="text-muted-foreground">{statusLabels[status]}</span>
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 function OnlineIndicator() {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 backdrop-blur-sm rounded-sm border border-border">
       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-glow" />
-      <span className="text-emerald-400" style={{ fontFamily: "Arial", fontSize: "11px" }}>
+      <span
+        className="text-emerald-400"
+        style={{ fontFamily: "Arial", fontSize: "11px" }}
+      >
         Online
       </span>
     </div>
-  )
+  );
 }
 
 export function FloorPlanManager() {
-  const [tables, setTables] = React.useState<TableData[]>(initialTables)
-  const [reservations] = React.useState<Reservation[]>(initialReservations)
-  const [walkInName, setWalkInName] = React.useState("")
-  const [walkInPax, setWalkInPax] = React.useState("")
-  const [walkInTable, setWalkInTable] = React.useState("")
-  const [isOnline, setIsOnline] = React.useState(true)
-  const [loadingTables, setLoadingTables] = React.useState(true)
-  const [tableError, setTableError] = React.useState<string | null>(null)
+  const [tables, setTables] = React.useState<TableData[]>(initialTables);
+  const [reservations] = React.useState<Reservation[]>(initialReservations);
+  const [walkInName, setWalkInName] = React.useState("");
+  const [walkInPax, setWalkInPax] = React.useState("");
+  const [walkInTable, setWalkInTable] = React.useState("");
+  const [isOnline, setIsOnline] = React.useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  const [loadingTables, setLoadingTables] = React.useState(true);
+  const [tableError, setTableError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setIsOnline(navigator.onLine)
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
-    }
-  }, [])
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   React.useEffect(() => {
-    let isMounted = true
+    let isMounted = true;
 
     async function loadTables() {
       try {
@@ -200,98 +416,110 @@ export function FloorPlanManager() {
           headers: {
             "Content-Type": "application/json",
           },
-        })
+        });
 
         const payload = (await response.json()) as {
-          tables?: TableData[]
-          error?: string
-        }
+          tables?: TableData[];
+          error?: string;
+        };
 
         if (!response.ok || !payload.tables) {
-          throw new Error(payload.error ?? "Failed to load floor plan data.")
+          throw new Error(payload.error ?? "Failed to load floor plan data.");
         }
 
         if (isMounted) {
-          setTables(payload.tables)
-          setTableError(null)
+          setTables(payload.tables);
+          setTableError(null);
         }
       } catch (error) {
         if (isMounted) {
-          setTableError(error instanceof Error ? error.message : "Failed to load floor plan data.")
+          setTableError(
+            error instanceof Error
+              ? error.message
+              : "Failed to load floor plan data.",
+          );
         }
       } finally {
         if (isMounted) {
-          setLoadingTables(false)
+          setLoadingTables(false);
         }
       }
     }
 
-    loadTables()
+    loadTables();
 
     return () => {
-      isMounted = false
-    }
-  }, [])
+      isMounted = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     const channel = supabase
-      .channel('public:tables')
+      .channel("public:tables")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'tables' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tables" },
         (payload) => {
-          const newRow = payload.new as Partial<TableData> | null
-          const oldRow = payload.old as Partial<TableData> | null
+          const newRow = payload.new as Partial<TableData> | null;
+          const oldRow = payload.old as Partial<TableData> | null;
 
-          if (payload.eventType === 'DELETE' && oldRow?.id) {
-            setTables((current) => current.filter((table) => table.id !== oldRow.id))
-            return
+          if (payload.eventType === "DELETE" && oldRow?.id) {
+            setTables((current) =>
+              current.filter((table) => table.id !== oldRow.id),
+            );
+            return;
           }
 
-          if (!newRow?.id) return
+          if (!newRow?.id) return;
 
           setTables((current) => {
             const nextTable: TableData = {
-              ...(current.find((table) => table.id === newRow.id) ?? {} as TableData),
+              ...(current.find((table) => table.id === newRow.id) ??
+                ({} as TableData)),
               ...newRow,
               guestName:
-                (current.find((table) => table.id === newRow.id)?.guestName ?? undefined),
+                current.find((table) => table.id === newRow.id)?.guestName ??
+                undefined,
               guestCount:
-                (current.find((table) => table.id === newRow.id)?.guestCount ?? undefined),
-            } as TableData
+                current.find((table) => table.id === newRow.id)?.guestCount ??
+                undefined,
+            } as TableData;
 
-            const exists = current.some((table) => table.id === newRow.id)
+            const exists = current.some((table) => table.id === newRow.id);
             if (exists) {
-              return current.map((table) => (table.id === newRow.id ? nextTable : table))
+              return current.map((table) =>
+                table.id === newRow.id ? nextTable : table,
+              );
             }
 
             return [...current, nextTable].sort((left, right) => {
-              if (left.position_y !== right.position_y) return left.position_y - right.position_y
-              return left.position_x - right.position_x
-            })
-          })
-        }
+              if (left.position_y !== right.position_y)
+                return left.position_y - right.position_y;
+              return left.position_x - right.position_x;
+            });
+          });
+        },
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleStatusChange = (id: string, status: TableStatus) => {
-    if (!isOnline) return
+    if (!isOnline) return;
 
     setTables((prev) =>
-      prev.map((table) => (table.id === id ? { ...table, status } : table))
-    )
-  }
+      prev.map((table) => (table.id === id ? { ...table, status } : table)),
+    );
+  };
 
   const handleWalkIn = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!isOnline) return
+    e.preventDefault();
+    if (!isOnline) return;
 
-    if (!walkInName || !walkInPax || !walkInTable) return
+    if (!walkInName || !walkInPax || !walkInTable) return;
 
     setTables((prev) =>
       prev.map((table) =>
@@ -302,16 +530,16 @@ export function FloorPlanManager() {
               guestName: walkInName,
               guestCount: parseInt(walkInPax),
             }
-          : table
-      )
-    )
-    setWalkInName("")
-    setWalkInPax("")
-    setWalkInTable("")
-  }
+          : table,
+      ),
+    );
+    setWalkInName("");
+    setWalkInPax("");
+    setWalkInTable("");
+  };
 
   const handleMarkDirty = async (tableId: string) => {
-    if (!isOnline) return
+    if (!isOnline) return;
 
     try {
       const response = await fetch(`/api/admin/tables/${tableId}/mark-dirty`, {
@@ -319,17 +547,20 @@ export function FloorPlanManager() {
         headers: {
           "Content-Type": "application/json",
         },
-      })
+      });
 
       const payload = (await response.json()) as {
-        success?: boolean
-        message?: string
-        error?: string
-      }
+        success?: boolean;
+        message?: string;
+        error?: string;
+      };
 
       if (!response.ok || !payload.success) {
-        console.error("Failed to mark table dirty:", payload.error ?? "Unknown error")
-        return
+        console.error(
+          "Failed to mark table dirty:",
+          payload.error ?? "Unknown error",
+        );
+        return;
       }
 
       // Update local state: mark table as dirty
@@ -337,30 +568,32 @@ export function FloorPlanManager() {
         prev.map((table) =>
           table.id === tableId
             ? { ...table, status: "dirty" as TableStatus }
-            : table
-        )
-      )
+            : table,
+        ),
+      );
     } catch (error) {
-      console.error("Error marking table dirty:", error)
+      console.error("Error marking table dirty:", error);
     }
-  }
+  };
 
-  const occupiedTables = tables.filter((t) => t.status === "occupied")
+  const occupiedTables = tables.filter((t) => t.status === "occupied");
   const tableById = React.useMemo(
     () => new Map(tables.map((table) => [table.id, table])),
-    [tables]
-  )
+    [tables],
+  );
 
   // Organize tables by position_y for the grid
   const rows = [0, 1, 2].map((rowIndex) =>
-    tables.filter((t) => t.position_y === rowIndex).sort((a, b) => a.position_x - b.position_x)
-  )
+    tables
+      .filter((t) => t.position_y === rowIndex)
+      .sort((a, b) => a.position_x - b.position_x),
+  );
 
   return (
     <div className="flex h-screen w-full bg-background">
       {/* Left Sidebar */}
-      <aside className="w-80 flex-shrink-0 border-r border-border bg-sidebar flex flex-col h-screen overflow-hidden">
-        <div className="p-4 border-b border-sidebar-border flex-shrink-0">
+      <aside className="w-80 shrink-0 border-r border-border bg-sidebar flex flex-col h-screen overflow-hidden">
+        <div className="p-4 border-b border-sidebar-border shrink-0">
           <h1
             className="text-lg font-semibold text-sidebar-foreground flex items-center gap-2"
             style={{ fontFamily: "Arial" }}
@@ -374,7 +607,8 @@ export function FloorPlanManager() {
           <div className="p-4 space-y-6 pb-8">
             {!isOnline && (
               <div className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                Offline Warning: table interactions are disabled until the connection is restored.
+                Offline Warning: table interactions are disabled until the
+                connection is restored.
               </div>
             )}
 
@@ -407,7 +641,9 @@ export function FloorPlanManager() {
                     style={{ fontFamily: "Arial", fontSize: "11px" }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-sidebar-foreground">{res.name}</span>
+                      <span className="font-medium text-sidebar-foreground">
+                        {res.name}
+                      </span>
                       <span className="text-cyber font-mono">{res.time}</span>
                     </div>
                     <div className="flex items-center justify-between mt-1 text-muted-foreground">
@@ -481,7 +717,10 @@ export function FloorPlanManager() {
               </h2>
               <div className="space-y-2">
                 {occupiedTables.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4" style={{ fontFamily: "Arial", fontSize: "11px" }}>
+                  <p
+                    className="text-muted-foreground text-center py-4"
+                    style={{ fontFamily: "Arial", fontSize: "11px" }}
+                  >
                     No occupied tables
                   </p>
                 ) : (
@@ -492,8 +731,12 @@ export function FloorPlanManager() {
                       style={{ fontFamily: "Arial", fontSize: "11px" }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sidebar-foreground">{table.guestName}</span>
-                        <span className="text-red-400 font-mono">T{table.table_number}</span>
+                        <span className="font-medium text-sidebar-foreground">
+                          {table.guestName}
+                        </span>
+                        <span className="text-red-400 font-mono">
+                          T{table.table_number}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between mt-1 text-muted-foreground">
                         <span>Capacity: {table.capacity}</span>
@@ -502,11 +745,12 @@ export function FloorPlanManager() {
                           {table.guestCount || "-"}
                         </span>
                       </div>
-                      {table.is_combinable && hasAvailableAdjacentTables(table, tableById) && (
-                        <div className="mt-1 text-cyber text-[10px]">
-                          Can combine with adjacent tables
-                        </div>
-                      )}
+                      {table.is_combinable &&
+                        hasAvailableAdjacentTables(table, tableById) && (
+                          <div className="mt-1 text-cyber text-[10px]">
+                            Can combine with adjacent tables
+                          </div>
+                        )}
                       <Button
                         onClick={() => handleMarkDirty(table.id)}
                         disabled={!isOnline}
@@ -527,7 +771,10 @@ export function FloorPlanManager() {
       <main className="flex-1 flex flex-col">
         {/* Header with Legend */}
         <header className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground" style={{ fontFamily: "Arial" }}>
+          <h2
+            className="text-lg font-semibold text-foreground"
+            style={{ fontFamily: "Arial" }}
+          >
             Interactive Floor Plan
           </h2>
           <Legend />
@@ -602,5 +849,5 @@ export function FloorPlanManager() {
         </div>
       </main>
     </div>
-  )
+  );
 }

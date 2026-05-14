@@ -12,8 +12,7 @@
  * Principle: Single Responsibility -- this file ONLY handles Customer data.
  */
 
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
-import { createServiceSupabaseClient } from '@/lib/supabaseAdmin';
+import { createServiceSupabaseClient } from "@/lib/supabaseAdmin";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,19 +90,25 @@ export type ReservationSummary = ReservationRow;
  * Resolves the `public.customers.id` (UUID) for the currently signed-in user.
  * Required before calling the reservation lock RPC, which expects `customer_id`.
  */
-export async function getCustomerByUserId(userId: string): Promise<CustomerProfile | null> {
+export async function getCustomerByUserId(
+  userId: string,
+): Promise<CustomerProfile | null> {
   const supabase = createServiceSupabaseClient();
 
   const { data, error } = await supabase
-    .from('customers')
-    .select('id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows')
-    .eq('user_id', userId)
+    .from("customers")
+    .select(
+      "id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows",
+    )
+    .eq("user_id", userId)
     .single();
 
   if (error) {
     // No customer row means the signup trigger has not yet created the profile.
-    if (error.code === 'PGRST116') return null;
-    throw new Error(`[Customer Service] Failed to fetch customer profile: ${error.message}`);
+    if (error.code === "PGRST116") return null;
+    throw new Error(
+      `[Customer Service] Failed to fetch customer profile: ${error.message}`,
+    );
   }
 
   return data as CustomerProfile;
@@ -113,30 +118,36 @@ export async function getCustomerByUserId(userId: string): Promise<CustomerProfi
  * Fetches the linked auth user and customer profile for the current account.
  */
 export async function getCustomerAccountByUserId(
-  userId: string
+  userId: string,
 ): Promise<CustomerAccountProfile | null> {
   const supabase = createServiceSupabaseClient();
 
   const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('id, email, full_name, phone')
-    .eq('id', userId)
+    .from("users")
+    .select("id, email, full_name, phone")
+    .eq("id", userId)
     .single();
 
   if (userError) {
-    if (userError.code === 'PGRST116') return null;
-    throw new Error(`[Customer Service] Failed to fetch user account: ${userError.message}`);
+    if (userError.code === "PGRST116") return null;
+    throw new Error(
+      `[Customer Service] Failed to fetch user account: ${userError.message}`,
+    );
   }
 
   const { data: customerData, error: customerError } = await supabase
-    .from('customers')
-    .select('id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows')
-    .eq('user_id', userId)
+    .from("customers")
+    .select(
+      "id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows",
+    )
+    .eq("user_id", userId)
     .single();
 
   if (customerError) {
-    if (customerError.code === 'PGRST116') return null;
-    throw new Error(`[Customer Service] Failed to fetch customer profile: ${customerError.message}`);
+    if (customerError.code === "PGRST116") return null;
+    throw new Error(
+      `[Customer Service] Failed to fetch customer profile: ${customerError.message}`,
+    );
   }
 
   return {
@@ -158,37 +169,43 @@ export async function getCustomerAccountByUserId(
  */
 export async function updateCustomerAccountByUserId(
   userId: string,
-  input: UpdateCustomerAccountInput
+  input: UpdateCustomerAccountInput,
 ): Promise<CustomerAccountProfile> {
   const supabase = createServiceSupabaseClient();
 
   const { error: userError } = await supabase
-    .from('users')
+    .from("users")
     .update({
       full_name: input.fullName,
       phone: input.phone,
     })
-    .eq('id', userId);
+    .eq("id", userId);
 
   if (userError) {
-    throw new Error(`[Customer Service] Failed to update contact details: ${userError.message}`);
+    throw new Error(
+      `[Customer Service] Failed to update contact details: ${userError.message}`,
+    );
   }
 
   const { error: customerError } = await supabase
-    .from('customers')
+    .from("customers")
     .update({
       dietary_restrictions: input.dietaryRestrictions,
       allergies: input.allergies,
     })
-    .eq('user_id', userId);
+    .eq("user_id", userId);
 
   if (customerError) {
-    throw new Error(`[Customer Service] Failed to update customer profile: ${customerError.message}`);
+    throw new Error(
+      `[Customer Service] Failed to update customer profile: ${customerError.message}`,
+    );
   }
 
   const updatedAccount = await getCustomerAccountByUserId(userId);
   if (!updatedAccount) {
-    throw new Error('[Customer Service] Updated account could not be reloaded.');
+    throw new Error(
+      "[Customer Service] Updated account could not be reloaded.",
+    );
   }
 
   return updatedAccount;
@@ -198,12 +215,15 @@ export async function updateCustomerAccountByUserId(
  * Fetches all reservations for a given customer ID, ordered by date descending.
  * Joins `reservation_tables` to get the physical table numbers for display.
  */
-export async function getReservationsForCustomer(customerId: string): Promise<ReservationRow[]> {
+export async function getReservationsForCustomer(
+  customerId: string,
+): Promise<ReservationRow[]> {
   const supabase = createServiceSupabaseClient();
 
   const { data, error } = await supabase
-    .from('reservations')
-    .select(`
+    .from("reservations")
+    .select(
+      `
       id,
       reservation_date,
       start_time,
@@ -216,17 +236,20 @@ export async function getReservationsForCustomer(customerId: string): Promise<Re
       reservation_tables (
         tables ( table_number )
       )
-    `)
-    .eq('customer_id', customerId)
-    .order('reservation_date', { ascending: false });
+    `,
+    )
+    .eq("customer_id", customerId)
+    .order("reservation_date", { ascending: false });
 
   if (error) {
-    throw new Error(`[Customer Service] Failed to fetch reservations: ${error.message}`);
+    throw new Error(
+      `[Customer Service] Failed to fetch reservations: ${error.message}`,
+    );
   }
 
   type TableRef = { table_number: number } | null;
   type ReservationTableJoin = { tables: TableRef | TableRef[] | null };
-  type ReservationQueryRow = Omit<ReservationRow, 'tables'> & {
+  type ReservationQueryRow = Omit<ReservationRow, "tables"> & {
     reservation_tables: ReservationTableJoin[] | null;
   };
 
@@ -235,21 +258,23 @@ export async function getReservationsForCustomer(customerId: string): Promise<Re
     return Array.isArray(t) ? t : [t];
   }
 
-  return (data ?? []).map((row: ReservationQueryRow): ReservationRow => ({
-    id: row.id,
-    reservation_date: row.reservation_date,
-    start_time: row.start_time,
-    end_time: row.end_time,
-    party_size: row.party_size,
-    status: row.status,
-    special_requests: row.special_requests,
-    locked_until: row.locked_until,
-    created_at: row.created_at,
-    tables: (row.reservation_tables ?? [])
-      .flatMap((rt) => normalizeTables(rt.tables))
-      .filter((t): t is { table_number: number } => t !== null)
-      .map((t) => ({ table_number: t.table_number || 0 })),
-  }));
+  return (data ?? []).map(
+    (row: ReservationQueryRow): ReservationRow => ({
+      id: row.id,
+      reservation_date: row.reservation_date,
+      start_time: row.start_time,
+      end_time: row.end_time,
+      party_size: row.party_size,
+      status: row.status,
+      special_requests: row.special_requests,
+      locked_until: row.locked_until,
+      created_at: row.created_at,
+      tables: (row.reservation_tables ?? [])
+        .flatMap((rt) => normalizeTables(rt.tables))
+        .filter((t): t is { table_number: number } => t !== null)
+        .map((t) => ({ table_number: t.table_number || 0 })),
+    }),
+  );
 }
 
 /**
@@ -257,7 +282,7 @@ export async function getReservationsForCustomer(customerId: string): Promise<Re
  */
 export async function getReservationForCustomer(
   reservationId: string,
-  customerId: string
+  customerId: string,
 ): Promise<ReservationSummary | null> {
   const reservations = await getReservationsForCustomer(customerId);
   return reservations.find((r) => r.id === reservationId) ?? null;
@@ -275,40 +300,56 @@ export async function getReservationForCustomer(
  */
 export async function cancelReservation(
   reservationId: string,
-  customerId: string
+  customerId: string,
 ): Promise<void> {
   const supabase = createServiceSupabaseClient();
 
   // Step 1: Mark the reservation as cancelled.
-  const { error: cancelError } = await supabase
-    .from('reservations')
-    .update({ status: 'cancelled', locked_until: null })
-    .eq('id', reservationId)
-    .eq('customer_id', customerId);
+  const { data: updatedReservations, error: cancelError } = await supabase
+    .from("reservations")
+    .update({ status: "cancelled", locked_until: null })
+    .select("id")
+    .eq("id", reservationId)
+    .eq("customer_id", customerId);
 
   if (cancelError) {
-    throw new Error(`[Customer Service] Failed to cancel reservation: ${cancelError.message}`);
+    throw new Error(
+      `[Customer Service] Failed to cancel reservation: ${cancelError.message}`,
+    );
+  }
+
+  if (
+    !updatedReservations ||
+    (Array.isArray(updatedReservations) && updatedReservations.length === 0)
+  ) {
+    throw new Error(
+      "[Customer Service] Reservation not found or not owned by customer.",
+    );
   }
 
   // Step 2: Revert all tables linked to this reservation back to 'available'.
   const { data: linkedTables, error: linkError } = await supabase
-    .from('reservation_tables')
-    .select('table_id')
-    .eq('reservation_id', reservationId);
+    .from("reservation_tables")
+    .select("table_id")
+    .eq("reservation_id", reservationId);
 
   if (linkError) {
-    throw new Error(`[Customer Service] Failed to fetch linked tables: ${linkError.message}`);
+    throw new Error(
+      `[Customer Service] Failed to fetch linked tables: ${linkError.message}`,
+    );
   }
 
   if (linkedTables && linkedTables.length > 0) {
     const tableIds = linkedTables.map((rt) => rt.table_id);
     const { error: tableError } = await supabase
-      .from('tables')
-      .update({ status: 'available' })
-      .in('id', tableIds);
+      .from("tables")
+      .update({ status: "available" })
+      .in("id", tableIds);
 
     if (tableError) {
-      throw new Error(`[Customer Service] Failed to revert table status: ${tableError.message}`);
+      throw new Error(
+        `[Customer Service] Failed to revert table status: ${tableError.message}`,
+      );
     }
   }
 }
@@ -331,7 +372,9 @@ export async function deleteCustomerAccount(userId: string): Promise<void> {
   const { error } = await supabase.auth.admin.deleteUser(userId);
 
   if (error) {
-    throw new Error(`[Customer Service] Failed to delete account: ${error.message}`);
+    throw new Error(
+      `[Customer Service] Failed to delete account: ${error.message}`,
+    );
   }
 }
 
@@ -341,25 +384,32 @@ export async function deleteCustomerAccount(userId: string): Promise<void> {
  */
 export async function getAdminCrmCustomers(filters?: {
   search?: string;
-  status?: 'all' | 'VIP' | 'Regular' | 'Blacklisted';
+  status?: "all" | "VIP" | "Regular" | "Blacklisted";
 }): Promise<AdminCrmCustomer[]> {
   const supabase = createServiceSupabaseClient();
 
   const { data, error } = await supabase
-    .from('customers')
+    .from("customers")
     .select(
-      'id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows, staff_notes, created_at, updated_at, users!inner(id, full_name, phone, email)'
+      "id, user_id, dietary_restrictions, allergies, vip_status, total_visits, total_no_shows, staff_notes, created_at, updated_at, users!inner(id, full_name, phone, email)",
     )
-    .order('updated_at', { ascending: false });
+    .order("updated_at", { ascending: false });
 
   if (error) {
-    throw new Error(`[Customer Service] Failed to fetch CRM customers: ${error.message}`);
+    throw new Error(
+      `[Customer Service] Failed to fetch CRM customers: ${error.message}`,
+    );
   }
 
   const normalized = (data ?? []).map((row) => {
     const usersField = row.users as
       | { id: string; full_name: string; phone: string | null; email: string }
-      | Array<{ id: string; full_name: string; phone: string | null; email: string }>;
+      | Array<{
+          id: string;
+          full_name: string;
+          phone: string | null;
+          email: string;
+        }>;
 
     const user = Array.isArray(usersField) ? usersField[0] : usersField;
 
@@ -379,13 +429,18 @@ export async function getAdminCrmCustomers(filters?: {
   });
 
   const search = filters?.search?.trim().toLowerCase();
-  const status = filters?.status ?? 'all';
+  const status = filters?.status ?? "all";
 
   return normalized.filter((customer) => {
-    const isBlacklisted = customer.staff_notes?.toLowerCase().includes('blacklist') ?? false;
-    const customerStatus = isBlacklisted ? 'Blacklisted' : customer.vip_status ? 'VIP' : 'Regular';
+    const isBlacklisted =
+      customer.staff_notes?.toLowerCase().includes("blacklist") ?? false;
+    const customerStatus = isBlacklisted
+      ? "Blacklisted"
+      : customer.vip_status
+        ? "VIP"
+        : "Regular";
 
-    const matchesStatus = status === 'all' || customerStatus === status;
+    const matchesStatus = status === "all" || customerStatus === status;
     if (!matchesStatus) return false;
 
     if (!search) return true;
@@ -393,7 +448,7 @@ export async function getAdminCrmCustomers(filters?: {
     return (
       customer.user.full_name.toLowerCase().includes(search) ||
       customer.user.email.toLowerCase().includes(search) ||
-      (customer.user.phone ?? '').includes(search)
+      (customer.user.phone ?? "").includes(search)
     );
   });
 }
@@ -410,7 +465,7 @@ export interface UpdateAdminCrmCustomerInput {
  */
 export async function updateAdminCrmCustomer(
   customerId: string,
-  input: UpdateAdminCrmCustomerInput
+  input: UpdateAdminCrmCustomerInput,
 ): Promise<AdminCrmCustomer> {
   const supabase = createServiceSupabaseClient();
 
@@ -427,7 +482,9 @@ export async function updateAdminCrmCustomer(
   }
 
   if (input.staff_notes !== undefined) {
-    payload.staff_notes = input.staff_notes?.trim() ? input.staff_notes.trim() : null;
+    payload.staff_notes = input.staff_notes?.trim()
+      ? input.staff_notes.trim()
+      : null;
   }
 
   if (input.vip_status !== undefined) {
@@ -435,19 +492,23 @@ export async function updateAdminCrmCustomer(
   }
 
   const { error } = await supabase
-    .from('customers')
+    .from("customers")
     .update(payload)
-    .eq('id', customerId);
+    .eq("id", customerId);
 
   if (error) {
-    throw new Error(`[Customer Service] Failed to update CRM customer: ${error.message}`);
+    throw new Error(
+      `[Customer Service] Failed to update CRM customer: ${error.message}`,
+    );
   }
 
   const customers = await getAdminCrmCustomers();
   const updated = customers.find((customer) => customer.id === customerId);
 
   if (!updated) {
-    throw new Error('[Customer Service] Updated CRM customer could not be reloaded.');
+    throw new Error(
+      "[Customer Service] Updated CRM customer could not be reloaded.",
+    );
   }
 
   return updated;
