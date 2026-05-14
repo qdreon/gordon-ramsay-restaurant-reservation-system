@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/apiAuth";
 import {
   deleteAdminWaitlistEntry,
   updateAdminWaitlistEntry,
   type WaitlistStatus,
-} from '@/services/waitlistService';
+} from "@/services/waitlistService";
 
 interface UpdateWaitlistBody {
   desired_date?: string;
@@ -15,22 +16,40 @@ interface UpdateWaitlistBody {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ waitlistId: string }> }
+  { params }: { params: Promise<{ waitlistId: string }> },
 ) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { waitlistId } = await params;
     if (!waitlistId) {
-      return NextResponse.json({ error: 'waitlistId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "waitlistId is required" },
+        { status: 400 },
+      );
     }
 
     const body = (await request.json()) as UpdateWaitlistBody;
 
-    if (body.position !== undefined && (!Number.isFinite(body.position) || body.position < 1)) {
-      return NextResponse.json({ error: 'position must be a positive number' }, { status: 400 });
+    if (
+      body.position !== undefined &&
+      (!Number.isFinite(body.position) || body.position < 1)
+    ) {
+      return NextResponse.json(
+        { error: "position must be a positive number" },
+        { status: 400 },
+      );
     }
 
-    if (body.party_size !== undefined && (!Number.isFinite(body.party_size) || body.party_size < 1)) {
-      return NextResponse.json({ error: 'party_size must be a positive number' }, { status: 400 });
+    if (
+      body.party_size !== undefined &&
+      (!Number.isFinite(body.party_size) || body.party_size < 1)
+    ) {
+      return NextResponse.json(
+        { error: "party_size must be a positive number" },
+        { status: 400 },
+      );
     }
 
     const updatedEntry = await updateAdminWaitlistEntry(waitlistId, {
@@ -43,25 +62,37 @@ export async function PATCH(
 
     return NextResponse.json({ waitlistEntry: updatedEntry }, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update waitlist entry';
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update waitlist entry";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ waitlistId: string }> }
+  request: Request,
+  { params }: { params: Promise<{ waitlistId: string }> },
 ) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { waitlistId } = await params;
     if (!waitlistId) {
-      return NextResponse.json({ error: 'waitlistId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "waitlistId is required" },
+        { status: 400 },
+      );
     }
 
     await deleteAdminWaitlistEntry(waitlistId);
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to delete waitlist entry';
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to delete waitlist entry";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

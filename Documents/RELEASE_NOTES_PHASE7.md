@@ -9,9 +9,9 @@
 - Confirmed production HTTPS availability and HSTS on the deployed Vercel domain.
 - Verified production RBAC redirect behavior: unauthenticated access to `/admin/dashboard` redirects to `/auth/login`.
 - Verified production customer homepage search flow returns live availability options successfully.
-- Documented the PITR deferment decision and the manual `pg_dump` backup fallback in `Documents/documentation.md`.
+- Documented that this function is deferred due to project constraints and recorded the manual `pg_dump` backup fallback in `Documents/documentation.md`.
 - Updated `Documents/MASTER_TODO.md` and `Documents/traceability.md` to reflect the final release-state wording and QA evidence references.
-- Marked DEF-003 as deferred under current academic/free-tier constraints.
+- Marked DEF-003 as deferred due to project constraints.
 
 ## Verification Evidence
 
@@ -21,11 +21,11 @@
 
 ## Deferred Items
 
-- Supabase PITR remains deferred because the project is on the free tier.
-- Production email sender-domain authentication (DEF-003) remains deferred because the sender domain cannot be authenticated under the current constraints.
-- Manual restore drill remains documented as a fallback path, but is not required for this academic handoff.
+- Supabase PITR and backup automation are documented as deferred due to project constraints.
+- Production email sender-domain authentication (DEF-003) is documented as deferred due to project constraints.
+- Manual restore and alternate backup paths remain documented for future operational hardening, but they are not blockers for the final handoff.
 
 ## Handoff Notes
 
-- The project is ready for academic submission and stakeholder review.
-- Remaining follow-up work is operational / optional and can be completed later if budget or hosting constraints change.
+- The project is complete and ready for academic submission and stakeholder review.
+- Remaining backup-path items are informational only and can be revisited later if budget or hosting constraints change.

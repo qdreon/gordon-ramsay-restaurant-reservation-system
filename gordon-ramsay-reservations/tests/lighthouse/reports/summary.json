@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-05-14T05:43:45.573Z",
+  "results": [
+    {
+      "page": "Customer Home (Availability Search)",
+      "url": "http://localhost:3000/",
+      "metrics": {
+        "performanceScore": 95,
+        "lcp": 2211,
+        "fcp": 1326,
+        "tbt": 205,
+        "cls": "0.001",
+        "tti": 3108,
+        "si": 1512
+      },
+      "pass": true
+    },
+    {
+      "page": "Admin Dashboard (Floor Plan)",
+      "url": "http://localhost:3000/admin/dashboard",
+      "metrics": {
+        "performanceScore": 87,
+        "lcp": 2189,
+        "fcp": 1160,
+        "tbt": 470,
+        "cls": "0.000",
+        "tti": 3432,
+        "si": 1462
+      },
+      "pass": true
+    }
+  ]
+}

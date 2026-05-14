@@ -11,8 +11,17 @@ const publicPaths = [
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isAdminApiRoute = pathname.startsWith("/api/admin");
+  const isAdminPageRoute = pathname.startsWith("/admin");
+  const isCustomerPageRoute = pathname.startsWith("/customer");
+  const isProtectedPageRoute = isAdminPageRoute || isCustomerPageRoute;
 
-  if (publicPaths.includes(pathname) || pathname.startsWith("/api/")) {
+  // Public pages and non-admin APIs are allowed through. Customer-specific APIs
+  // still perform their own auth checks inside the route handlers.
+  if (
+    publicPaths.includes(pathname) ||
+    (pathname.startsWith("/api/") && !isAdminApiRoute)
+  ) {
     return NextResponse.next();
   }
 
@@ -21,10 +30,18 @@ export async function proxy(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("[Proxy Error] Missing Supabase environment variables.");
+
+    if (isAdminApiRoute) {
+      return NextResponse.json(
+        { error: "Server auth configuration is missing." },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.next();
   }
 
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -70,12 +87,32 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    if (!user && (pathname.startsWith("/customer") || pathname.startsWith("/admin"))) {
+    if (!user && (isProtectedPageRoute || isAdminApiRoute)) {
+      if (isAdminApiRoute) {
+        return NextResponse.json(
+          { error: "Authentication required." },
+          { status: 401 },
+        );
+      }
+
       return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
-    if (pathname.startsWith("/admin") && role !== "admin") {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+    // Admin users should never land on the customer dashboard/account area.
+    if (isCustomerPageRoute && role === "admin") {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
+
+    // Customer users should never access admin pages or admin APIs.
+    if ((isAdminPageRoute || isAdminApiRoute) && role !== "admin") {
+      if (isAdminApiRoute) {
+        return NextResponse.json(
+          { error: "Admin access required." },
+          { status: 403 },
+        );
+      }
+
+      return NextResponse.redirect(new URL("/customer/dashboard", request.url));
     }
 
     return response;

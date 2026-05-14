@@ -1,5 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getReservationsByDateRange, getBlockedDatesForMonth } from '@/services/reservationService';
+import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/apiAuth";
+import {
+  getReservationsByDateRange,
+  getBlockedDatesForMonth,
+} from "@/services/reservationService";
 
 /**
  * GET /api/admin/reservations/range?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
@@ -8,19 +12,22 @@ import { getReservationsByDateRange, getBlockedDatesForMonth } from '@/services/
  */
 export async function GET(request: Request) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     if (!startDate || !endDate) {
       return NextResponse.json(
-        { error: 'startDate and endDate query parameters are required' },
-        { status: 400 }
+        { error: "startDate and endDate query parameters are required" },
+        { status: 400 },
       );
     }
 
     // Extract year and month from startDate for blocked dates query
-    const [year, month] = startDate.split('-').slice(0, 2);
+    const [year, month] = startDate.split("-").slice(0, 2);
 
     const [reservations, blockedDates] = await Promise.all([
       getReservationsByDateRange(startDate, endDate),
@@ -32,10 +39,11 @@ export async function GET(request: Request) {
         reservations,
         blockedDates,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch calendar data';
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch calendar data";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

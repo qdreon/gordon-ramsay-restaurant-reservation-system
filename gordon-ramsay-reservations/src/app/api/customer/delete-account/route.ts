@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
-import { deleteCustomerAccount } from '@/services/customerService';
+import { NextResponse } from "next/server";
+import { requireCustomerApi } from "@/lib/apiAuth";
+import { deleteCustomerAccount } from "@/services/customerService";
 
 /**
  * POST /api/customer/delete-account
@@ -10,24 +10,17 @@ import { deleteCustomerAccount } from '@/services/customerService';
  */
 export async function POST(req: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const authHeader = req.headers.get('authorization');
-    const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(accessToken ?? undefined);
+    const auth = await requireCustomerApi(req);
+    if (!auth.ok) return auth.response;
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    }
-
-    await deleteCustomerAccount(user.id);
+    await deleteCustomerAccount(auth.user.id);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Unexpected error while deleting account.';
+      error instanceof Error
+        ? error.message
+        : "Unexpected error while deleting account.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

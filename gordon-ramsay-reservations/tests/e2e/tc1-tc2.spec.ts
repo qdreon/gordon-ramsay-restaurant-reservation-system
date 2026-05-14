@@ -65,7 +65,15 @@ async function searchAvailability(
   await page.fill('input[type="number"]', partySize);
 
   // Submit the search form
+  const availabilityResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/availability'),
+    { timeout: 20000 },
+  );
   await page.click('button[type="submit"]');
+
+  await availabilityResponse;
 }
 
 // ===========================================================================

@@ -77,11 +77,30 @@ export function SystemHealthMonitor() {
 
   if (!health) {
     return (
-      <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Activity className="w-4 h-4 animate-spin" />
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+        <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+          <Activity className="h-4 w-4 animate-spin" />
           Loading system status...
         </div>
+
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          <div className="flex items-center gap-2 rounded bg-background/50 p-2 text-xs">
+            <XCircle className="h-4 w-4 shrink-0 text-slate-400" />
+            <span className="text-slate-500 dark:text-slate-400">Database</span>
+          </div>
+
+          <div className="flex items-center gap-2 rounded bg-background/50 p-2 text-xs">
+            <XCircle className="h-4 w-4 shrink-0 text-slate-400" />
+            <span className="text-slate-500 dark:text-slate-400">Email</span>
+          </div>
+
+          <div className="flex items-center gap-2 rounded bg-background/50 p-2 text-xs">
+            <XCircle className="h-4 w-4 shrink-0 text-slate-400" />
+            <span className="text-slate-500 dark:text-slate-400">Payments</span>
+          </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground">Last updated: checking...</div>
       </div>
     );
   }

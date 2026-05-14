@@ -1,5 +1,10 @@
-import { NextResponse } from 'next/server';
-import { createAdminMenuItem, getAdminMenuItems, type MenuCategory } from '@/services/menuService';
+import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/apiAuth";
+import {
+  createAdminMenuItem,
+  getAdminMenuItems,
+  type MenuCategory,
+} from "@/services/menuService";
 
 interface CreateMenuBody {
   name?: string;
@@ -11,34 +16,58 @@ interface CreateMenuBody {
   sort_order?: number;
 }
 
-const VALID_CATEGORIES: MenuCategory[] = ['starters', 'mains', 'desserts', 'sides', 'beverages'];
+const VALID_CATEGORIES: MenuCategory[] = [
+  "starters",
+  "mains",
+  "desserts",
+  "sides",
+  "beverages",
+];
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
     const items = await getAdminMenuItems();
     return NextResponse.json({ items }, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch admin menu items';
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch admin menu items";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const body = (await request.json()) as CreateMenuBody;
 
     if (!body.name?.trim()) {
-      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+      return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
 
-    if (typeof body.price !== 'number' || Number.isNaN(body.price) || body.price < 0) {
-      return NextResponse.json({ error: 'price must be a non-negative number' }, { status: 400 });
-    }
-
-    if (!body.category || !VALID_CATEGORIES.includes(body.category as MenuCategory)) {
+    if (
+      typeof body.price !== "number" ||
+      Number.isNaN(body.price) ||
+      body.price < 0
+    ) {
       return NextResponse.json(
-        { error: `category must be one of: ${VALID_CATEGORIES.join(', ')}` },
-        { status: 400 }
+        { error: "price must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !body.category ||
+      !VALID_CATEGORIES.includes(body.category as MenuCategory)
+    ) {
+      return NextResponse.json(
+        { error: `category must be one of: ${VALID_CATEGORIES.join(", ")}` },
+        { status: 400 },
       );
     }
 
@@ -54,7 +83,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ item: created }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create menu item';
+    const message =
+      error instanceof Error ? error.message : "Failed to create menu item";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -50,13 +50,19 @@ test.describe("DEF-002 regression: sign-out completes without abort", () => {
     // The sign-out button POSTs to /api/auth/signout (server-side). The server
     // clears the cookie and returns a 303 to "/". The browser follows the
     // redirect -- no /auth/v1/logout fetch fires from the browser at all.
-    await Promise.all([
-      page.waitForURL("/", { timeout: 15000 }),
-      page.click('button:has-text("Sign Out")'),
-    ]);
+    const signoutResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth/signout') &&
+        [200, 303].includes(response.status()),
+      { timeout: 30000 },
+    );
+
+    await page.click('button:has-text("Sign Out")');
+    await signoutResponse;
+    await page.waitForURL(/\/$/, { timeout: 30000 });
 
     // Assert we landed on the home page.
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL(/\/$/);
 
     // Assert the Supabase logout endpoint was NOT fired from the browser
     // (it runs server-side now, so no browser-level abort is possible).

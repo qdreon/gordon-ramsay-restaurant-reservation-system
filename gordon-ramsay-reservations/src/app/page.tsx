@@ -221,29 +221,9 @@ export default function Home() {
         return;
       }
 
-      const authUserId = sessionData.session.user.id;
-
-      // Resolve customer_id from /api/customer/me, which looks up the
-      // public.customers row for the current auth user.
-      const customerRes = await fetch("/api/customer/me", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-        },
-      });
-      const customerPayload = (await customerRes.json()) as {
-        customerId?: string;
-        error?: string;
-      };
-
-      if (!customerRes.ok || !customerPayload.customerId) {
-        throw new Error(
-          customerPayload.error ??
-            "Could not resolve your customer account. Please try again.",
-        );
-      }
-
-      // POST the lock request to the booking engine.
+      // POST the lock request to the booking engine. The server resolves
+      // customerId and createdBy from the authenticated session, not from
+      // browser-provided IDs.
       const lockRes = await fetch("/api/reservations/lock", {
         method: "POST",
         headers: {
@@ -251,14 +231,12 @@ export default function Home() {
           Authorization: `Bearer ${sessionData.session.access_token}`,
         },
         body: JSON.stringify({
-          customerId: customerPayload.customerId,
           tableIds: selectedOption.table_ids,
           reservationDate,
           startTime: startTimeISO,
           endTime: endTimeISO,
           partySize,
           paymentToken,
-          createdBy: authUserId,
         }),
       });
 
@@ -408,141 +386,271 @@ export default function Home() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">
-          Gordon Ramsay Restaurant Reservations
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          Search table availability by date, time, and party size.
-        </p>
-      </header>
-
-      {/* Search Form */}
-      <form
-        onSubmit={handleSearch}
-        className="grid gap-4 rounded-lg border p-4 md:grid-cols-4"
-      >
-        <label className="flex flex-col gap-2 text-sm">
-          Date
-          <input
-            type="date"
-            value={reservationDate}
-            onChange={(event) => setReservationDate(event.target.value)}
-            className="rounded border px-3 py-2"
-            required
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          Time
-          <input
-            type="time"
-            value={reservationTime}
-            onChange={(event) => setReservationTime(event.target.value)}
-            className="rounded border px-3 py-2"
-            required
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          Party Size
-          <input
-            type="number"
-            min={1}
-            max={12}
-            value={partySize}
-            onChange={(event) => setPartySize(Number(event.target.value))}
-            className="rounded border px-3 py-2"
-            required
-          />
-        </label>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 md:self-end"
-        >
-          {loading ? "Searching..." : "Search Availability"}
-        </button>
-      </form>
-
-      {/* Booking-level error (lock conflict etc.) */}
-      {bookingError && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-          {bookingError}
-        </div>
-      )}
-
-      {/* Results + Menu Section */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-3 text-xl font-semibold">Availability Results</h2>
-
-          {!hasSearched && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Submit a search to view available table options.
-            </p>
-          )}
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          {!error && options.length === 0 && hasSearched && (
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                No available options found.
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(180,83,9,0.16),_transparent_35%),linear-gradient(180deg,_#fff7ed_0%,_#ffffff_42%,_#fafafa_100%)] text-zinc-950 dark:bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.16),_transparent_35%),linear-gradient(180deg,_#0c0a09_0%,_#111827_52%,_#020617_100%)] dark:text-white">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-6 py-8 sm:px-8 lg:px-10">
+        <header className="flex items-center justify-between gap-4 rounded-full border border-amber-200/70 bg-white/80 px-5 py-3 shadow-sm backdrop-blur dark:border-amber-500/20 dark:bg-zinc-950/70">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-950 text-sm font-black tracking-tight text-amber-300 dark:bg-amber-400 dark:text-zinc-950">
+              GR
+            </div>
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.22em] text-zinc-900 dark:text-white">
+                Gordon Ramsay
               </p>
-              {/* Phase 5.1: Waitlist UI (QDR-66 / FR-5) */}
-              {waitlistError && (
-                <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {waitlistError}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={handleJoinWaitlist}
-                disabled={waitlistLoading || waitlistCapacity >= 50}
-                className="w-full rounded bg-amber-600 px-4 py-2 text-white disabled:opacity-50 hover:bg-amber-700"
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Restaurant Reservations
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="#reservation-menu"
+            className="hidden rounded-full bg-zinc-950 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-zinc-950/10 transition hover:-translate-y-0.5 hover:bg-amber-700 dark:bg-amber-400 dark:text-zinc-950 dark:hover:bg-amber-300 sm:inline-flex"
+          >
+            Reserve Now
+          </a>
+        </header>
+
+        <section className="grid items-center gap-10 py-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] lg:py-14">
+          <div className="space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-amber-100/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-900 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200">
+              Fine Dining • Live Availability • Instant Booking
+            </div>
+
+            <div className="space-y-5">
+              <h1 className="max-w-4xl text-5xl font-black tracking-tight text-zinc-950 dark:text-white sm:text-6xl lg:text-7xl">
+                Gordon Ramsay Restaurant Reservations
+              </h1>
+              <p className="max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
+                Book your table with real-time availability, explore the menu,
+                and secure your reservation with a fast simulated checkout.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a
+                href="#reservation-menu"
+                className="inline-flex items-center justify-center rounded-full bg-zinc-950 px-7 py-4 text-sm font-bold uppercase tracking-[0.18em] text-white shadow-xl shadow-zinc-950/15 transition hover:-translate-y-0.5 hover:bg-amber-700 dark:bg-amber-400 dark:text-zinc-950 dark:hover:bg-amber-300"
               >
-                {waitlistCapacity >= 50
-                  ? "Waitlist Full"
-                  : waitlistLoading
-                    ? "Checking capacity..."
-                    : "Join Virtual Waitlist"}
-              </button>
+                Go to Reservation Menu
+              </a>
+              <a
+                href="/auth/login"
+                className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white/80 px-7 py-4 text-sm font-bold uppercase tracking-[0.18em] text-zinc-900 transition hover:-translate-y-0.5 hover:border-amber-500 hover:text-amber-700 dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:border-amber-300 dark:hover:text-amber-200"
+              >
+                Customer Login
+              </a>
+            </div>
+
+            <div className="grid max-w-2xl gap-3 sm:grid-cols-3">
+              {[
+                ["Live tables", "Realtime availability checks"],
+                ["5-min lock", "Checkout window protection"],
+                ["Waitlist", "Join when fully booked"],
+              ].map(([title, subtitle]) => (
+                <div
+                  key={title}
+                  className="rounded-3xl border border-zinc-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5"
+                >
+                  <p className="text-sm font-bold text-zinc-950 dark:text-white">
+                    {title}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                    {subtitle}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden rounded-[2rem] border border-amber-200 bg-zinc-950 p-6 text-white shadow-2xl shadow-amber-950/20 dark:border-amber-400/20">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.35),_transparent_30%),radial-gradient(circle_at_80%_0%,_rgba(251,191,36,0.2),_transparent_28%)]" />
+            <div className="relative space-y-6">
+              <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
+                  Tonight&apos;s Experience
+                </p>
+                <h2 className="mt-3 text-3xl font-black">Chef&apos;s Table</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-300">
+                  Reserve prime seating, review menu highlights, and manage your
+                  booking from your customer dashboard.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-white p-4 text-zinc-950">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    Open Slots
+                  </p>
+                  <p className="mt-2 text-3xl font-black">Live</p>
+                </div>
+                <div className="rounded-2xl bg-amber-300 p-4 text-zinc-950">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-900">
+                    Max Pax
+                  </p>
+                  <p className="mt-2 text-3xl font-black">12</p>
+                </div>
+              </div>
+
+              <a
+                href="#reservation-menu"
+                className="flex w-full items-center justify-center rounded-2xl bg-amber-400 px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-zinc-950 transition hover:bg-amber-300"
+              >
+                Start Reservation
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="reservation-menu"
+          className="scroll-mt-8 space-y-6 rounded-[2rem] border border-zinc-200 bg-white/90 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur dark:border-white/10 dark:bg-zinc-950/80 sm:p-7"
+        >
+          <div className="flex flex-col justify-between gap-4 border-b border-zinc-200 pb-5 dark:border-white/10 md:flex-row md:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
+                Reservation Menu
+              </p>
+              <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+                Find your table and browse the menu
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                Choose a date, time, and party size. If no table is available,
+                you can join the virtual waitlist.
+              </p>
+            </div>
+          </div>
+
+          {/* Search Form */}
+          <form
+            onSubmit={handleSearch}
+            className="grid gap-4 rounded-3xl border border-zinc-200 bg-zinc-50 p-4 dark:border-white/10 dark:bg-white/5 md:grid-cols-4"
+          >
+            <label className="flex flex-col gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+              Date
+              <input
+                type="date"
+                value={reservationDate}
+                onChange={(event) => setReservationDate(event.target.value)}
+                className="rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white"
+                required
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+              Time
+              <input
+                type="time"
+                value={reservationTime}
+                onChange={(event) => setReservationTime(event.target.value)}
+                className="rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white"
+                required
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+              Party Size
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={partySize}
+                onChange={(event) => setPartySize(Number(event.target.value))}
+                className="rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 dark:border-white/10 dark:bg-zinc-950 dark:text-white"
+                required
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:-translate-y-0.5 hover:bg-amber-700 disabled:opacity-50 dark:bg-amber-400 dark:text-zinc-950 dark:hover:bg-amber-300 md:self-end"
+            >
+              {loading ? "Searching..." : "Search Availability"}
+            </button>
+          </form>
+
+          {/* Booking-level error (lock conflict etc.) */}
+          {bookingError && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+              {bookingError}
             </div>
           )}
 
-          {!error && options.length > 0 && (
-            <ul className="space-y-2">
-              {options.map((option) => (
-                <li key={option.table_ids.join("-")}>
+          {/* Results + Menu Section */}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900/80">
+              <h2 className="mb-3 text-xl font-bold">Availability Results</h2>
+
+              {!hasSearched && (
+                <p className="rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-600 dark:bg-white/5 dark:text-zinc-300">
+                  Submit a search to view available table options.
+                </p>
+              )}
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              {!error && options.length === 0 && hasSearched && (
+                <div className="space-y-4">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                    No available options found.
+                  </p>
+                  {/* Phase 5.1: Waitlist UI (QDR-66 / FR-5) */}
+                  {waitlistError && (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+                      {waitlistError}
+                    </div>
+                  )}
                   <button
                     type="button"
-                    onClick={() => handleSelectOption(option)}
-                    className="w-full rounded border p-3 text-left text-sm transition-colors hover:border-black hover:bg-zinc-50 dark:hover:border-zinc-400 dark:hover:bg-zinc-800"
+                    onClick={handleJoinWaitlist}
+                    disabled={waitlistLoading || waitlistCapacity >= 50}
+                    className="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-amber-700 disabled:opacity-50"
                   >
-                    <p>
-                      <span className="font-medium">
-                        {option.table_numbers.length > 1 ? "Tables:" : "Table:"}
-                      </span>{" "}
-                      {option.table_numbers.join(" + ")}
-                    </p>
-                    <p>
-                      <span className="font-medium">Seats up to:</span>{" "}
-                      {option.total_capacity} guests
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      Click to reserve this option
-                    </p>
+                    {waitlistCapacity >= 50
+                      ? "Waitlist Full"
+                      : waitlistLoading
+                        ? "Checking capacity..."
+                        : "Join Virtual Waitlist"}
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                </div>
+              )}
 
-        <MenuDisplay className="self-start" />
+              {!error && options.length > 0 && (
+                <ul className="space-y-3">
+                  {options.map((option) => (
+                    <li key={option.table_ids.join("-")}>
+                      <button
+                        type="button"
+                        data-test="availability-item"
+                        onClick={() => handleSelectOption(option)}
+                        className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left text-sm transition hover:-translate-y-0.5 hover:border-amber-500 hover:bg-amber-50 dark:border-white/10 dark:bg-white/5 dark:hover:border-amber-300 dark:hover:bg-amber-400/10"
+                      >
+                        <p>
+                          <span className="font-semibold">
+                            {option.table_numbers.length > 1
+                              ? "Tables:"
+                              : "Table:"}
+                          </span>{" "}
+                          {option.table_numbers.join(" + ")}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Seats up to:</span>{" "}
+                          {option.total_capacity} guests
+                        </p>
+                        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          Click to reserve this option
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <MenuDisplay className="self-start" />
+          </div>
+        </section>
       </div>
 
       {/* Checkout Modal (FR-3 / QDR-39) */}
@@ -614,6 +722,6 @@ export default function Home() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

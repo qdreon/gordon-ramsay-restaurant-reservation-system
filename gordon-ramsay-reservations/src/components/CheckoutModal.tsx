@@ -147,7 +147,7 @@ export default function CheckoutModal({
         : 'text-green-600 dark:text-green-400'; // Green: >= 2 minutes
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
+    <div data-test="checkout-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
       <div className="w-full max-w-md rounded-lg border bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4 dark:border-slate-700">

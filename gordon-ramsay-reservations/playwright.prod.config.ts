@@ -28,6 +28,7 @@ export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: ["**/tc7-security.spec.ts"],
   timeout: 90_000,
+  workers: 1,
   use: {
     headless: true,
     baseURL: process.env.BASE_URL || "http://localhost:3001",

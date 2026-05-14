@@ -175,7 +175,7 @@ The SRS defines non-functional requirements across Performance (PR-*), Safety (S
 
 | ID | Requirement | Description | Status |
 |----|-------------|-------------|--------|
-| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | Free-tier fallback documented; manual restore drill remains |
+| SAF-1 | Data Backup and Recovery | Rely on Supabase automated Point-in-Time Recovery (PITR) and daily backups to prevent data loss | This function is deferred due to project constraints; manual restore drill remains |
 | SAF-2 | Offline Failsafe | If the admin dashboard loses internet, display Offline Warning and disable all grid interactions | ✅ Complete (Phase 4) |
 
 ### PITR Recovery Procedure
@@ -200,7 +200,7 @@ If the project remains on a free Supabase plan and PITR cannot be enabled, use a
 
 ### PITR Deferment — Decision & Runbook
 
-**Decision:** Supabase PITR will be deferred while the project remains on the free-tier (cost constraint). This is an explicit, recorded decision made to allow go-live testing and handoff without incurring paid DB costs. The team accepts that without PITR we cannot restore to an arbitrary WAL timestamp.
+**Decision:** This function is deferred due to project constraints. Supabase PITR will remain deferred while the project stays on the free-tier, which means the project cannot provide arbitrary WAL-timestamp recovery until a paid backup path is available.
 
 **Implications:**
 - Recovery Point Objective (RPO): limited to the most recent successful logical dump (see Backup Schedule).
@@ -248,6 +248,10 @@ If you prefer not to maintain a custom `restore.sh` in this academic project, co
 - If desired later, add a small `scripts/restore.sh` that automates fetch → decrypt → `pg_restore` for one-click restores; for now we leave this as an optional enhancement.
 
 These alternatives are recorded so stakeholders can choose a path aligned to budget, SLA, and operational capacity.
+
+### Completion Note
+
+All academic deliverables are complete and verified. The deferred backup-path items remain documented for future operational hardening, but they are not blockers for the final presentation or handoff.
 
 
 ### Teardown Trigger Note

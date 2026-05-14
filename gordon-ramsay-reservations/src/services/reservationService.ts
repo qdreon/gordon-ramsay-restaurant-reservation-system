@@ -146,6 +146,7 @@ export async function getReservationsByDateRange(
 export async function createBlockedDate(
   blockedDate: string,
   reason: string,
+  createdBy: string | null = null,
 ): Promise<string> {
   const supabase = createServiceSupabaseClient();
 
@@ -154,7 +155,7 @@ export async function createBlockedDate(
     .insert({
       blocked_date: blockedDate,
       reason,
-      created_by: "system",
+      created_by: createdBy,
     })
     .select("id")
     .single();

@@ -9,7 +9,10 @@
  */
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import React from "react";
+import { createServiceSupabaseClient } from "@/lib/supabaseAdmin";
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +25,31 @@ const ADMIN_NAV_LINKS = [
   { href: "/admin/waitlist", label: "Waitlist" },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login?next=/admin/dashboard");
+  }
+
+  const adminClient = createServiceSupabaseClient();
+  const { data: userRow } = await adminClient
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (userRow?.role !== "admin") {
+    redirect("/customer/dashboard");
+  }
+
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-900">
       <header className="border-b bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">

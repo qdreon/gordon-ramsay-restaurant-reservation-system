@@ -1,14 +1,22 @@
-'use client';
+"use client";
 
-import { FormEvent, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { signIn } from '@/lib/authClient';
+      const user = await signIn({ email, password });
 
-/**
- * Login page for returning customers.
- *
- * Purpose:
+      let role: string = "customer";
+      try {
+        // Resolve role but do not block login if role resolution fails.
+        role = await getSignedInUserRole(user.id);
+      } catch (err) {
+        console.warn("Login: role lookup failed, continuing as customer:", err);
+        role = "customer";
+      }
+
+      if (role === "admin") {
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      router.push("/customer/dashboard");
  *   Accepts email and password, then authenticates against Supabase Auth.
  *   On success, redirects to the customer dashboard.
  *   On error, displays an error message.
@@ -19,8 +27,8 @@ import { signIn } from '@/lib/authClient';
  */
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -31,7 +39,7 @@ export default function LoginPage() {
 
     // Validate input early
     if (!email || !password) {
-      setError('Email and password are required.');
+      setError("Email and password are required.");
       return;
     }
 
@@ -39,10 +47,17 @@ export default function LoginPage() {
 
     try {
       await signIn({ email, password });
-      // Redirect to customer dashboard on successful login
-      router.push('/customer/dashboard');
+      const role = await getSignedInUserRole();
+
+      if (role === "admin") {
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      router.push("/customer/dashboard");
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      const message =
+        err instanceof Error ? err.message : "Login failed. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
@@ -105,15 +120,18 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full rounded-md bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400 dark:bg-blue-700 dark:hover:bg-blue-600"
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>
 
       {/* Footer */}
       <div className="text-center text-sm">
         <p className="text-slate-600 dark:text-slate-400">
-          Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/auth/register"
+            className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+          >
             Sign up here
           </Link>
         </p>

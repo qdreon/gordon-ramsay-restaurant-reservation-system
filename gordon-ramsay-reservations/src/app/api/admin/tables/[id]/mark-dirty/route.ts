@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
+import { requireAdminApi } from "@/lib/apiAuth";
 import { createServiceSupabaseClient } from "@/lib/supabaseAdmin";
 
 /**
@@ -19,6 +20,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { id: tableId } = await params;
     if (!tableId) {
       return NextResponse.json(

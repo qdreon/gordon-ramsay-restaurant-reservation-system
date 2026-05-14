@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { NextRequest, NextResponse } from "next/server";
+import { requireCustomerApi } from "@/lib/apiAuth";
+import { createServiceSupabaseClient } from "@/lib/supabaseAdmin";
 
 /**
  * POST /api/customer/profile/update (QDR-59)
@@ -35,21 +36,8 @@ import { createServerSupabaseClient } from '@/lib/supabaseServer';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get auth session from request cookies
-    const supabase = await createServerSupabaseClient();
-    
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - please sign in' },
-        { status: 401 }
-      );
-    }
+    const auth = await requireCustomerApi(request);
+    if (!auth.ok) return auth.response;
 
     // Parse request body
     const body = (await request.json()) as {
@@ -63,8 +51,8 @@ export async function POST(request: NextRequest) {
     const updateFields = Object.keys(body).length;
     if (updateFields === 0) {
       return NextResponse.json(
-        { error: 'No fields to update' },
-        { status: 400 }
+        { error: "No fields to update" },
+        { status: 400 },
       );
     }
 
@@ -87,25 +75,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Update customer profile in the database
-    const { data, error } = await supabase
-      .from('customers')
+    const adminClient = createServiceSupabaseClient();
+    const { data, error } = await adminClient
+      .from("customers")
       .update(updateData)
-      .eq('user_id', user.id)
+      .eq("user_id", auth.user.id)
       .select()
       .single();
 
     if (error) {
-      console.error('Profile update error:', error);
+      console.error("Profile update error:", error);
       return NextResponse.json(
-        { error: error.message || 'Failed to update profile' },
-        { status: 500 }
+        { error: error.message || "Failed to update profile" },
+        { status: 500 },
       );
     }
 
     if (!data) {
       return NextResponse.json(
-        { error: 'Customer profile not found' },
-        { status: 404 }
+        { error: "Customer profile not found" },
+        { status: 404 },
       );
     }
 
@@ -114,15 +103,13 @@ export async function POST(request: NextRequest) {
         success: true,
         customer: data,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Profile update failed';
-    console.error('Profile update endpoint error:', message);
+    const message =
+      err instanceof Error ? err.message : "Profile update failed";
+    console.error("Profile update endpoint error:", message);
 
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -16,6 +16,7 @@
  */
 
 import { test, expect, Browser, BrowserContext, Page } from "@playwright/test";
+import { createServiceSupabaseClient } from "@/lib/supabaseAdmin";
 
 // ---------------------------------------------------------------------------
 // Shared constants
@@ -62,6 +63,9 @@ async function searchAvailability(
 ): Promise<void> {
   await page.goto("/");
 
+  // Wait until the reservation form is ready before interacting with fields.
+  await page.waitForSelector('input[type="date"]', { timeout: NAV_TIMEOUT });
+
   // Fill date input (type="date")
   await page.fill('input[type="date"]', date);
 
@@ -72,7 +76,15 @@ async function searchAvailability(
   await page.fill('input[type="number"]', String(partySize));
 
   // Submit the availability search form
+  const availabilityResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().includes('/api/availability'),
+    { timeout: NAV_TIMEOUT },
+  );
   await page.click('button[type="submit"]');
+
+  await availabilityResponse;
 }
 
 /**
@@ -90,6 +102,98 @@ async function fillAndSubmitCheckout(page: Page): Promise<void> {
   await page.fill("#cvv", CARD_CVV);
 
   await page.click('button:has-text("Confirm Booking")');
+}
+
+async function seedWaitlistScenario(): Promise<string> {
+  const supabase = createServiceSupabaseClient();
+  const marker = `TC-4.1 waitlist seed ${Date.now()}`;
+
+  const { data: userRow, error: userError } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", CUSTOMER_EMAIL)
+    .single();
+
+  if (userError || !userRow) {
+    throw new Error(`Failed to resolve test customer user ID: ${userError?.message ?? "missing user"}`);
+  }
+
+  const { data: customerRow, error: customerError } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("user_id", userRow.id)
+    .single();
+
+  if (customerError || !customerRow) {
+    throw new Error(`Failed to resolve test customer profile ID: ${customerError?.message ?? "missing customer"}`);
+  }
+
+  const { data: tableRows, error: tableError } = await supabase
+    .from("tables")
+    .select("id, table_number")
+    .order("table_number", { ascending: true });
+
+  if (tableError || !tableRows || tableRows.length === 0) {
+    throw new Error(`Failed to load tables for waitlist seed: ${tableError?.message ?? "no tables"}`);
+  }
+
+  for (const tableRow of tableRows) {
+    const { data: reservationRow, error: reservationError } = await supabase
+      .from("reservations")
+      .insert({
+        customer_id: customerRow.id,
+        reservation_date: "2026-12-25",
+        start_time: "2026-12-25T19:00:00Z",
+        end_time: "2026-12-25T21:00:00Z",
+        party_size: 2,
+        status: "confirmed",
+        special_requests: marker,
+        payment_token: "tok_waitlist_seed",
+      })
+      .select("id")
+      .single();
+
+    if (reservationError || !reservationRow) {
+      throw new Error(
+        `Failed to seed reservation for table ${tableRow.table_number}: ${reservationError?.message ?? "missing reservation row"}`,
+      );
+    }
+
+    const { error: linkError } = await supabase.from("reservation_tables").insert({
+      reservation_id: reservationRow.id,
+      table_id: tableRow.id,
+    });
+
+    if (linkError) {
+      throw new Error(
+        `Failed to link reservation for table ${tableRow.table_number}: ${linkError.message}`,
+      );
+    }
+
+    const { error: tableUpdateError } = await supabase
+      .from("tables")
+      .update({ status: "reserved" })
+      .eq("id", tableRow.id);
+
+    if (tableUpdateError) {
+      throw new Error(
+        `Failed to reserve table ${tableRow.table_number}: ${tableUpdateError.message}`,
+      );
+    }
+  }
+
+  return marker;
+}
+
+async function cleanupWaitlistScenario(marker: string): Promise<void> {
+  const supabase = createServiceSupabaseClient();
+
+  await supabase
+    .from("reservations")
+    .update({ status: "cancelled" })
+    .eq("special_requests", marker);
+
+  await supabase.from("reservations").delete().eq("special_requests", marker);
 }
 
 // ---------------------------------------------------------------------------
@@ -376,114 +480,71 @@ test.describe("TC-4 -- Waitlist and Email Notification (FR-5, FR-6, FR-10)", () 
   test("TC-4.1 -- Join virtual waitlist for fully-booked Christmas slot (FR-5, FR-10)", async ({
     page,
   }) => {
+    const seedMarker = await seedWaitlistScenario();
+
     // Step 1: Authenticate as the test customer
-    await loginAsCustomer(page);
+    try {
+      await loginAsCustomer(page);
 
-    // Step 2: Search for Christmas Day -- likely fully booked or blocked in test data
-    await searchAvailability(page, "2026-12-25", "19:00", 2);
+      // Step 2: Search for the forced fully-booked Christmas slot
+      await searchAvailability(page, "2026-12-25", "19:00", 2);
 
-    // Allow the API call to complete
-    await page.waitForTimeout(2000);
-
-    // Step 3: Check for an API-level error (date blocked by restaurant)
-    //   If the availability endpoint returns an error for this date, I skip the test
-    //   rather than fail -- the environment does not support this scenario
-    const errorText = page.locator(
-      'p.text-sm.text-red-600, [class*="red-600"]',
-    );
-    const hasApiError = await errorText
-      .isVisible({ timeout: 3_000 })
-      .catch(() => false);
-
-    if (hasApiError) {
-      test.skip(
-        true,
-        "Availability API returned an error for 2026-12-25 -- date may be blocked; skipping waitlist test",
+      // Step 3: The seeded reservations should force the waitlist button to appear
+      const waitlistButton = page.locator(
+        'button:has-text("Join Virtual Waitlist")',
       );
-      return;
-    }
 
-    // Step 4: Check whether options or waitlist button appeared
-    const optionButtons = page.locator("ul > li > button");
-    const waitlistButton = page.locator(
-      'button:has-text("Join Virtual Waitlist")',
-    );
+      await expect(waitlistButton).toBeVisible({ timeout: ASSERT_TIMEOUT });
 
-    const optionCount = await optionButtons.count();
-    const waitlistVisible = await waitlistButton
-      .isVisible({ timeout: ASSERT_TIMEOUT })
-      .catch(() => false);
+      // Step 4: Click "Join Virtual Waitlist"
+      await waitlistButton.click();
 
-    if (optionCount > 0 && !waitlistVisible) {
-      // Tables are available -- waitlist flow not reachable this way
-      test.skip(
-        true,
-        "Tables available for 2026-12-25 19:00; waitlist button not shown -- skipping waitlist test",
+      // Step 5: Waitlist confirmation modal should open
+      const modalHeading = page.locator(
+        'h2:has-text("Join the Virtual Waitlist")',
       );
-      return;
+      await expect(modalHeading).toBeVisible({ timeout: ASSERT_TIMEOUT });
+
+      const joinConfirmBtn = page.locator('button:has-text("Join Waitlist")');
+      await expect(joinConfirmBtn).toBeVisible({ timeout: ASSERT_TIMEOUT });
+
+      // Step 6: Confirm joining the waitlist
+      let dialogMessage = "";
+      page.once("dialog", async (dialog) => {
+        dialogMessage = dialog.message();
+        await dialog.accept();
+      });
+
+      await joinConfirmBtn.click();
+
+      // Step 7: Assert success -- modal closes OR a success dialog was shown
+      const modalGone = await page
+        .waitForSelector('h2:has-text("Join the Virtual Waitlist")', {
+          state: "detached",
+          timeout: ASSERT_TIMEOUT,
+        })
+        .then(() => true)
+        .catch(() => false);
+
+      const successViaDialog =
+        dialogMessage.toLowerCase().includes("waitlist") ||
+        dialogMessage.toLowerCase().includes("position") ||
+        dialogMessage.toLowerCase().includes("added");
+
+      const successInline = page
+        .locator("text=/added to the waitlist/i, text=/position/i")
+        .first();
+      const inlineVisible = await successInline
+        .isVisible({ timeout: 3_000 })
+        .catch(() => false);
+
+      expect(
+        modalGone || successViaDialog || inlineVisible,
+        "Waitlist join must succeed: modal closes, or success dialog shown, or inline message visible",
+      ).toBe(true);
+    } finally {
+      await cleanupWaitlistScenario(seedMarker);
     }
-
-    if (!waitlistVisible) {
-      // Neither options nor waitlist appeared -- unexpected state
-      test.skip(
-        true,
-        "Neither table options nor waitlist button appeared after search -- skipping",
-      );
-      return;
-    }
-
-    // Step 5: Click "Join Virtual Waitlist"
-    await waitlistButton.click();
-
-    // Step 6: Waitlist confirmation modal should open
-    //   I look for the modal heading and the "Join Waitlist" confirm button
-    const modalHeading = page.locator(
-      'h2:has-text("Join the Virtual Waitlist")',
-    );
-    await expect(modalHeading).toBeVisible({ timeout: ASSERT_TIMEOUT });
-
-    const joinConfirmBtn = page.locator('button:has-text("Join Waitlist")');
-    await expect(joinConfirmBtn).toBeVisible({ timeout: ASSERT_TIMEOUT });
-
-    // Step 7: Confirm joining the waitlist
-    //   The page calls /api/waitlist/join which checks for auth, so I expect
-    //   either a success alert (window.alert) or a silent modal close
-    //   I intercept the dialog to accept it automatically
-    let dialogMessage = "";
-    page.once("dialog", async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
-
-    await joinConfirmBtn.click();
-
-    // Step 8: Assert success -- modal closes OR a success dialog was shown
-    //   I wait for the modal to disappear (success path) OR capture the alert text
-    const modalGone = await page
-      .waitForSelector('h2:has-text("Join the Virtual Waitlist")', {
-        state: "detached",
-        timeout: ASSERT_TIMEOUT,
-      })
-      .then(() => true)
-      .catch(() => false);
-
-    const successViaDialog =
-      dialogMessage.toLowerCase().includes("waitlist") ||
-      dialogMessage.toLowerCase().includes("position") ||
-      dialogMessage.toLowerCase().includes("added");
-
-    // I also check for any inline success indicator the page might render
-    const successInline = page
-      .locator("text=/added to the waitlist/i, text=/position/i")
-      .first();
-    const inlineVisible = await successInline
-      .isVisible({ timeout: 3_000 })
-      .catch(() => false);
-
-    expect(
-      modalGone || successViaDialog || inlineVisible,
-      "Waitlist join must succeed: modal closes, or success dialog shown, or inline message visible",
-    ).toBe(true);
   });
 
   // -------------------------------------------------------------------------

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
-import { updateAdminCrmCustomer } from '@/services/customerService';
+import { NextResponse } from "next/server";
+import { requireAdminApi } from "@/lib/apiAuth";
+import { updateAdminCrmCustomer } from "@/services/customerService";
 
 interface UpdateCrmBody {
   dietary_restrictions?: string | null;
@@ -14,12 +15,18 @@ interface UpdateCrmBody {
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ customerId: string }> }
+  { params }: { params: Promise<{ customerId: string }> },
 ) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { customerId } = await params;
     if (!customerId) {
-      return NextResponse.json({ error: 'customerId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "customerId is required" },
+        { status: 400 },
+      );
     }
 
     const body = (await request.json()) as UpdateCrmBody;
@@ -33,7 +40,8 @@ export async function PATCH(
 
     return NextResponse.json({ customer: updatedCustomer }, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update CRM customer';
+    const message =
+      error instanceof Error ? error.message : "Failed to update CRM customer";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

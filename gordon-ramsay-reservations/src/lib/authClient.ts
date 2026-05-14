@@ -12,7 +12,7 @@
  *   Raw consent data is not stored; `users.consent_given` is set to true.
  */
 
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from "@/lib/supabaseClient";
 
 export interface SignUpInput {
   email: string;
@@ -27,6 +27,8 @@ export interface SignInInput {
   password: string;
 }
 
+export type UserRole = "admin" | "customer";
+
 /**
  * Register a new customer with email, password, and profile data.
 
@@ -36,13 +38,15 @@ export interface SignInInput {
  */
 export async function signUp(input: SignUpInput) {
   if (!input.consentGiven) {
-    throw new Error('[Auth Client] You must consent to RA 10173 Data Privacy Act terms.');
+    throw new Error(
+      "[Auth Client] You must consent to RA 10173 Data Privacy Act terms.",
+    );
   }
 
-  const response = await fetch('/api/auth/register', {
-    method: 'POST',
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       email: input.email,
@@ -58,11 +62,15 @@ export async function signUp(input: SignUpInput) {
     | { error?: string };
 
   if (!response.ok) {
-    throw new Error(`[Auth Client] Sign-up failed: ${payload.error || 'Unknown registration error.'}`);
+    throw new Error(
+      `[Auth Client] Sign-up failed: ${payload.error || "Unknown registration error."}`,
+    );
   }
 
-  if (!('user' in payload) || !payload.user) {
-    throw new Error('[Auth Client] Sign-up succeeded but no user was returned.');
+  if (!("user" in payload) || !payload.user) {
+    throw new Error(
+      "[Auth Client] Sign-up succeeded but no user was returned.",
+    );
   }
 
   return payload.user;
@@ -82,10 +90,45 @@ export async function signIn(input: SignInInput) {
   }
 
   if (!data.user) {
-    throw new Error('[Auth Client] Sign-in succeeded but no user was returned.');
+    throw new Error(
+      "[Auth Client] Sign-in succeeded but no user was returned.",
+    );
   }
 
   return data.user;
+}
+
+/**
+ * Resolve the signed-in user's application role from public.users.
+ */
+export async function getSignedInUserRole(): Promise<UserRole> {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    const response = await fetch("/api/auth/me", {
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
+    });
+
+    const payload = (await response.json()) as {
+      role?: UserRole;
+      error?: string;
+    };
+
+    if (!response.ok || !payload.role) {
+      console.warn(
+        `[Auth Client] Failed to resolve user role: ${payload.error ?? "Unknown role error."}`
+      );
+      return "customer";
+    }
+
+    return payload.role === "admin" ? "admin" : "customer";
+  } catch (err) {
+    console.warn("[Auth Client] getSignedInUserRole unexpected error:", err);
+    return "customer";
+  }
 }
 
 /**
@@ -122,7 +165,7 @@ export async function getCurrentUser() {
 
   if (error) {
     // If the error is just that they aren't logged in, return null gracefully
-    if (error.message.includes('Auth session missing')) {
+    if (error.message.includes("Auth session missing")) {
       return null;
     }
     throw new Error(`[Auth Client] Failed to get user: ${error.message}`);

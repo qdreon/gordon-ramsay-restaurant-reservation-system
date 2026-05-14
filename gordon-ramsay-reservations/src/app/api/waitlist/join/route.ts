@@ -2,9 +2,10 @@
 // QDR-41.1: Virtual Waitlist - Join endpoint
 // FR-5: Allow customers to join virtual waitlist
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
-import waitlistService from '@/services/waitlistService';
+import { NextRequest, NextResponse } from "next/server";
+import { requireCustomerApi } from "@/lib/apiAuth";
+import { getCustomerByUserId } from "@/services/customerService";
+import waitlistService from "@/services/waitlistService";
 
 interface JoinWaitlistRequest {
   desired_date: string; // YYYY-MM-DD
@@ -14,19 +15,9 @@ interface JoinWaitlistRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Get authenticated user
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    // 1. Get authenticated customer
+    const auth = await requireCustomerApi(request);
+    if (!auth.ok) return auth.response;
 
     // 2. Parse request body
     const body: JoinWaitlistRequest = await request.json();
@@ -35,50 +26,52 @@ export async function POST(request: NextRequest) {
     // 3. Validate inputs
     if (!desired_date || !desired_time || !party_size) {
       return NextResponse.json(
-        { error: 'Missing required fields: desired_date, desired_time, party_size' },
-        { status: 400 }
+        {
+          error:
+            "Missing required fields: desired_date, desired_time, party_size",
+        },
+        { status: 400 },
       );
     }
 
     if (party_size < 1 || party_size > 12) {
       return NextResponse.json(
-        { error: 'Party size must be between 1 and 12' },
-        { status: 400 }
+        { error: "Party size must be between 1 and 12" },
+        { status: 400 },
       );
     }
 
     // 4. Get customer record from user_id
-    const { data: customers, error: customerError } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    const customer = await getCustomerByUserId(auth.user.id);
 
-    if (customerError || !customers) {
+    if (!customer) {
       return NextResponse.json(
-        { error: 'Customer profile not found' },
-        { status: 404 }
+        { error: "Customer profile not found" },
+        { status: 404 },
       );
     }
 
-    const customerId = customers.id;
+    const customerId = customer.id;
 
     // 5. Check if customer already has a waiting entry for this timeslot
-    const { data: existingEntries } = await supabase
-      .from('waitlist')
-      .select('*')
-      .eq('customer_id', customerId)
-      .eq('desired_date', desired_date)
-      .eq('party_size', party_size)
-      .in('status', ['waiting', 'offered']);
+    const { createServiceSupabaseClient } = await import("@/lib/supabaseAdmin");
+    const adminClient = createServiceSupabaseClient();
+    const { data: existingEntries } = await adminClient
+      .from("waitlist")
+      .select("*")
+      .eq("customer_id", customerId)
+      .eq("desired_date", desired_date)
+      .eq("party_size", party_size)
+      .in("status", ["waiting", "offered"]);
 
     if (existingEntries && existingEntries.length > 0) {
       return NextResponse.json(
         {
-          error: 'You already have a waitlist entry for this date and party size',
+          error:
+            "You already have a waitlist entry for this date and party size",
           position: existingEntries[0].position,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -87,7 +80,7 @@ export async function POST(request: NextRequest) {
       customerId,
       desired_date,
       desired_time,
-      party_size
+      party_size,
     );
 
     // 7. Return success response
@@ -102,15 +95,16 @@ export async function POST(request: NextRequest) {
           created_at: waitlistEntry.created_at,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
-    console.error('Error joining waitlist:', error);
+    console.error("Error joining waitlist:", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to join waitlist',
+        error:
+          error instanceof Error ? error.message : "Failed to join waitlist",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

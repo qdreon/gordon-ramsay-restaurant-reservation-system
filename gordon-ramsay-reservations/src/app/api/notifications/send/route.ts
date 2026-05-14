@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'reservation is required.' }, { status: 400 });
       }
 
-      await sendBookingConfirmation(body.reservation);
+      void sendBookingConfirmation(body.reservation);
       return NextResponse.json({ success: true, type: body.type }, { status: 200 });
     }
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'invite is required.' }, { status: 400 });
       }
 
-      await sendWaitlistInvite(body.invite);
+      void sendWaitlistInvite(body.invite);
       return NextResponse.json({ success: true, type: body.type }, { status: 200 });
     }
 
