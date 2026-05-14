@@ -1,23 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import CheckoutModal from "@/components/CheckoutModal";
 import MenuDisplay from "@/components/MenuDisplay";
 import { validateReservationTime } from "@/lib/config";
-
-/**
- * Home page -- Customer availability search and booking entry point.
- *
- * Purpose:
- *   1. Accepts Date, Time, and Party Size inputs.
- *   2. Queries /api/availability to retrieve available table options (FR-2).
- *   3. Allows the customer to select a table option, which opens the
- *      CheckoutModal with a 5-minute countdown (FR-3 / QDR-39).
- *   4. On confirmed payment token, posts to /api/reservations/lock to
- *      create a pending_payment reservation row (FR-3 / QDR-65).
- */
 
 const DEFAULT_RESERVATION_HOURS = 2;
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
@@ -26,6 +14,15 @@ type AvailabilityOption = {
   table_ids: string[];
   table_numbers: number[];
   total_capacity: number;
+};
+
+type ToastKind = "success" | "error" | "info";
+
+type ToastMessage = {
+  id: number;
+  title: string;
+  description: string;
+  kind: ToastKind;
 };
 
 function isAvailabilityOptionArray(
@@ -46,7 +43,9 @@ function isAvailabilityOptionArray(
 export default function Home() {
   const router = useRouter();
 
-  // Search form state
+  const reservationSectionRef = useRef<HTMLElement | null>(null);
+  const toastIdRef = useRef(0);
+
   const [reservationDate, setReservationDate] = useState("");
   const [reservationTime, setReservationTime] = useState("");
   const [partySize, setPartySize] = useState(2);
@@ -55,38 +54,65 @@ export default function Home() {
   const [options, setOptions] = useState<AvailabilityOption[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Stores the ISO start/end times calculated during search for reuse in the lock call.
   const [startTimeISO, setStartTimeISO] = useState("");
   const [endTimeISO, setEndTimeISO] = useState("");
 
-  // Checkout modal state
   const [selectedOption, setSelectedOption] =
     useState<AvailabilityOption | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  /** Bumps on each open so the modal remounts with a fresh countdown (avoids effect setState reset). */
   const [checkoutModalKey, setCheckoutModalKey] = useState(0);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // Waitlist state (Phase 5.1 / QDR-66)
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
   const [waitlistError, setWaitlistError] = useState<string | null>(null);
   const [waitlistCapacity, setWaitlistCapacity] = useState<number>(0);
 
-  // ---------------------------------------------------------------------------
-  // Handlers
-  // ---------------------------------------------------------------------------
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const storedTheme = window.localStorage.getItem("theme");
+    const preferDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const shouldUseDark = storedTheme === "dark" || (!storedTheme && preferDark);
+    root.classList.toggle("dark", shouldUseDark);
+    setIsDarkMode(shouldUseDark);
+  }, []);
+
+  function pushToast(title: string, description: string, kind: ToastKind = "info") {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, title, description, kind }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 4000);
+  }
+
+  function toggleTheme() {
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    document.documentElement.classList.toggle("dark", next);
+    window.localStorage.setItem("theme", next ? "dark" : "light");
+  }
+
+  function scrollToReservation() {
+    reservationSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMobileMenuOpen(false);
+  }
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setBookingError(null);
+    setWaitlistError(null);
     setOptions([]);
     setHasSearched(false);
     setSelectedOption(null);
 
     if (!reservationDate || !reservationTime) {
       setError("Please select both date and time.");
+      pushToast("Missing details", "Please select both date and time.", "error");
       return;
     }
 
@@ -95,6 +121,7 @@ export default function Home() {
 
     if (dateParts.length !== 3 || timeParts.length !== 2) {
       setError("Invalid date/time format.");
+      pushToast("Invalid input", "Please use a valid date and time.", "error");
       return;
     }
 
@@ -109,24 +136,26 @@ export default function Home() {
       !Number.isFinite(minute)
     ) {
       setError("Invalid date/time value.");
+      pushToast("Invalid input", "Please correct your date and time selection.", "error");
       return;
     }
 
     const startLocal = new Date(year, month - 1, day, hour, minute, 0);
     if (Number.isNaN(startLocal.getTime())) {
       setError("Invalid date/time selection.");
+      pushToast("Invalid selection", "Please choose a valid reservation slot.", "error");
       return;
     }
 
-    // Validate reservation time is within operating hours (FR-8 / QDR-74)
     const timeValidation = validateReservationTime(
       hour,
       DEFAULT_RESERVATION_HOURS,
     );
     if (!timeValidation.valid) {
-      setError(
-        timeValidation.error || "Reservation time is outside operating hours.",
-      );
+      const message =
+        timeValidation.error || "Reservation time is outside operating hours.";
+      setError(message);
+      pushToast("Outside operating hours", message, "error");
       return;
     }
 
@@ -136,7 +165,6 @@ export default function Home() {
     const startISO = startLocal.toISOString();
     const endISO = endLocal.toISOString();
 
-    // Cache times for the subsequent lock call.
     setStartTimeISO(startISO);
     setEndTimeISO(endISO);
 
@@ -171,8 +199,23 @@ export default function Home() {
         );
       }
 
-      setOptions(payload.options ?? []);
+      const nextOptions = payload.options ?? [];
+      setOptions(nextOptions);
       setHasSearched(true);
+
+      if (nextOptions.length > 0) {
+        pushToast(
+          "Tables found",
+          `${nextOptions.length} option${nextOptions.length > 1 ? "s" : ""} available for your request.",
+          "success",
+        );
+      } else {
+        pushToast(
+          "No tables available",
+          "No instant availability found. You can join the virtual waitlist.",
+          "info",
+        );
+      }
     } catch (requestError) {
       const message =
         requestError instanceof Error
@@ -180,15 +223,12 @@ export default function Home() {
           : "Unexpected error occurred.";
       setError(message);
       setHasSearched(true);
+      pushToast("Search failed", message, "error");
     } finally {
       setLoading(false);
     }
   }
 
-  /**
-   * Opens the checkout modal for a selected table option.
-   * Requires the user to be authenticated; redirects to login if not.
-   */
   function handleSelectOption(option: AvailabilityOption) {
     setBookingError(null);
     setSelectedOption(option);
@@ -196,26 +236,13 @@ export default function Home() {
     setIsModalOpen(true);
   }
 
-  /**
-   * Called by CheckoutModal on user confirmation.
-   *
-   * Flow:
-   *   1. Fetch the current session to get the auth user ID.
-   *   2. Resolve the customer_id from the users table via /api/customer/me.
-   *   3. POST to /api/reservations/lock with the full booking payload.
-   *   4. On success, redirect to /customer/dashboard.
-   *   5. On lock conflict (55P03), display a 'Table already reserved' error.
-   *   6. Keep modal open on error so user can try again.
-   */
   async function handleCheckoutConfirm(paymentToken: string) {
     if (!selectedOption) return;
 
     try {
-      // Resolve the current user's auth session client-side.
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {
-        // Not logged in -- close modal and redirect to login.
         setIsModalOpen(false);
         router.push("/auth/login");
         return;
@@ -223,8 +250,6 @@ export default function Home() {
 
       const authUserId = sessionData.session.user.id;
 
-      // Resolve customer_id from /api/customer/me, which looks up the
-      // public.customers row for the current auth user.
       const customerRes = await fetch("/api/customer/me", {
         headers: {
           "Content-Type": "application/json",
@@ -243,7 +268,6 @@ export default function Home() {
         );
       }
 
-      // POST the lock request to the booking engine.
       const lockRes = await fetch("/api/reservations/lock", {
         method: "POST",
         headers: {
@@ -268,7 +292,6 @@ export default function Home() {
       };
 
       if (!lockRes.ok) {
-        // Map the 55P03 lock-conflict to a user-readable message (FR-3).
         const msg = lockPayload.error ?? "Reservation failed.";
         const isConflict =
           msg.includes("no longer available") ||
@@ -281,18 +304,17 @@ export default function Home() {
         );
       }
 
-      // Success -- navigate to the dashboard.
       setIsModalOpen(false);
+      pushToast("Reservation locked", "Your table has been reserved successfully.", "success");
       router.push("/customer/dashboard?booking=confirmed");
     } catch (err) {
-      // Error is caught by the modal's error handler
       const message =
         err instanceof Error
           ? err.message
           : "Checkout failed. Please try again.";
       setBookingError(message);
-      // Modal stays open for user to retry or cancel
-      throw err; // Re-throw so modal can catch and display in its error state
+      pushToast("Reservation failed", message, "error");
+      throw err;
     }
   }
 
@@ -302,67 +324,52 @@ export default function Home() {
     setBookingError(null);
   }
 
-  /**
-   * Check waitlist capacity for the selected date/time/party size (QDR-66 / FR-5)
-   * Fetch current queue count; cap at ~50 parties per timeslot
-   */
   async function checkWaitlistCapacity(): Promise<number> {
     try {
-      // In a full implementation, would query /api/waitlist/capacity
-      // For MVP, assume we can query the waitlist count for the selected timeslot
       const response = await fetch(
         `/api/waitlist/capacity?date=${reservationDate}&time=${reservationTime}&party_size=${partySize}`,
       );
       const data = await response.json();
       return data.count ?? 0;
     } catch {
-      // Default to 0 if query fails
       return 0;
     }
   }
 
-  /**
-   * Handle "Join Waitlist" button click (QDR-66 / FR-5)
-   */
   async function handleJoinWaitlist() {
     setWaitlistError(null);
     setWaitlistLoading(true);
 
     try {
-      // Check current capacity
       const currentCapacity = await checkWaitlistCapacity();
       setWaitlistCapacity(currentCapacity);
 
-      // Hard cap: ~50 parties max per timeslot (FR-5)
       if (currentCapacity >= 50) {
-        setWaitlistError(
-          "Waitlist is currently full for this time slot. Please try another time.",
-        );
+        const message =
+          "Waitlist is currently full for this time slot. Please try another time.";
+        setWaitlistError(message);
+        pushToast("Waitlist full", message, "error");
         return;
       }
 
-      // Open modal to confirm waitlist entry
       setIsWaitlistModalOpen(true);
     } catch (err) {
-      setWaitlistError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Failed to check waitlist capacity",
-      );
+          : "Failed to check waitlist capacity";
+      setWaitlistError(message);
+      pushToast("Waitlist unavailable", message, "error");
     } finally {
       setWaitlistLoading(false);
     }
   }
 
-  /**
-   * Confirm joining the waitlist (QDR-66 / FR-5)
-   */
   async function handleConfirmWaitlist() {
     setWaitlistError(null);
     setWaitlistLoading(true);
 
     try {
-      // Get authenticated user
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {
@@ -371,7 +378,6 @@ export default function Home() {
         return;
       }
 
-      // Call /api/waitlist/join endpoint
       const response = await fetch("/api/waitlist/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -388,164 +394,381 @@ export default function Home() {
         throw new Error(data.error ?? "Failed to join waitlist");
       }
 
-      // Success -- show confirmation and close modal
-      alert(
-        `Success! You've been added to the waitlist at position ${data.waitlist_entry.position}. ` +
-          `We'll notify you when a table becomes available.`,
+      pushToast(
+        "Joined waitlist",
+        `You are in position ${data.waitlist_entry.position}. We will notify you as soon as a table opens.`,
+        "success",
       );
       setIsWaitlistModalOpen(false);
     } catch (err) {
-      setWaitlistError(
-        err instanceof Error ? err.message : "Failed to join waitlist",
-      );
+      const message =
+        err instanceof Error ? err.message : "Failed to join waitlist";
+      setWaitlistError(message);
+      pushToast("Waitlist join failed", message, "error");
     } finally {
       setWaitlistLoading(false);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">
-          Gordon Ramsay Restaurant Reservations
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          Search table availability by date, time, and party size.
-        </p>
-      </header>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.18),transparent_38%),linear-gradient(180deg,#0b0b0f_0%,#15151d_45%,#17171f_100%)] text-zinc-100">
+      <nav className="sticky top-0 z-40 border-b border-white/10 bg-black/30 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="text-left"
+          >
+            <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Fine Dining</p>
+            <p className="font-semibold text-white">Gordon Ramsay</p>
+          </button>
 
-      {/* Search Form */}
-      <form
-        onSubmit={handleSearch}
-        className="grid gap-4 rounded-lg border p-4 md:grid-cols-4"
-      >
-        <label className="flex flex-col gap-2 text-sm">
-          Date
-          <input
-            type="date"
-            value={reservationDate}
-            onChange={(event) => setReservationDate(event.target.value)}
-            className="rounded border px-3 py-2"
-            required
-          />
-        </label>
+          <div className="hidden items-center gap-6 md:flex">
+            <a href="#home" className="text-sm text-zinc-300 transition hover:text-white">Home</a>
+            <a href="#dishes" className="text-sm text-zinc-300 transition hover:text-white">Featured</a>
+            <a href="#testimonials" className="text-sm text-zinc-300 transition hover:text-white">Reviews</a>
+            <button
+              type="button"
+              onClick={scrollToReservation}
+              className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:bg-amber-300"
+            >
+              Reserve a Table
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle dark mode"
+              className="rounded-full border border-white/20 px-3 py-2 text-xs text-zinc-200 transition hover:border-white/50 hover:text-white"
+            >
+              {isDarkMode ? "Light" : "Dark"}
+            </button>
+          </div>
 
-        <label className="flex flex-col gap-2 text-sm">
-          Time
-          <input
-            type="time"
-            value={reservationTime}
-            onChange={(event) => setReservationTime(event.target.value)}
-            className="rounded border px-3 py-2"
-            required
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          Party Size
-          <input
-            type="number"
-            min={1}
-            max={12}
-            value={partySize}
-            onChange={(event) => setPartySize(Number(event.target.value))}
-            className="rounded border px-3 py-2"
-            required
-          />
-        </label>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50 md:self-end"
-        >
-          {loading ? "Searching..." : "Search Availability"}
-        </button>
-      </form>
-
-      {/* Booking-level error (lock conflict etc.) */}
-      {bookingError && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-          {bookingError}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="rounded-md border border-white/20 px-3 py-2 text-sm md:hidden"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav"
+            aria-label="Toggle navigation"
+          >
+            Menu
+          </button>
         </div>
-      )}
 
-      {/* Results + Menu Section */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-        <section className="rounded-lg border p-4">
-          <h2 className="mb-3 text-xl font-semibold">Availability Results</h2>
-
-          {!hasSearched && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Submit a search to view available table options.
-            </p>
-          )}
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          {!error && options.length === 0 && hasSearched && (
-            <div className="space-y-4">
-              <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                No available options found.
-              </p>
-              {/* Phase 5.1: Waitlist UI (QDR-66 / FR-5) */}
-              {waitlistError && (
-                <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                  {waitlistError}
-                </div>
-              )}
+        {mobileMenuOpen && (
+          <div id="mobile-nav" className="space-y-2 border-t border-white/10 px-4 py-4 md:hidden">
+            <a href="#home" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Home</a>
+            <a href="#dishes" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Featured Dishes</a>
+            <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className="block rounded-md px-2 py-2 text-sm text-zinc-200 hover:bg-white/10">Testimonials</a>
+            <div className="flex gap-2 pt-2">
               <button
                 type="button"
-                onClick={handleJoinWaitlist}
-                disabled={waitlistLoading || waitlistCapacity >= 50}
-                className="w-full rounded bg-amber-600 px-4 py-2 text-white disabled:opacity-50 hover:bg-amber-700"
+                onClick={scrollToReservation}
+                className="flex-1 rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-black"
               >
-                {waitlistCapacity >= 50
-                  ? "Waitlist Full"
-                  : waitlistLoading
-                    ? "Checking capacity..."
-                    : "Join Virtual Waitlist"}
+                Reserve a Table
+              </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="rounded-full border border-white/20 px-4 py-2 text-sm text-zinc-100"
+              >
+                {isDarkMode ? "Light" : "Dark"}
               </button>
             </div>
-          )}
+          </div>
+        )}
+      </nav>
 
-          {!error && options.length > 0 && (
-            <ul className="space-y-2">
-              {options.map((option) => (
-                <li key={option.table_ids.join("-")}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectOption(option)}
-                    className="w-full rounded border p-3 text-left text-sm transition-colors hover:border-black hover:bg-zinc-50 dark:hover:border-zinc-400 dark:hover:bg-zinc-800"
-                  >
-                    <p>
-                      <span className="font-medium">
-                        {option.table_numbers.length > 1 ? "Tables:" : "Table:"}
-                      </span>{" "}
-                      {option.table_numbers.join(" + ")}
-                    </p>
-                    <p>
-                      <span className="font-medium">Seats up to:</span>{" "}
-                      {option.total_capacity} guests
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      Click to reserve this option
-                    </p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      <main className="mx-auto w-full max-w-7xl space-y-16 px-4 py-8 sm:px-6 lg:px-8 lg:py-14">
+        <section id="home" className="grid gap-6 overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:grid-cols-2 lg:p-10">
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-amber-300">Michelin-level experience</p>
+            <h1 className="font-heading text-4xl leading-tight sm:text-5xl">
+              Reserve an unforgettable evening.
+            </h1>
+            <p className="max-w-xl text-zinc-300">
+              Discover modern British fine dining with iconic Gordon Ramsay craftsmanship, curated tasting menus, and elegant hospitality.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={scrollToReservation}
+                className="rounded-full bg-amber-400 px-6 py-3 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:bg-amber-300"
+              >
+                Reserve a Table
+              </button>
+              <a
+                href="#dishes"
+                className="rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white transition hover:border-white/50 hover:bg-white/10"
+              >
+                Explore Menu Highlights
+              </a>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center text-sm">
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                <p className="text-xl font-semibold text-amber-300">4.9</p>
+                <p className="text-zinc-400">Guest Rating</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                <p className="text-xl font-semibold text-amber-300">2k+</p>
+                <p className="text-zinc-400">Monthly Guests</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                <p className="text-xl font-semibold text-amber-300">18</p>
+                <p className="text-zinc-400">Signature Dishes</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative min-h-[320px] rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,217,127,0.16),rgba(255,255,255,0.02)),radial-gradient(circle_at_80%_20%,rgba(255,208,102,0.32),transparent_45%),linear-gradient(145deg,#15151d,#0f0f14)] p-6">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-transparent via-transparent to-white/10" />
+            <div className="relative flex h-full flex-col justify-between">
+              <p className="text-xs uppercase tracking-[0.25em] text-zinc-300">Tonight&apos;s Experience</p>
+              <div className="space-y-4">
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4 backdrop-blur">
+                  <p className="text-xs text-zinc-400">Chef&apos;s Signature</p>
+                  <p className="text-lg font-semibold text-white">Beef Wellington</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4 backdrop-blur">
+                  <p className="text-xs text-zinc-400">Seasonal Special</p>
+                  <p className="text-lg font-semibold text-white">Lobster Risotto</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4 backdrop-blur">
+                  <p className="text-xs text-zinc-400">Dessert</p>
+                  <p className="text-lg font-semibold text-white">Sticky Toffee Soufflé</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
-        <MenuDisplay className="self-start" />
-      </div>
+        <section id="dishes" className="space-y-6">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Featured dishes</p>
+            <h2 className="font-heading text-3xl">Curated culinary highlights</h2>
+            <p className="text-zinc-300">A modern menu blending precision, seasonal produce, and iconic flavor profiles.</p>
+          </div>
 
-      {/* Checkout Modal (FR-3 / QDR-39) */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                name: "Truffle Beef Wellington",
+                note: "Prime filet, mushroom duxelles, red wine jus",
+              },
+              {
+                name: "Butter-Poached Lobster",
+                note: "Saffron bisque, charred leek, citrus oil",
+              },
+              {
+                name: "Dark Chocolate Sphere",
+                note: "Salted caramel core, warm ganache pour-over",
+              },
+            ].map((dish) => (
+              <article key={dish.name} className="group rounded-2xl border border-white/10 bg-white/5 p-5 transition duration-300 hover:-translate-y-1 hover:border-amber-300/40 hover:bg-white/10">
+                <div className="mb-4 h-32 rounded-xl bg-[linear-gradient(130deg,rgba(255,214,124,0.38),rgba(255,255,255,0.04)),linear-gradient(160deg,#121218,#1c1c27)]" />
+                <h3 className="text-lg font-semibold text-white">{dish.name}</h3>
+                <p className="mt-2 text-sm text-zinc-300">{dish.note}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section
+          ref={reservationSectionRef}
+          id="reservation"
+          className="grid gap-6 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_16px_60px_rgba(0,0,0,0.4)] backdrop-blur-xl lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:p-8"
+        >
+          <div className="space-y-5">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Reservation</p>
+              <h2 className="mt-2 font-heading text-3xl">Book your table</h2>
+              <p className="mt-2 text-zinc-300">Search live availability and reserve instantly with secure checkout.</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-xs">
+              {["1. Find availability", "2. Select table", "3. Confirm reservation"].map((step) => (
+                <span key={step} className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-zinc-200">
+                  {step}
+                </span>
+              ))}
+            </div>
+
+            <form
+              onSubmit={handleSearch}
+              className="grid gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 sm:grid-cols-2"
+              aria-describedby="reservation-help"
+            >
+              <label htmlFor="reservation-date" className="flex flex-col gap-2 text-sm">
+                Date
+                <input
+                  id="reservation-date"
+                  type="date"
+                  value={reservationDate}
+                  onChange={(event) => setReservationDate(event.target.value)}
+                  className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-200/20"
+                  required
+                  aria-invalid={!!error && !reservationDate}
+                />
+              </label>
+
+              <label htmlFor="reservation-time" className="flex flex-col gap-2 text-sm">
+                Time
+                <input
+                  id="reservation-time"
+                  type="time"
+                  value={reservationTime}
+                  onChange={(event) => setReservationTime(event.target.value)}
+                  className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-200/20"
+                  required
+                  aria-invalid={!!error && !reservationTime}
+                />
+              </label>
+
+              <label htmlFor="party-size" className="flex flex-col gap-2 text-sm">
+                Party Size
+                <input
+                  id="party-size"
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={partySize}
+                  onChange={(event) => setPartySize(Number(event.target.value))}
+                  className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-200/20"
+                  required
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60 sm:self-end"
+              >
+                {loading ? "Searching..." : "Search Availability"}
+              </button>
+
+              <p id="reservation-help" className="text-xs text-zinc-300 sm:col-span-2">
+                Reservations are for {DEFAULT_RESERVATION_HOURS} hours and depend on real-time availability.
+              </p>
+            </form>
+
+            {bookingError && (
+              <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200" role="alert">
+                {bookingError}
+              </div>
+            )}
+
+            <section className="space-y-3 rounded-2xl border border-white/10 bg-black/25 p-4" aria-live="polite">
+              <h3 className="text-lg font-semibold text-white">Availability results</h3>
+
+              {!hasSearched && (
+                <p className="text-sm text-zinc-300">
+                  Enter your details and run a search to view available tables.
+                </p>
+              )}
+
+              {loading && (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-14 animate-pulse rounded-xl border border-white/10 bg-white/10" />
+                  ))}
+                </div>
+              )}
+
+              {error && !loading && <p className="text-sm text-red-300">{error}</p>}
+
+              {!loading && !error && options.length === 0 && hasSearched && (
+                <div className="space-y-4 rounded-xl border border-dashed border-white/20 bg-white/5 p-4">
+                  <p className="text-sm text-zinc-200">No available options found for this slot.</p>
+                  {waitlistError && (
+                    <div className="rounded-md border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+                      {waitlistError}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleJoinWaitlist}
+                    disabled={waitlistLoading || waitlistCapacity >= 50}
+                    className="w-full rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {waitlistCapacity >= 50
+                      ? "Waitlist Full"
+                      : waitlistLoading
+                        ? "Checking capacity..."
+                        : "Join Virtual Waitlist"}
+                  </button>
+                </div>
+              )}
+
+              {!loading && !error && options.length > 0 && (
+                <ul className="space-y-2">
+                  {options.map((option) => (
+                    <li key={option.table_ids.join("-")}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectOption(option)}
+                        className="w-full rounded-xl border border-white/15 bg-white/5 p-4 text-left text-sm transition hover:-translate-y-0.5 hover:border-amber-300/40 hover:bg-white/10"
+                      >
+                        <p>
+                          <span className="font-medium text-zinc-100">
+                            {option.table_numbers.length > 1 ? "Tables:" : "Table:"}
+                          </span>{" "}
+                          {option.table_numbers.join(" + ")}
+                        </p>
+                        <p className="mt-1 text-zinc-300">
+                          <span className="font-medium text-zinc-100">Seats up to:</span>{" "}
+                          {option.total_capacity} guests
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-400">Tap to reserve this option</p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+
+          <MenuDisplay className="self-start rounded-2xl border border-white/10 bg-black/25 p-3" />
+        </section>
+
+        <section id="testimonials" className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.25em] text-amber-300">Testimonials</p>
+            <h2 className="font-heading text-3xl">What guests are saying</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              {
+                quote: "Seamless reservation flow and a world-class dining experience.",
+                author: "Alyssa T.",
+              },
+              {
+                quote: "Elegant ambiance, flawless service, and unforgettable flavors.",
+                author: "Marcus L.",
+              },
+              {
+                quote: "From booking to dessert, every detail felt premium.",
+                author: "Rachel D.",
+              },
+            ].map((item) => (
+              <blockquote key={item.author} className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-zinc-200">
+                <p>&ldquo;{item.quote}&rdquo;</p>
+                <footer className="mt-3 text-xs uppercase tracking-wide text-amber-300">{item.author}</footer>
+              </blockquote>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-white/10 bg-black/30">
+        <div className="mx-auto grid w-full max-w-7xl gap-3 px-4 py-6 text-sm text-zinc-300 sm:px-6 lg:grid-cols-3 lg:px-8">
+          <p><span className="font-semibold text-white">Gordon Ramsay Restaurant</span><br />68 Royal Exchange, London</p>
+          <p><span className="font-semibold text-white">Hours</span><br />Mon–Sun · 17:00–23:30</p>
+          <p><span className="font-semibold text-white">Contact</span><br />+44 20 7123 4567 · reservations@gordonramsay.example</p>
+        </div>
+      </footer>
+
       <CheckoutModal
         key={checkoutModalKey}
         isOpen={isModalOpen}
@@ -563,33 +786,28 @@ export default function Home() {
         }
       />
 
-      {/* Waitlist Modal (Phase 5.1 / QDR-66 / FR-5) */}
       {isWaitlistModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
-            <h2 className="text-xl font-semibold mb-4">
-              Join the Virtual Waitlist
-            </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+            <h2 className="mb-4 text-xl font-semibold">Join the Virtual Waitlist</h2>
 
-            <div className="mb-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <div className="mb-4 space-y-2 text-sm text-zinc-300">
               <p>
-                <span className="font-medium">Date:</span> {reservationDate}
+                <span className="font-medium text-zinc-100">Date:</span> {reservationDate}
               </p>
               <p>
-                <span className="font-medium">Time:</span> {reservationTime}
+                <span className="font-medium text-zinc-100">Time:</span> {reservationTime}
               </p>
               <p>
-                <span className="font-medium">Party Size:</span> {partySize}{" "}
-                guests
+                <span className="font-medium text-zinc-100">Party Size:</span> {partySize} guests
               </p>
-              <p className="text-xs mt-3 text-amber-600 dark:text-amber-400">
-                We&apos;ll notify you when a table becomes available. Your spot
-                will expire if you don&apos;t accept within 10 minutes.
+              <p className="mt-3 text-xs text-amber-300">
+                We&apos;ll notify you when a table becomes available. Your offer expires if not accepted in 10 minutes.
               </p>
             </div>
 
             {waitlistError && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+              <div className="mb-4 rounded-md border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
                 {waitlistError}
               </div>
             )}
@@ -598,7 +816,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setIsWaitlistModalOpen(false)}
-                className="flex-1 rounded border px-4 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                className="flex-1 rounded-lg border border-white/20 px-4 py-2 text-sm transition hover:bg-white/10"
               >
                 Cancel
               </button>
@@ -606,7 +824,7 @@ export default function Home() {
                 type="button"
                 onClick={handleConfirmWaitlist}
                 disabled={waitlistLoading}
-                className="flex-1 rounded bg-amber-600 px-4 py-2 text-sm text-white disabled:opacity-50 hover:bg-amber-700"
+                className="flex-1 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-amber-400 disabled:opacity-50"
               >
                 {waitlistLoading ? "Joining..." : "Join Waitlist"}
               </button>
@@ -614,6 +832,26 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <div className="pointer-events-none fixed right-4 top-20 z-[60] flex w-[min(92vw,360px)] flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto rounded-xl border p-3 text-sm shadow-xl backdrop-blur ${
+              toast.kind === "success"
+                ? "border-emerald-300/30 bg-emerald-500/20 text-emerald-100"
+                : toast.kind === "error"
+                  ? "border-red-300/30 bg-red-500/20 text-red-100"
+                  : "border-white/20 bg-black/40 text-zinc-100"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <p className="font-semibold">{toast.title}</p>
+            <p className="mt-1 text-xs opacity-90">{toast.description}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
