@@ -10,6 +10,8 @@
 
 import Link from "next/link";
 import React from "react";
+import { redirect } from "next/navigation";
+import { getServerAuthContext } from "@/lib/authGuards";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +24,21 @@ const ADMIN_NAV_LINKS = [
   { href: "/admin/waitlist", label: "Waitlist" },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, profile } = await getServerAuthContext();
+
+  if (!user) {
+    redirect("/auth/login?next=/admin/dashboard");
+  }
+
+  if (profile?.role !== "admin") {
+    redirect("/customer/dashboard");
+  }
+
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-900">
       <header className="border-b bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
