@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, Search, Plus, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,10 @@ const DEFAULT_FORM_STATE: MenuFormState = {
 };
 
 function categoryLabel(category: MenuCategory | null): string {
-  return CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? "Uncategorized";
+  return (
+    CATEGORY_OPTIONS.find((option) => option.value === category)?.label ??
+    "Uncategorized"
+  );
 }
 
 export default function MenuManagementPage() {
@@ -76,13 +79,14 @@ export default function MenuManagementPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<MenuFormState>(DEFAULT_FORM_STATE);
+  const [createForm, setCreateForm] =
+    useState<MenuFormState>(DEFAULT_FORM_STATE);
 
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editForm, setEditForm] = useState<MenuFormState>(DEFAULT_FORM_STATE);
 
-  async function fetchMenuItems() {
+  const fetchMenuItems = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -103,22 +107,30 @@ export default function MenuManagementPage() {
 
       setMenuItems(payload.items ?? []);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Failed to load menu items");
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to load menu items",
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void fetchMenuItems();
-  }, []);
+    queueMicrotask(() => {
+      void fetchMenuItems();
+    });
+  }, [fetchMenuItems]);
 
   const filteredMenu = useMemo(
     () =>
       menuItems.filter((item) =>
-        `${item.name} ${item.description ?? ""}`.toLowerCase().includes(searchQuery.toLowerCase())
+        `${item.name} ${item.description ?? ""}`
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()),
       ),
-    [menuItems, searchQuery]
+    [menuItems, searchQuery],
   );
 
   function openEditDialog(item: MenuItem) {
@@ -183,7 +195,11 @@ export default function MenuManagementPage() {
       setCreateForm(DEFAULT_FORM_STATE);
       setIsCreateOpen(false);
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to create menu item");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to create menu item",
+      );
     } finally {
       setIsCreating(false);
     }
@@ -236,10 +252,18 @@ export default function MenuManagementPage() {
         throw new Error(payload.error ?? "Failed to update menu item");
       }
 
-      setMenuItems((prev) => prev.map((item) => (item.id === payload.item!.id ? payload.item! : item)));
+      setMenuItems((prev) =>
+        prev.map((item) =>
+          item.id === payload.item!.id ? payload.item! : item,
+        ),
+      );
       setEditingItem(null);
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to update menu item");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to update menu item",
+      );
     } finally {
       setIsSavingEdit(false);
     }
@@ -264,14 +288,24 @@ export default function MenuManagementPage() {
         throw new Error(payload.error ?? "Failed to update availability");
       }
 
-      setMenuItems((prev) => prev.map((current) => (current.id === payload.item!.id ? payload.item! : current)));
+      setMenuItems((prev) =>
+        prev.map((current) =>
+          current.id === payload.item!.id ? payload.item! : current,
+        ),
+      );
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to update availability");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to update availability",
+      );
     }
   }
 
   async function handleDelete(item: MenuItem) {
-    const confirmed = window.confirm(`Delete ${item.name}? This action cannot be undone.`);
+    const confirmed = window.confirm(
+      `Delete ${item.name}? This action cannot be undone.`,
+    );
     if (!confirmed) return;
 
     setActionError(null);
@@ -292,7 +326,11 @@ export default function MenuManagementPage() {
 
       setMenuItems((prev) => prev.filter((current) => current.id !== item.id));
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to delete menu item");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to delete menu item",
+      );
     }
   }
 
@@ -328,26 +366,38 @@ export default function MenuManagementPage() {
             </DialogTrigger>
             <DialogContent className="bg-popover border-border text-popover-foreground font-sans text-[11px]">
               <DialogHeader>
-                <DialogTitle className="text-lg font-heading text-primary">Add New Dish</DialogTitle>
+                <DialogTitle className="text-lg font-heading text-primary">
+                  Add New Dish
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleCreateSubmit} className="grid gap-4 py-2">
                 <Input
                   placeholder="Dish Name"
                   className="bg-background border-input"
                   value={createForm.name}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   required
                 />
                 <Input
                   placeholder="Description"
                   className="bg-background border-input"
                   value={createForm.description}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                 />
                 <Select
                   value={createForm.category}
                   onValueChange={(value) =>
-                    setCreateForm((prev) => ({ ...prev, category: value as MenuCategory }))
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      category: value as MenuCategory,
+                    }))
                   }
                 >
                   <SelectTrigger className="w-full bg-background border-input">
@@ -368,7 +418,12 @@ export default function MenuManagementPage() {
                     step="0.01"
                     className="bg-background border-input"
                     value={createForm.price}
-                    onChange={(e) => setCreateForm((prev) => ({ ...prev, price: e.target.value }))}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        price: e.target.value,
+                      }))
+                    }
                     required
                   />
                   <Input
@@ -376,7 +431,12 @@ export default function MenuManagementPage() {
                     type="number"
                     className="bg-background border-input"
                     value={createForm.sort_order}
-                    onChange={(e) => setCreateForm((prev) => ({ ...prev, sort_order: e.target.value }))}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        sort_order: e.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <Button
@@ -427,11 +487,17 @@ export default function MenuManagementPage() {
                 <TableCell className="font-medium text-foreground text-[12px]">
                   {item.name}
                   {item.description && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.description}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {item.description}
+                    </p>
                   )}
                 </TableCell>
-                <TableCell className="text-secondary-foreground">{categoryLabel(item.category)}</TableCell>
-                <TableCell className="text-foreground">${item.price.toFixed(2)}</TableCell>
+                <TableCell className="text-secondary-foreground">
+                  {categoryLabel(item.category)}
+                </TableCell>
+                <TableCell className="text-foreground">
+                  ${item.price.toFixed(2)}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Switch
@@ -439,9 +505,13 @@ export default function MenuManagementPage() {
                       onCheckedChange={() => void toggleAvailability(item)}
                     />
                     {item.available ? (
-                      <span className="text-primary font-medium">Available</span>
+                      <span className="text-primary font-medium">
+                        Available
+                      </span>
                     ) : (
-                      <span className="text-destructive font-bold">Sold Out</span>
+                      <span className="text-destructive font-bold">
+                        Sold Out
+                      </span>
                     )}
                   </div>
                 </TableCell>
@@ -470,7 +540,10 @@ export default function MenuManagementPage() {
 
             {filteredMenu.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={5}
+                  className="text-center text-muted-foreground py-8"
+                >
                   {loading ? "Loading menu items..." : "No menu items found."}
                 </TableCell>
               </TableRow>
@@ -479,29 +552,44 @@ export default function MenuManagementPage() {
         </Table>
       </div>
 
-      <Dialog open={!!editingItem} onOpenChange={(isOpen) => !isOpen && setEditingItem(null)}>
+      <Dialog
+        open={!!editingItem}
+        onOpenChange={(isOpen) => !isOpen && setEditingItem(null)}
+      >
         <DialogContent className="bg-popover border-border text-popover-foreground font-sans text-[11px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading text-primary">Edit Menu Item</DialogTitle>
+            <DialogTitle className="text-lg font-heading text-primary">
+              Edit Menu Item
+            </DialogTitle>
           </DialogHeader>
           {editingItem && (
             <form onSubmit={handleEditSubmit} className="grid gap-4 py-2">
               <Input
                 value={editForm.name}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, name: e.target.value }))
+                }
                 className="bg-background border-input"
                 required
               />
               <Input
                 value={editForm.description}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 className="bg-background border-input"
                 placeholder="Description"
               />
               <Select
                 value={editForm.category}
                 onValueChange={(value) =>
-                  setEditForm((prev) => ({ ...prev, category: value as MenuCategory }))
+                  setEditForm((prev) => ({
+                    ...prev,
+                    category: value as MenuCategory,
+                  }))
                 }
               >
                 <SelectTrigger className="w-full bg-background border-input">
@@ -520,14 +608,21 @@ export default function MenuManagementPage() {
                   type="number"
                   step="0.01"
                   value={editForm.price}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, price: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, price: e.target.value }))
+                  }
                   className="bg-background border-input"
                   required
                 />
                 <Input
                   type="number"
                   value={editForm.sort_order}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, sort_order: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      sort_order: e.target.value,
+                    }))
+                  }
                   className="bg-background border-input"
                 />
               </div>

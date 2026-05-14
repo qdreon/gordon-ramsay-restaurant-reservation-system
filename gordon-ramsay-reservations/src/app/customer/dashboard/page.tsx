@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { FormEvent, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { getCurrentSession, getCurrentUser, signOut } from '@/lib/authClient';
+import { FormEvent, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { getCurrentSession, getCurrentUser, signOut } from "@/lib/authClient";
 
 /**
  * Customer Dashboard page (/customer/dashboard).
@@ -22,10 +22,10 @@ import { getCurrentSession, getCurrentUser, signOut } from '@/lib/authClient';
 export default function CustomerDashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dietaryRestrictions, setDietaryRestrictions] = useState('');
-  const [allergies, setAllergies] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+  const [allergies, setAllergies] = useState("");
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -56,9 +56,9 @@ export default function CustomerDashboard() {
   };
 
   const loadReservations = useCallback(async (token: string) => {
-    const response = await fetch('/api/customer/reservations', {
+    const response = await fetch("/api/customer/reservations", {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
@@ -68,16 +68,16 @@ export default function CustomerDashboard() {
     };
 
     if (!response.ok) {
-      throw new Error(payload.error ?? 'Failed to load reservations.');
+      throw new Error(payload.error ?? "Failed to load reservations.");
     }
 
     setReservations(payload.reservations ?? []);
   }, []);
 
   const loadProfile = useCallback(async (token: string) => {
-    const response = await fetch('/api/customer/me', {
+    const response = await fetch("/api/customer/me", {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
@@ -97,14 +97,14 @@ export default function CustomerDashboard() {
     };
 
     if (!response.ok || !payload.customerId) {
-      throw new Error(payload.error ?? 'Failed to load customer profile.');
+      throw new Error(payload.error ?? "Failed to load customer profile.");
     }
 
     if (payload.profile) {
-      setFullName(payload.profile.fullName ?? '');
-      setPhone(payload.profile.phone ?? '');
-      setDietaryRestrictions(payload.profile.dietaryRestrictions ?? '');
-      setAllergies(payload.profile.allergies ?? '');
+      setFullName(payload.profile.fullName ?? "");
+      setPhone(payload.profile.phone ?? "");
+      setDietaryRestrictions(payload.profile.dietaryRestrictions ?? "");
+      setAllergies(payload.profile.allergies ?? "");
     }
   }, []);
 
@@ -123,12 +123,12 @@ export default function CustomerDashboard() {
         const session = await getCurrentSession();
         const user = await getCurrentUser();
         if (!user) {
-          router.push('/auth/login');
+          router.push("/auth/login");
           return;
         }
 
         if (!session?.access_token) {
-          router.push('/auth/login');
+          router.push("/auth/login");
           return;
         }
 
@@ -140,19 +140,20 @@ export default function CustomerDashboard() {
           loadReservations(session.access_token),
         ]);
 
-        if (profileResult.status === 'rejected') {
+        if (profileResult.status === "rejected") {
           setProfileError(
             profileResult.reason instanceof Error
               ? profileResult.reason.message
-              : 'Failed to load customer profile.'
+              : "Failed to load customer profile.",
           );
         }
 
-        if (reservationsResult.status === 'rejected') {
+        if (reservationsResult.status === "rejected") {
           throw reservationsResult.reason;
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load user.';
+        const message =
+          err instanceof Error ? err.message : "Failed to load user.";
         setError(message);
       } finally {
         setLoading(false);
@@ -160,14 +161,30 @@ export default function CustomerDashboard() {
     }
 
     loadUser();
-  }, [router, loadReservations]);
+  }, [router, loadProfile, loadReservations]);
 
   async function handleSignOut() {
     try {
-      await signOut();
-      router.push('/');
+      // I POST to /api/auth/signout instead of calling supabase.auth.signOut()
+      // directly from the browser. The client-side signOut() fires a fetch to
+      // /auth/v1/logout; any navigation that follows (router or location.href)
+      // causes the browser to abort that in-flight fetch before Supabase
+      // responds (DEF-002: net::ERR_ABORTED).
+      //
+      // The server-side route handles the Supabase call entirely on the server,
+      // clears the session cookie, then returns a 303 redirect to "/".
+      // The browser only receives the redirect after sign-out is complete --
+      // no browser fetch is left in-flight.
+      const response = await fetch("/api/auth/signout", { method: "POST" });
+      // follow=manual means we handle the redirect ourselves via location.href
+      // so the browser does a full navigation rather than a client-side swap.
+      if (response.redirected) {
+        window.location.href = response.url;
+      } else {
+        window.location.href = "/";
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Sign-out failed.';
+      const message = err instanceof Error ? err.message : "Sign-out failed.";
       setError(message);
     }
   }
@@ -178,34 +195,40 @@ export default function CustomerDashboard() {
     setRefreshing(true);
 
     try {
-      const response = await fetch('/api/reservations/cancel', {
-        method: 'POST',
+      const response = await fetch("/api/reservations/cancel", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({ reservationId }),
       });
 
-      const payload = (await response.json()) as { error?: string; success?: boolean };
+      const payload = (await response.json()) as {
+        error?: string;
+        success?: boolean;
+      };
       if (!response.ok) {
         if (payload.error?.includes("cannot be cancelled")) {
-          setActionMessage('This reservation was already cancelled. Refreshing your reservation list.');
+          setActionMessage(
+            "This reservation was already cancelled. Refreshing your reservation list.",
+          );
           if (accessToken) {
             await loadReservations(accessToken);
           }
           return;
         }
 
-        throw new Error(payload.error ?? 'Failed to cancel reservation.');
+        throw new Error(payload.error ?? "Failed to cancel reservation.");
       }
 
-      setActionMessage('Reservation cancelled successfully.');
+      setActionMessage("Reservation cancelled successfully.");
       if (accessToken) {
         await loadReservations(accessToken);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Cancellation failed.';
+      const message =
+        err instanceof Error ? err.message : "Cancellation failed.";
       setError(message);
     } finally {
       setRefreshing(false);
@@ -214,12 +237,12 @@ export default function CustomerDashboard() {
 
   async function handleDeleteAccount() {
     if (!accessToken) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
 
     const confirmed = window.confirm(
-      'Delete your account and all reservation history? This action cannot be undone.'
+      "Delete your account and all reservation history? This action cannot be undone.",
     );
 
     if (!confirmed) {
@@ -231,23 +254,27 @@ export default function CustomerDashboard() {
     setDeletingAccount(true);
 
     try {
-      const response = await fetch('/api/customer/delete-account', {
-        method: 'POST',
+      const response = await fetch("/api/customer/delete-account", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
       });
 
-      const payload = (await response.json()) as { error?: string; success?: boolean };
+      const payload = (await response.json()) as {
+        error?: string;
+        success?: boolean;
+      };
       if (!response.ok) {
-        throw new Error(payload.error ?? 'Failed to delete account.');
+        throw new Error(payload.error ?? "Failed to delete account.");
       }
 
       await signOut();
-      router.push('/');
+      router.push("/");
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Account deletion failed.';
+      const message =
+        err instanceof Error ? err.message : "Account deletion failed.";
       setError(message);
     } finally {
       setDeletingAccount(false);
@@ -261,22 +288,22 @@ export default function CustomerDashboard() {
     setProfileMessage(null);
 
     if (!accessToken) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
 
     if (!fullName.trim()) {
-      setProfileError('Full name is required.');
+      setProfileError("Full name is required.");
       return;
     }
 
     setSavingProfile(true);
 
     try {
-      const response = await fetch('/api/customer/me', {
-        method: 'PATCH',
+      const response = await fetch("/api/customer/me", {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
@@ -298,16 +325,17 @@ export default function CustomerDashboard() {
       };
 
       if (!response.ok || !payload.profile) {
-        throw new Error(payload.error ?? 'Failed to update customer profile.');
+        throw new Error(payload.error ?? "Failed to update customer profile.");
       }
 
-      setFullName(payload.profile.fullName ?? '');
-      setPhone(payload.profile.phone ?? '');
-      setDietaryRestrictions(payload.profile.dietaryRestrictions ?? '');
-      setAllergies(payload.profile.allergies ?? '');
-      setProfileMessage('Profile updated successfully.');
+      setFullName(payload.profile.fullName ?? "");
+      setPhone(payload.profile.phone ?? "");
+      setDietaryRestrictions(payload.profile.dietaryRestrictions ?? "");
+      setAllergies(payload.profile.allergies ?? "");
+      setProfileMessage("Profile updated successfully.");
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Profile update failed.';
+      const message =
+        err instanceof Error ? err.message : "Profile update failed.";
       setProfileError(message);
     } finally {
       setSavingProfile(false);
@@ -319,17 +347,24 @@ export default function CustomerDashboard() {
   }
 
   function canCancel(reservation: ReservationItem, currentMs: number) {
-    const cancellableStatuses = ['pending_payment', 'confirmed'];
+    const cancellableStatuses = ["pending_payment", "confirmed"];
     const msUntilStart = new Date(reservation.start_time).getTime() - currentMs;
-    return cancellableStatuses.includes(reservation.status) && msUntilStart >= TWO_HOURS_IN_MS;
+    return (
+      cancellableStatuses.includes(reservation.status) &&
+      msUntilStart >= TWO_HOURS_IN_MS
+    );
   }
 
   const effectiveNow = nowMs ?? 0;
   const upcoming = reservations.filter(
-    (r) => new Date(r.start_time).getTime() >= effectiveNow && r.status !== 'cancelled'
+    (r) =>
+      new Date(r.start_time).getTime() >= effectiveNow &&
+      r.status !== "cancelled",
   );
   const past = reservations.filter(
-    (r) => new Date(r.start_time).getTime() < effectiveNow || r.status === 'cancelled'
+    (r) =>
+      new Date(r.start_time).getTime() < effectiveNow ||
+      r.status === "cancelled",
   );
 
   if (loading || nowMs === null) {
@@ -413,7 +448,10 @@ export default function CustomerDashboard() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="dietaryRestrictions" className="text-sm font-medium">
+              <label
+                htmlFor="dietaryRestrictions"
+                className="text-sm font-medium"
+              >
                 Dietary Restrictions
               </label>
               <textarea
@@ -448,7 +486,7 @@ export default function CustomerDashboard() {
             disabled={savingProfile}
             className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60 dark:bg-blue-700 dark:hover:bg-blue-600"
           >
-            {savingProfile ? 'Saving Profile...' : 'Save Profile'}
+            {savingProfile ? "Saving Profile..." : "Save Profile"}
           </button>
         </form>
       </section>
@@ -473,31 +511,41 @@ export default function CustomerDashboard() {
           ) : (
             <ul className="space-y-3">
               {upcoming.map((reservation) => (
-                <li key={reservation.id} className="rounded-md border p-4 text-sm">
+                <li
+                  key={reservation.id}
+                  className="rounded-md border p-4 text-sm"
+                >
                   <p>
-                    <span className="font-semibold">When:</span> {formatDateTime(reservation.start_time)}
+                    <span className="font-semibold">When:</span>{" "}
+                    {formatDateTime(reservation.start_time)}
                   </p>
                   <p>
-                    <span className="font-semibold">Party:</span> {reservation.party_size}
+                    <span className="font-semibold">Party:</span>{" "}
+                    {reservation.party_size}
                   </p>
                   <p>
-                    <span className="font-semibold">Tables:</span>{' '}
-                    {reservation.tables.map((t) => t.table_number).join(', ') || 'TBD'}
+                    <span className="font-semibold">Tables:</span>{" "}
+                    {reservation.tables.map((t) => t.table_number).join(", ") ||
+                      "TBD"}
                   </p>
                   <p>
-                    <span className="font-semibold">Status:</span> {reservation.status}
+                    <span className="font-semibold">Status:</span>{" "}
+                    {reservation.status}
                   </p>
                   <div className="mt-3">
                     <button
                       onClick={() => handleCancelReservation(reservation.id)}
-                      disabled={!canCancel(reservation, effectiveNow) || refreshing}
+                      disabled={
+                        !canCancel(reservation, effectiveNow) || refreshing
+                      }
                       className="rounded-md border border-red-300 px-3 py-1.5 text-red-700 disabled:opacity-50 dark:border-red-700 dark:text-red-400"
                     >
                       Cancel Booking
                     </button>
                     {!canCancel(reservation, effectiveNow) && (
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Cancellation allowed only for pending/confirmed reservations at least 2 hours before start.
+                        Cancellation allowed only for pending/confirmed
+                        reservations at least 2 hours before start.
                       </p>
                     )}
                   </div>
@@ -518,15 +566,21 @@ export default function CustomerDashboard() {
           ) : (
             <ul className="space-y-3">
               {past.map((reservation) => (
-                <li key={reservation.id} className="rounded-md border p-4 text-sm">
+                <li
+                  key={reservation.id}
+                  className="rounded-md border p-4 text-sm"
+                >
                   <p>
-                    <span className="font-semibold">When:</span> {formatDateTime(reservation.start_time)}
+                    <span className="font-semibold">When:</span>{" "}
+                    {formatDateTime(reservation.start_time)}
                   </p>
                   <p>
-                    <span className="font-semibold">Party:</span> {reservation.party_size}
+                    <span className="font-semibold">Party:</span>{" "}
+                    {reservation.party_size}
                   </p>
                   <p>
-                    <span className="font-semibold">Status:</span> {reservation.status}
+                    <span className="font-semibold">Status:</span>{" "}
+                    {reservation.status}
                   </p>
                 </li>
               ))}
@@ -538,7 +592,7 @@ export default function CustomerDashboard() {
       {/* Account Actions */}
       <section className="space-y-3">
         <button
-          onClick={() => router.push('/')}
+          onClick={() => router.push("/")}
           className="w-full rounded-md bg-blue-600 py-2 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
         >
           Make a New Reservation
@@ -555,7 +609,7 @@ export default function CustomerDashboard() {
           className="w-full rounded-md border border-red-300 py-2 text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-400"
           title="QDR-61: Delete account and all associated data"
         >
-          {deletingAccount ? 'Deleting Account...' : 'Delete Account (QDR-61)'}
+          {deletingAccount ? "Deleting Account..." : "Delete Account (QDR-61)"}
         </button>
       </section>
     </div>

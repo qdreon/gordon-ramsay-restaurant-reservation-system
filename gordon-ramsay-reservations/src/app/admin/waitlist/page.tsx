@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, Edit2, Search, Trash2, UsersRound } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Edit2,
+  Search,
+  Trash2,
+  UsersRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +17,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -28,7 +34,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type WaitlistStatus = "waiting" | "offered" | "accepted" | "expired" | "cancelled";
+type WaitlistStatus =
+  | "waiting"
+  | "offered"
+  | "accepted"
+  | "expired"
+  | "cancelled";
 
 type WaitlistEntry = {
   id: string;
@@ -72,14 +83,15 @@ const DEFAULT_FORM_STATE: WaitlistFormState = {
   status: "waiting",
 };
 
-const STATUS_OPTIONS: Array<{ value: WaitlistStatus | "all"; label: string }> = [
-  { value: "all", label: "All Entries" },
-  { value: "waiting", label: "Waiting" },
-  { value: "offered", label: "Offered" },
-  { value: "accepted", label: "Accepted" },
-  { value: "expired", label: "Expired" },
-  { value: "cancelled", label: "Cancelled" },
-];
+const STATUS_OPTIONS: Array<{ value: WaitlistStatus | "all"; label: string }> =
+  [
+    { value: "all", label: "All Entries" },
+    { value: "waiting", label: "Waiting" },
+    { value: "offered", label: "Offered" },
+    { value: "accepted", label: "Accepted" },
+    { value: "expired", label: "Expired" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
 
 function statusLabel(status: WaitlistStatus) {
   switch (status) {
@@ -116,18 +128,25 @@ function isBlacklisted(notes: string | null) {
 }
 
 export default function AdminWaitlistPage() {
-  const [waitlistEntries, setWaitlistEntries] = React.useState<WaitlistEntry[]>([]);
+  const [waitlistEntries, setWaitlistEntries] = React.useState<WaitlistEntry[]>(
+    [],
+  );
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<WaitlistStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = React.useState<
+    WaitlistStatus | "all"
+  >("all");
   const [dateFilter, setDateFilter] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [actionError, setActionError] = React.useState<string | null>(null);
-  const [editingEntry, setEditingEntry] = React.useState<WaitlistEntry | null>(null);
+  const [editingEntry, setEditingEntry] = React.useState<WaitlistEntry | null>(
+    null,
+  );
   const [isSaving, setIsSaving] = React.useState(false);
-  const [editForm, setEditForm] = React.useState<WaitlistFormState>(DEFAULT_FORM_STATE);
+  const [editForm, setEditForm] =
+    React.useState<WaitlistFormState>(DEFAULT_FORM_STATE);
 
-  async function fetchWaitlistEntries() {
+  const fetchWaitlistEntries = React.useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -153,15 +172,21 @@ export default function AdminWaitlistPage() {
 
       setWaitlistEntries(payload.waitlistEntries ?? []);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Failed to load waitlist entries");
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to load waitlist entries",
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, [dateFilter, searchQuery, statusFilter]);
 
   React.useEffect(() => {
-    void fetchWaitlistEntries();
-  }, [searchQuery, statusFilter, dateFilter]);
+    queueMicrotask(() => {
+      void fetchWaitlistEntries();
+    });
+  }, [fetchWaitlistEntries]);
 
   function openEditDialog(entry: WaitlistEntry) {
     setEditingEntry(entry);
@@ -182,7 +207,10 @@ export default function AdminWaitlistPage() {
       body: JSON.stringify(body),
     });
 
-    const payload = (await response.json()) as { waitlistEntry?: WaitlistEntry; error?: string };
+    const payload = (await response.json()) as {
+      waitlistEntry?: WaitlistEntry;
+      error?: string;
+    };
 
     if (!response.ok || !payload.waitlistEntry) {
       throw new Error(payload.error ?? "Failed to update waitlist entry");
@@ -231,11 +259,17 @@ export default function AdminWaitlistPage() {
       });
 
       setWaitlistEntries((prev) =>
-        prev.map((entry) => (entry.id === updatedEntry.id ? updatedEntry : entry))
+        prev.map((entry) =>
+          entry.id === updatedEntry.id ? updatedEntry : entry,
+        ),
       );
       setEditingEntry(null);
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to update waitlist entry");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to update waitlist entry",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -250,16 +284,22 @@ export default function AdminWaitlistPage() {
       });
 
       setWaitlistEntries((prev) =>
-        prev.map((current) => (current.id === updatedEntry.id ? updatedEntry : current))
+        prev.map((current) =>
+          current.id === updatedEntry.id ? updatedEntry : current,
+        ),
       );
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to reprioritize waitlist entry");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to reprioritize waitlist entry",
+      );
     }
   }
 
   async function handleDeleteEntry(entry: WaitlistEntry) {
     const confirmed = window.confirm(
-      `Remove ${entry.customer.user.full_name} from the waitlist? This action cannot be undone.`
+      `Remove ${entry.customer.user.full_name} from the waitlist? This action cannot be undone.`,
     );
 
     if (!confirmed) return;
@@ -271,20 +311,33 @@ export default function AdminWaitlistPage() {
         method: "DELETE",
       });
 
-      const payload = (await response.json()) as { success?: boolean; error?: string };
+      const payload = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
 
       if (!response.ok || !payload.success) {
         throw new Error(payload.error ?? "Failed to delete waitlist entry");
       }
 
-      setWaitlistEntries((prev) => prev.filter((current) => current.id !== entry.id));
+      setWaitlistEntries((prev) =>
+        prev.filter((current) => current.id !== entry.id),
+      );
     } catch (requestError) {
-      setActionError(requestError instanceof Error ? requestError.message : "Failed to delete waitlist entry");
+      setActionError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to delete waitlist entry",
+      );
     }
   }
 
-  const waitingCount = waitlistEntries.filter((entry) => entry.status === "waiting").length;
-  const offeredCount = waitlistEntries.filter((entry) => entry.status === "offered").length;
+  const waitingCount = waitlistEntries.filter(
+    (entry) => entry.status === "waiting",
+  ).length;
+  const offeredCount = waitlistEntries.filter(
+    (entry) => entry.status === "offered",
+  ).length;
 
   return (
     <div className="flex w-full flex-col gap-6 p-8 font-sans text-[11px] bg-background text-foreground">
@@ -294,18 +347,27 @@ export default function AdminWaitlistPage() {
             <UsersRound className="h-5 w-5 text-primary" /> Waitlist Control
           </h1>
           <p className="mt-1 italic text-muted-foreground">
-            Reorder, review, and clear queue entries for VIP handling and walk-in triage
+            Reorder, review, and clear queue entries for VIP handling and
+            walk-in triage
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="rounded-md border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Waiting</p>
-            <p className="text-base font-semibold text-foreground">{waitingCount}</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Waiting
+            </p>
+            <p className="text-base font-semibold text-foreground">
+              {waitingCount}
+            </p>
           </div>
           <div className="rounded-md border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Offered</p>
-            <p className="text-base font-semibold text-foreground">{offeredCount}</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Offered
+            </p>
+            <p className="text-base font-semibold text-foreground">
+              {offeredCount}
+            </p>
           </div>
 
           <div className="relative w-64">
@@ -328,7 +390,9 @@ export default function AdminWaitlistPage() {
 
           <Select
             value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as WaitlistStatus | "all")}
+            onValueChange={(value) =>
+              setStatusFilter(value as WaitlistStatus | "all")
+            }
           >
             <SelectTrigger className="h-9 w-44 border-input bg-background">
               <SelectValue placeholder="Filter status" />
@@ -385,19 +449,28 @@ export default function AdminWaitlistPage() {
               const blacklisted = isBlacklisted(entry.customer.staff_notes);
 
               return (
-                <TableRow key={entry.id} className="border-b border-border transition-colors hover:bg-muted/50">
+                <TableRow
+                  key={entry.id}
+                  className="border-b border-border transition-colors hover:bg-muted/50"
+                >
                   <TableCell className="font-medium text-foreground text-[12px]">
                     <div className="flex flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span>{entry.customer.user.full_name}</span>
-                        {vip && <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600">VIP</Badge>}
+                        {vip && (
+                          <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600">
+                            VIP
+                          </Badge>
+                        )}
                         {blacklisted && (
                           <Badge className="border-destructive/30 bg-destructive/10 text-destructive">
                             Blacklisted
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[10px] text-muted-foreground">{entry.customer.user.email}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {entry.customer.user.email}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">
                         {entry.customer.user.phone ?? "No phone on file"}
                       </p>
@@ -406,13 +479,22 @@ export default function AdminWaitlistPage() {
                   <TableCell className="text-secondary-foreground">
                     <div className="flex flex-col gap-1">
                       <span>{entry.desired_date}</span>
-                      <span className="text-[10px] text-muted-foreground">{entry.desired_time.slice(0, 5)}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {entry.desired_time.slice(0, 5)}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-foreground">{entry.party_size} pax</TableCell>
-                  <TableCell className="text-foreground">#{entry.position}</TableCell>
+                  <TableCell className="text-foreground">
+                    {entry.party_size} pax
+                  </TableCell>
+                  <TableCell className="text-foreground">
+                    #{entry.position}
+                  </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={statusClass(entry.status)}>
+                    <Badge
+                      variant="outline"
+                      className={statusClass(entry.status)}
+                    >
                       {statusLabel(entry.status)}
                     </Badge>
                   </TableCell>
@@ -462,7 +544,10 @@ export default function AdminWaitlistPage() {
 
             {!loading && waitlistEntries.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-muted-foreground"
+                >
                   No waitlist entries found.
                 </TableCell>
               </TableRow>
@@ -470,7 +555,10 @@ export default function AdminWaitlistPage() {
 
             {loading && (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="py-8 text-center text-muted-foreground"
+                >
                   Loading waitlist queue...
                 </TableCell>
               </TableRow>
@@ -479,16 +567,23 @@ export default function AdminWaitlistPage() {
         </Table>
       </div>
 
-      <Dialog open={!!editingEntry} onOpenChange={(isOpen) => !isOpen && setEditingEntry(null)}>
+      <Dialog
+        open={!!editingEntry}
+        onOpenChange={(isOpen) => !isOpen && setEditingEntry(null)}
+      >
         <DialogContent className="border-border bg-popover text-popover-foreground font-sans text-[11px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading text-primary">Edit Waitlist Entry</DialogTitle>
+            <DialogTitle className="text-lg font-heading text-primary">
+              Edit Waitlist Entry
+            </DialogTitle>
           </DialogHeader>
 
           {editingEntry && (
             <form onSubmit={handleSaveEdit} className="grid gap-4 py-2">
               <div className="rounded-md border border-border bg-muted/30 p-3 text-[10px] text-muted-foreground">
-                <p className="font-medium text-foreground">{editingEntry.customer.user.full_name}</p>
+                <p className="font-medium text-foreground">
+                  {editingEntry.customer.user.full_name}
+                </p>
                 <p>{editingEntry.customer.user.email}</p>
                 <p>{editingEntry.customer.user.phone ?? "No phone on file"}</p>
               </div>
@@ -497,14 +592,24 @@ export default function AdminWaitlistPage() {
                 type="date"
                 className="bg-background border-input"
                 value={editForm.desired_date}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, desired_date: event.target.value }))}
+                onChange={(event) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    desired_date: event.target.value,
+                  }))
+                }
                 required
               />
               <Input
                 type="time"
                 className="bg-background border-input"
                 value={editForm.desired_time}
-                onChange={(event) => setEditForm((prev) => ({ ...prev, desired_time: event.target.value }))}
+                onChange={(event) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    desired_time: event.target.value,
+                  }))
+                }
                 required
               />
               <div className="grid grid-cols-2 gap-2">
@@ -513,7 +618,12 @@ export default function AdminWaitlistPage() {
                   min="1"
                   className="bg-background border-input"
                   value={editForm.party_size}
-                  onChange={(event) => setEditForm((prev) => ({ ...prev, party_size: event.target.value }))}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      party_size: event.target.value,
+                    }))
+                  }
                   required
                 />
                 <Input
@@ -521,19 +631,31 @@ export default function AdminWaitlistPage() {
                   min="1"
                   className="bg-background border-input"
                   value={editForm.position}
-                  onChange={(event) => setEditForm((prev) => ({ ...prev, position: event.target.value }))}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      position: event.target.value,
+                    }))
+                  }
                   required
                 />
               </div>
               <Select
                 value={editForm.status}
-                onValueChange={(value) => setEditForm((prev) => ({ ...prev, status: value as WaitlistStatus }))}
+                onValueChange={(value) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    status: value as WaitlistStatus,
+                  }))
+                }
               >
                 <SelectTrigger className="w-full bg-background border-input">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
+                  {STATUS_OPTIONS.filter(
+                    (option) => option.value !== "all",
+                  ).map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

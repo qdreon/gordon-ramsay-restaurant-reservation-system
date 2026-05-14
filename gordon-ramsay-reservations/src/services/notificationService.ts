@@ -5,27 +5,38 @@
  * Uses Mailtrap API only.
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
-let mailtrapClient: any | null = null;
+type MailtrapPayload = Record<string, unknown>;
+
+type MailtrapClientLike = {
+  send(payload: MailtrapPayload): Promise<unknown>;
+};
+
+type MailtrapModule = {
+  MailtrapClient: new (config: { token: string }) => MailtrapClientLike;
+};
+
+let mailtrapClient: MailtrapClientLike | null = null;
 let mailtrapClientInitialized = false;
 
-function initMailtrapApi(): void {
+async function initMailtrapApi(): Promise<void> {
   if (mailtrapClientInitialized) return;
   mailtrapClientInitialized = true;
 
   try {
     if (process.env.MAILTRAP_API_TOKEN) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { MailtrapClient } = require('mailtrap');
-      mailtrapClient = new MailtrapClient({ token: process.env.MAILTRAP_API_TOKEN });
-      console.log('[Notification] Mailtrap API initialized successfully');
+      const { MailtrapClient } = (await import("mailtrap")) as MailtrapModule;
+      mailtrapClient = new MailtrapClient({
+        token: process.env.MAILTRAP_API_TOKEN,
+      });
+      console.log("[Notification] Mailtrap API initialized successfully");
     } else {
-      console.log('[Notification] MAILTRAP_API_TOKEN not found');
+      console.log("[Notification] MAILTRAP_API_TOKEN not found");
     }
   } catch (err) {
-    console.error('[Notification] Failed to initialize Mailtrap API:', err);
+    console.error("[Notification] Failed to initialize Mailtrap API:", err);
     mailtrapClient = null;
   }
 }
@@ -37,12 +48,14 @@ function getMailtrapSender(): { email: string; name?: string } | null {
     return null;
   }
 
-  const match = fromAddress.match(/^\s*(?:(.*?)\s*<)?([^<>\s]+@[^<>\s]+)>?\s*$/);
+  const match = fromAddress.match(
+    /^\s*(?:(.*?)\s*<)?([^<>\s]+@[^<>\s]+)>?\s*$/,
+  );
   if (!match) {
     return { email: fromAddress };
   }
 
-  const name = match[1]?.trim().replace(/^"|"$/g, '');
+  const name = match[1]?.trim().replace(/^"|"$/g, "");
   const email = match[2].trim();
 
   return name ? { email, name } : { email };
@@ -54,20 +67,20 @@ async function sendViaMailtrapApi(
   html: string,
   text: string,
   category: string,
-  attachments?: Array<{ content: string; filename: string; type: string }>
+  attachments?: Array<{ content: string; filename: string; type: string }>,
 ): Promise<void> {
-  initMailtrapApi();
+  await initMailtrapApi();
 
   if (!mailtrapClient) {
-    throw new Error('Mailtrap API client is not configured.');
+    throw new Error("Mailtrap API client is not configured.");
   }
 
   const sender = getMailtrapSender();
   if (!sender) {
-    throw new Error('Missing MAILTRAP_FROM/EMAIL_FROM sender address.');
+    throw new Error("Missing MAILTRAP_FROM/EMAIL_FROM sender address.");
   }
 
-  const payload: Record<string, unknown> = {
+  const payload: MailtrapPayload = {
     from: sender,
     to: recipients,
     subject,
@@ -126,9 +139,9 @@ CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
 UID:${reservation.reservationId}@example.com
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
-DTSTART:${reservation.reservationDate.replace(/-/g, '')}T${reservation.reservationTime.replace(':', '')}00Z
-DTEND:${reservation.reservationDate.replace(/-/g, '')}T${reservation.reservationEndTime.replace(':', '')}00Z
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
+DTSTART:${reservation.reservationDate.replace(/-/g, "")}T${reservation.reservationTime.replace(":", "")}00Z
+DTEND:${reservation.reservationDate.replace(/-/g, "")}T${reservation.reservationEndTime.replace(":", "")}00Z
 SUMMARY:Reservation at ${reservation.restaurantName}
 DESCRIPTION:Booking confirmation for ${reservation.guestName} (Party of ${reservation.partySize})
 LOCATION:${reservation.restaurantAddress}
@@ -140,7 +153,7 @@ END:VCALENDAR`;
 }
 
 function addMinutesToTime(time: string, minutes: number): string {
-  const [hours, mins] = time.split(':').map(Number);
+  const [hours, mins] = time.split(":").map(Number);
   const date = new Date();
   date.setUTCHours(hours, mins + minutes, 0, 0);
   return date.toISOString().slice(11, 16);
@@ -148,8 +161,13 @@ function addMinutesToTime(time: string, minutes: number): string {
 
 function loadTemplate(templateName: string): string {
   try {
-    const templatePath = path.join(process.cwd(), 'src', 'emails', templateName);
-    return fs.readFileSync(templatePath, 'utf8');
+    const templatePath = path.join(
+      process.cwd(),
+      "src",
+      "emails",
+      templateName,
+    );
+    return fs.readFileSync(templatePath, "utf8");
   } catch (err) {
     console.error(`[Notification] Template ${templateName} not found:`, err);
     return `<p>Template ${templateName} missing</p>`;
@@ -163,65 +181,86 @@ function loadTemplate(templateName: string): string {
 /**
  * Sends a booking confirmation email with .ics calendar invite attached.
  */
-export async function sendBookingConfirmation(reservation: ReservationNotification): Promise<void> {
-  console.log('[Notification] sendBookingConfirmation invoked for:', reservation.guestEmail);
-  initMailtrapApi();
+export async function sendBookingConfirmation(
+  reservation: ReservationNotification,
+): Promise<void> {
+  console.log(
+    "[Notification] sendBookingConfirmation invoked for:",
+    reservation.guestEmail,
+  );
 
-  const htmlTemplate = loadTemplate('bookingConfirmation.html')
-    .replace('{{ guestName }}', reservation.guestName)
-    .replace('{{ restaurantName }}', reservation.restaurantName)
-    .replace('{{ reservationDate }}', reservation.reservationDate)
-    .replace('{{ reservationTime }}', reservation.reservationTime)
-    .replace('{{ partySize }}', reservation.partySize.toString())
-    .replace('{{ restaurantAddress }}', reservation.restaurantAddress)
-    .replace('{{ specialRequests }}', reservation.specialRequests ?? 'None')
-    .replace('{{ confirmationURL }}', reservation.confirmationURL);
+  const htmlTemplate = loadTemplate("bookingConfirmation.html")
+    .replace("{{ guestName }}", reservation.guestName)
+    .replace("{{ restaurantName }}", reservation.restaurantName)
+    .replace("{{ reservationDate }}", reservation.reservationDate)
+    .replace("{{ reservationTime }}", reservation.reservationTime)
+    .replace("{{ partySize }}", reservation.partySize.toString())
+    .replace("{{ restaurantAddress }}", reservation.restaurantAddress)
+    .replace("{{ specialRequests }}", reservation.specialRequests ?? "None")
+    .replace("{{ confirmationURL }}", reservation.confirmationURL);
 
   const icsContent = generateICS(reservation);
   const fromAddress = getMailtrapSender();
 
   if (!fromAddress) {
-    console.error('[Notification] Missing MAILTRAP_FROM/EMAIL_FROM sender address.');
+    console.error(
+      "[Notification] Missing MAILTRAP_FROM/EMAIL_FROM sender address.",
+    );
     return;
   }
 
   try {
-    console.log('[Notification] Attempting Mailtrap API send to:', reservation.guestEmail, 'from:', fromAddress.email);
+    console.log(
+      "[Notification] Attempting Mailtrap API send to:",
+      reservation.guestEmail,
+      "from:",
+      fromAddress.email,
+    );
     await sendViaMailtrapApi(
       [{ email: reservation.guestEmail }],
-      'Your Booking Confirmation',
+      "Your Booking Confirmation",
       htmlTemplate,
       `Booking confirmation for ${reservation.guestName}`,
-      'Booking Confirmation',
+      "Booking Confirmation",
       [
         {
-          filename: 'reservation.ics',
-          content: Buffer.from(icsContent).toString('base64'),
-          type: 'text/calendar',
+          filename: "reservation.ics",
+          content: Buffer.from(icsContent).toString("base64"),
+          type: "text/calendar",
         },
-      ]
+      ],
     );
-    console.log('[Notification] Mailtrap API send successful for:', reservation.guestEmail);
+    console.log(
+      "[Notification] Mailtrap API send successful for:",
+      reservation.guestEmail,
+    );
   } catch (err) {
-    console.error('[Notification] Mailtrap API sendBookingConfirmation failed:', err);
+    console.error(
+      "[Notification] Mailtrap API sendBookingConfirmation failed:",
+      err,
+    );
   }
 }
 
 /**
  * Sends a waitlist invitation email with tentative .ics calendar invite attached.
  */
-export async function sendWaitlistInvite(invite: WaitlistNotification): Promise<void> {
-  console.log('[Notification] sendWaitlistInvite invoked for:', invite.guestEmail);
-  initMailtrapApi();
+export async function sendWaitlistInvite(
+  invite: WaitlistNotification,
+): Promise<void> {
+  console.log(
+    "[Notification] sendWaitlistInvite invoked for:",
+    invite.guestEmail,
+  );
 
-  const htmlTemplate = loadTemplate('waitlistInvite.html')
-    .replace('{{ guestName }}', invite.guestName)
-    .replace('{{ restaurantName }}', invite.restaurantName)
-    .replace('{{ requestedDate }}', invite.requestedDate)
-    .replace('{{ requestedTime }}', invite.requestedTime)
-    .replace('{{ partySize }}', invite.partySize.toString())
-    .replace('{{ waitlistPosition }}', invite.waitlistPosition.toString())
-    .replace('{{ confirmationURL }}', invite.confirmationURL);
+  const htmlTemplate = loadTemplate("waitlistInvite.html")
+    .replace("{{ guestName }}", invite.guestName)
+    .replace("{{ restaurantName }}", invite.restaurantName)
+    .replace("{{ requestedDate }}", invite.requestedDate)
+    .replace("{{ requestedTime }}", invite.requestedTime)
+    .replace("{{ partySize }}", invite.partySize.toString())
+    .replace("{{ waitlistPosition }}", invite.waitlistPosition.toString())
+    .replace("{{ confirmationURL }}", invite.confirmationURL);
 
   const offerExpiresTime = addMinutesToTime(invite.requestedTime, 10);
   const icsContent = `BEGIN:VCALENDAR
@@ -231,9 +270,9 @@ CALSCALE:GREGORIAN
 METHOD:REQUEST
 BEGIN:VEVENT
 UID:${invite.inviteId}@example.com
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
-DTSTART:${invite.requestedDate.replace(/-/g, '')}T${invite.requestedTime.replace(':', '')}00Z
-DTEND:${invite.requestedDate.replace(/-/g, '')}T${offerExpiresTime.replace(':', '')}00Z
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
+DTSTART:${invite.requestedDate.replace(/-/g, "")}T${invite.requestedTime.replace(":", "")}00Z
+DTEND:${invite.requestedDate.replace(/-/g, "")}T${offerExpiresTime.replace(":", "")}00Z
 SUMMARY:Waitlist Invitation - ${invite.restaurantName}
 DESCRIPTION:You are invited from the waitlist for ${invite.guestName} (Party of ${invite.partySize})
 LOCATION:${invite.restaurantAddress}
@@ -245,28 +284,41 @@ END:VCALENDAR`;
 
   const fromAddress = getMailtrapSender();
   if (!fromAddress) {
-    console.error('[Notification] Missing MAILTRAP_FROM/EMAIL_FROM sender address.');
+    console.error(
+      "[Notification] Missing MAILTRAP_FROM/EMAIL_FROM sender address.",
+    );
     return;
   }
 
   try {
-    console.log('[Notification] Attempting Mailtrap API send to:', invite.guestEmail, 'from:', fromAddress.email);
+    console.log(
+      "[Notification] Attempting Mailtrap API send to:",
+      invite.guestEmail,
+      "from:",
+      fromAddress.email,
+    );
     await sendViaMailtrapApi(
       [{ email: invite.guestEmail }],
-      'Your Waitlist Spot Is Available',
+      "Your Waitlist Spot Is Available",
       htmlTemplate,
       `Waitlist invitation for ${invite.guestName}`,
-      'Waitlist Invitation',
+      "Waitlist Invitation",
       [
         {
-          filename: 'waitlist.ics',
-          content: Buffer.from(icsContent).toString('base64'),
-          type: 'text/calendar',
+          filename: "waitlist.ics",
+          content: Buffer.from(icsContent).toString("base64"),
+          type: "text/calendar",
         },
-      ]
+      ],
     );
-    console.log('[Notification] Mailtrap API send successful for:', invite.guestEmail);
+    console.log(
+      "[Notification] Mailtrap API send successful for:",
+      invite.guestEmail,
+    );
   } catch (err) {
-    console.error('[Notification] Mailtrap API sendWaitlistInvite failed:', err);
+    console.error(
+      "[Notification] Mailtrap API sendWaitlistInvite failed:",
+      err,
+    );
   }
 }
