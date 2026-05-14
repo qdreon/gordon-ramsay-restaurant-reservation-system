@@ -40,7 +40,8 @@ const SEARCH_DATE = "2030-01-15";
 const SEARCH_TIME = "19:00";
 const SEARCH_PARTY = "2";
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3001";
+const BASE_URL =
+  process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? "http://localhost:3000";
 const ASSERT_TIMEOUT = 15000;
 
 function loadDotEnvLocal(): void {
