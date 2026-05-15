@@ -23,8 +23,8 @@
 
 import { test, expect, type Page } from "@playwright/test";
 
-const CUSTOMER_EMAIL = "test-customer@example.com";
-const CUSTOMER_PASSWORD = "TestPassword123!";
+const CUSTOMER_EMAIL = "mikele.castroberde@gmail.com";
+const CUSTOMER_PASSWORD = "Mikgamwe2005";
 const ADMIN_EMAIL = "test-admin@example.com";
 const ADMIN_PASSWORD = "TestPassword123!";
 
@@ -54,12 +54,12 @@ test.describe("SAF-2: Offline Failsafe (QDR-50)", () => {
     context,
   }) => {
     // Step 1: Log in as admin and navigate to the floor plan
-    await page.goto("/auth/login");
+    await page.goto("/admin/login");
     await page.waitForSelector("#email", { timeout: ASSERT_TIMEOUT });
     await page.fill("#email", ADMIN_EMAIL);
     await page.fill("#password", ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/customer\/dashboard|admin/, {
+    await expect(page).toHaveURL(/admin\/dashboard/, {
       timeout: NAV_TIMEOUT,
     });
 
@@ -351,9 +351,9 @@ test.describe("SEC-1: RBAC Enforcement (QDR-50)", () => {
       await page.goto("/customer/dashboard");
       await expect(page).toHaveURL(/auth\/login/, { timeout: ASSERT_TIMEOUT });
 
-      // Admin route must redirect to login
+      // Admin route must redirect to the admin sign-in page
       await page.goto("/admin/dashboard");
-      await expect(page).toHaveURL(/auth\/login/, { timeout: ASSERT_TIMEOUT });
+      await expect(page).toHaveURL(/admin\/login/, { timeout: ASSERT_TIMEOUT });
 
       console.log(
         "[SEC-1] PASS: Unauthenticated access to /customer and /admin redirects to login.",
@@ -377,14 +377,16 @@ test.describe("SEC-1: RBAC Enforcement (QDR-50)", () => {
       await page.goto("/admin/dashboard");
 
       // Middleware must redirect the customer away from /admin
-      // Acceptable destinations: /auth/login or back to /customer/dashboard
+      // Acceptable destinations: /auth/login, /admin/login, or back to /customer/dashboard
       await expect(page).not.toHaveURL(/admin\/dashboard/, {
         timeout: ASSERT_TIMEOUT,
       });
 
       const finalUrl = page.url();
       const redirectedCorrectly =
-        /auth\/login/.test(finalUrl) || /customer\/dashboard/.test(finalUrl);
+        /auth\/login/.test(finalUrl) ||
+        /admin\/login/.test(finalUrl) ||
+        /customer\/dashboard/.test(finalUrl);
 
       expect(
         redirectedCorrectly,

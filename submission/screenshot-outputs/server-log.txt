@@ -1,0 +1,15 @@
+⚠ Port 3000 is in use by process 3040, using available port 3001 instead.
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3001
+- Network:       http://10.142.156.16:3001
+- Environments: .env.local
+✓ Ready in 2.3s
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          3040
+- Dir:          C:\Users\Michael Angelo\Desktop\GRRRS\Gordon-Ramsay-Restaurant-Reservation-System\gordon-ramsay-reservations
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 3040 /F to stop it.
+[?25h

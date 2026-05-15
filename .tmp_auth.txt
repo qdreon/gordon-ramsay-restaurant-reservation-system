@@ -1,0 +1,28 @@
+﻿import { test, expect } from '@playwright/test';
+import { skipIfMissingSupabaseEnv } from "./test-prerequisites";
+
+skipIfMissingSupabaseEnv();
+
+test.describe('Auth flows', () => {
+  test('TC-1.1 Registration requires consent before submission', async ({ page }) => {
+    await page.goto('/auth/register');
+    await page.fill('#fullName', 'QA Consent Check');
+    await page.fill('#email', `qa-auth-${Date.now()}@example.com`);
+    await page.fill('#password', 'P@ssw0rd123!');
+    await page.fill('#confirmPassword', 'P@ssw0rd123!');
+
+    const submitButton = page.locator('button[type="submit"]');
+    await expect(submitButton).toBeDisabled();
+
+    await page.locator('input[type="checkbox"]').check();
+    await expect(submitButton).toBeEnabled();
+  });
+
+  test('TC-1.2 Login works for registered user', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page.fill('#email', 'test-customer@example.com');
+    await page.fill('#password', 'TestPassword123!');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/customer\/dashboard/);
+  });
+});

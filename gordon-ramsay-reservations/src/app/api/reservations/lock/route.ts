@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         (user.user_metadata as { full_name?: string } | null)?.full_name || user.email || 'Guest';
       const guestEmail = user.email;
 
-      void sendBookingConfirmation({
+      await sendBookingConfirmation({
         reservationId: lockResult.reservation_id,
         guestName,
         guestEmail,
@@ -85,8 +85,6 @@ export async function POST(req: Request) {
         specialRequests: body.specialRequests ?? null,
         confirmationURL:
           `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/customer/dashboard?booking=confirmed`,
-      }).catch((emailError) => {
-        console.error('[Reservation Notification] Failed to send booking confirmation:', emailError);
       });
     } catch (emailError) {
       console.error('[Reservation Notification] Failed to send booking confirmation:', emailError);
