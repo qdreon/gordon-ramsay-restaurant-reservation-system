@@ -90,6 +90,18 @@ const TEST_ACCOUNTS: TestAccount[] = [
     fullName: "QA Test Customer",
     role: "customer",
   },
+  {
+    email: "qa-admin@example.com",
+    password: "Test@123Pass",
+    fullName: "QA Demo Admin",
+    role: "admin",
+  },
+  {
+    email: "qa-customer-1@example.com",
+    password: "Test@123Pass",
+    fullName: "QA Demo Customer",
+    role: "customer",
+  },
 ];
 
 async function findAuthUserByEmail(supabase: E2EClient, email: string) {

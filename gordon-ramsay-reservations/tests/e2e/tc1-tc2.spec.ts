@@ -37,11 +37,19 @@ async function loginAs(
   password: string,
 ): Promise<void> {
   await page.goto("/auth/login");
+  await page.waitForTimeout(1000);
+
   // I wait for the login form to be ready before filling it
   await page.waitForSelector("#email", { timeout: 15000 });
   await page.fill("#email", email);
+  await page.waitForTimeout(500);
+
   await page.fill("#password", password);
+  await page.waitForTimeout(500);
+
   await page.click('button[type="submit"]');
+  await page.waitForTimeout(2000);
+
   await expect(page).toHaveURL(/customer\/dashboard/, { timeout: 20000 });
 }
 
@@ -61,11 +69,17 @@ async function searchAvailability(
   // I use fill with type="date" / type="time" / type="number" as per the
   // known selectors documented in the app description
   await page.fill('input[type="date"]', date);
+  await page.waitForTimeout(500);
+
   await page.fill('input[type="time"]', time);
+  await page.waitForTimeout(500);
+
   await page.fill('input[type="number"]', partySize);
+  await page.waitForTimeout(500);
 
   // Submit the search form
   await page.click('button[type="submit"]');
+  await page.waitForTimeout(2000);
 }
 
 // ===========================================================================
@@ -86,19 +100,29 @@ test.describe("TC-1.2 Delete Account and Data Purge (FR-1, LEG-1)", () => {
     // Step 1: Register the new unique account
     // ------------------------------------------------------------------
     await page.goto("/auth/register");
-    await page.waitForSelector("#fullName", { timeout: 15000 });
+    await page.waitForTimeout(1000);
 
+    await page.waitForSelector("#fullName", { timeout: 15000 });
     await page.fill("#fullName", fullName);
+    await page.waitForTimeout(500);
+
     await page.fill("#email", uniqueEmail);
+    await page.waitForTimeout(500);
+
     // Phone is optional; I leave it blank intentionally
     await page.fill("#password", password);
+    await page.waitForTimeout(500);
+
     await page.fill("#confirmPassword", password);
+    await page.waitForTimeout(500);
 
     // Check the RA 10173 consent checkbox (LEG-1 requirement)
     await page.check('input[type="checkbox"]');
+    await page.waitForTimeout(500);
 
     // Submit the registration form
     await page.click('button[type="submit"]');
+    await page.waitForTimeout(2000);
 
     // Registration auto-logs in and redirects to the customer dashboard
     await expect(page).toHaveURL(/customer\/dashboard/, { timeout: 20000 });

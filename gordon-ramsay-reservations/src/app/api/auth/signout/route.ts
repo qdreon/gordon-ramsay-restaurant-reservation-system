@@ -28,7 +28,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     // I use the server-side Supabase client so the session cookie is read
     // and cleared correctly within the server context.
@@ -41,7 +41,7 @@ export async function POST() {
 
   // Redirect the browser to home. A 303 See Other is correct after a POST
   // that performs a state-changing action; the browser follows with a GET.
-  return NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'), {
+  return NextResponse.redirect(new URL('/', req.url), {
     status: 303,
   });
 }

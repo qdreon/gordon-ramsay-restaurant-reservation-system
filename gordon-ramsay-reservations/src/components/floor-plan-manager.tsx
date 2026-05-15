@@ -384,13 +384,14 @@ function OnlineIndicator() {
 
 export function FloorPlanManager() {
   const [tables, setTables] = React.useState<TableData[]>(initialTables);
-  const [reservations] = React.useState<Reservation[]>(initialReservations);
+  const [reservations, setReservations] = React.useState<Reservation[]>(initialReservations);
   const [walkInName, setWalkInName] = React.useState("");
   const [walkInPax, setWalkInPax] = React.useState("");
   const [walkInTable, setWalkInTable] = React.useState("");
   const [isOnline, setIsOnline] = React.useState(true);
   const [loadingTables, setLoadingTables] = React.useState(true);
   const [tableError, setTableError] = React.useState<string | null>(null);
+  const [loadingReservations, setLoadingReservations] = React.useState(true);
 
   React.useEffect(() => {
     setIsOnline(typeof navigator === "undefined" ? true : navigator.onLine);
@@ -503,6 +504,92 @@ export function FloorPlanManager() {
       .subscribe();
 
     return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Fetch upcoming reservations from API and subscribe to real-time updates
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function loadReservations() {
+      try {
+        setLoadingReservations(true);
+        const response = await fetch("/api/admin/reservations/upcoming");
+        
+        if (!response.ok) {
+          throw new Error("Failed to load reservations");
+        }
+
+        const payload = (await response.json()) as {
+          reservations?: Array<{
+            id: string;
+            start_time: string;
+            party_size: number;
+            customer_id?: string;
+            status?: string;
+          }>;
+          customers?: Record<string, { full_name: string }>;
+          error?: string;
+        };
+
+        if (!payload.reservations) {
+          throw new Error(payload.error ?? "No reservations data");
+        }
+
+        // Map API reservations to display format
+        if (isMounted) {
+          const mapped = payload.reservations.map((res, idx) => {
+            const customerName =
+              (res.customer_id && payload.customers?.[res.customer_id]?.full_name) ||
+              `Guest ${idx + 1}`;
+            const timeStr = res.start_time
+              ? new Date(res.start_time).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "N/A";
+            return {
+              id: res.id,
+              name: customerName,
+              time: timeStr,
+              tableId: "T-", // Will be populated from reservation_tables
+              pax: res.party_size,
+            };
+          });
+
+          setReservations(mapped);
+          setLoadingReservations(false);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error("Failed to load reservations:", error);
+          setLoadingReservations(false);
+        }
+      }
+    }
+
+    loadReservations();
+
+    // Subscribe to real-time reservation updates
+    const channel = supabase
+      .channel("public:reservations")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reservations",
+        },
+        () => {
+          // On any change to reservations, refresh the list
+          loadReservations();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);

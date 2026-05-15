@@ -26,6 +26,8 @@ import { defineConfig } from "@playwright/test";
 
 loadEnvConfig(process.cwd());
 
+const deployedBaseUrl = "https://gordon-ramsay-restaurant-reservation-system-e3ky64swr.vercel.app";
+
 export default defineConfig({
   // Only run the security test file
   testDir: "./tests/e2e",
@@ -35,20 +37,10 @@ export default defineConfig({
   workers: 1,
   use: {
     headless: true,
-    baseURL: process.env.BASE_URL || "http://localhost:3001",
+    baseURL: process.env.BASE_URL || deployedBaseUrl,
     video: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
-  // Auto-start the production server on a different port (3001) so it does not
-  // clash with a running dev server on 3000.
-  webServer: process.env.BASE_URL
-    ? undefined
-    : {
-        // `next start` serves the pre-built .next output.
-        // Run `npm run build` before executing this config.
-        command: "npx next start --port 3001",
-        url: "http://localhost:3001",
-        reuseExistingServer: false,
-        timeout: 120_000,
-      },
+  // Default to the deployed site. Set BASE_URL only if you need to override it.
+  webServer: undefined,
 });

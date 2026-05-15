@@ -36,12 +36,19 @@ test.describe("DEF-002 regression: sign-out completes without abort", () => {
 
     // -- Step 1: Log in --
     await page.goto("/auth/login");
+    await page.waitForTimeout(1000);
+
     await expect(page).toHaveURL(/auth\/login/);
 
     // I use the #id selectors that match the actual input elements in LoginPage.
     await page.fill("#email", TEST_EMAIL);
+    await page.waitForTimeout(500);
+
     await page.fill("#password", TEST_PASSWORD);
+    await page.waitForTimeout(500);
+
     await page.click('button[type="submit"]');
+    await page.waitForTimeout(2000);
 
     // Wait until dashboard is fully loaded.
     await expect(page).toHaveURL(/customer\/dashboard/, { timeout: 20000 });
@@ -50,13 +57,16 @@ test.describe("DEF-002 regression: sign-out completes without abort", () => {
     // The sign-out button POSTs to /api/auth/signout (server-side). The server
     // clears the cookie and returns a 303 to "/". The browser follows the
     // redirect -- no /auth/v1/logout fetch fires from the browser at all.
+    await page.waitForTimeout(1000);
+
     await Promise.all([
-      page.waitForURL("/", { timeout: 15000 }),
       page.click('button:has-text("Sign Out")'),
+      page.waitForURL("/", { timeout: 15000 }),
     ]);
 
     // Assert we landed on the home page.
     await expect(page).toHaveURL("/");
+    await page.waitForTimeout(1000);
 
     // Assert the Supabase logout endpoint was NOT fired from the browser
     // (it runs server-side now, so no browser-level abort is possible).
@@ -68,7 +78,11 @@ test.describe("DEF-002 regression: sign-out completes without abort", () => {
 
     // -- Step 3: Confirm session is cleared --
     // Navigating to the protected dashboard must redirect to /auth/login.
+    await page.waitForTimeout(1000);
+
     await page.goto("/customer/dashboard");
+    await page.waitForTimeout(1000);
+
     await expect(page).toHaveURL(/auth\/login/, { timeout: 10000 });
   });
 });

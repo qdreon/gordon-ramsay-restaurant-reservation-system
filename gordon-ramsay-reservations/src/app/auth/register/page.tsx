@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { signUp, signIn } from '@/lib/authClient';
 
 /**
@@ -32,7 +31,6 @@ export default function RegisterPage() {
   const [consentGiven, setConsentGiven] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,7 +75,7 @@ export default function RegisterPage() {
       await signIn({ email, password });
       
       // Redirect to customer dashboard on successful registration
-      router.push('/customer/dashboard');
+      window.location.assign('/customer/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setError(message);

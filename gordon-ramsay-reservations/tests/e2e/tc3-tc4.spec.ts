@@ -108,7 +108,8 @@ test.describe("TC-3 -- Table Combination and Concurrency (FR-3, FR-4, PR-2)", ()
     await loginAsCustomer(page);
 
     // Step 2: Navigate home and search for a large-party slot
-    await searchAvailability(page, "2026-12-15", "19:00", 8);
+    // Using 2030-08-15 instead of 2026-12-15 to avoid blocked dates and conflicts
+    await searchAvailability(page, "2030-08-15", "19:00", 8);
 
     // Step 3: Wait for search results to appear (with extended timeout for slower environments)
     const resultsAppeared = await Promise.race([
@@ -152,7 +153,7 @@ test.describe("TC-3 -- Table Combination and Concurrency (FR-3, FR-4, PR-2)", ()
       // No options for party of 8 -- skip the booking portion gracefully
       test.skip(
         true,
-        "No table options returned for party of 8 on 2026-12-15 19:00 -- skipping booking and teardown",
+        "No table options returned for party of 8 on 2030-08-15 19:00 -- skipping booking and teardown",
       );
       return;
     }
@@ -237,8 +238,8 @@ test.describe("TC-3 -- Table Combination and Concurrency (FR-3, FR-4, PR-2)", ()
 
       // Step 2: Both contexts navigate to / and run the same availability search
       await Promise.all([
-        searchAvailability(pageA, "2026-12-15", "19:00", 2),
-        searchAvailability(pageB, "2026-12-15", "19:00", 2),
+        searchAvailability(pageA, "2030-08-15", "19:00", 2),
+        searchAvailability(pageB, "2030-08-15", "19:00", 2),
       ]);
 
       // Allow results to render in both tabs
@@ -258,7 +259,7 @@ test.describe("TC-3 -- Table Combination and Concurrency (FR-3, FR-4, PR-2)", ()
         // No options in at least one context -- cannot test concurrency
         test.skip(
           true,
-          "No table options available for concurrency test on 2026-12-15 19:00 -- skipping",
+          "No table options available for concurrency test on 2030-08-15 19:00 -- skipping",
         );
         return;
       }
@@ -389,7 +390,7 @@ test.describe("TC-4 -- Waitlist and Email Notification (FR-5, FR-6, FR-10)", () 
     await loginAsCustomer(page);
 
     // Step 2: Search for Christmas Day -- likely fully booked or blocked in test data
-    await searchAvailability(page, "2026-12-25", "19:00", 2);
+    await searchAvailability(page, "2030-12-25", "19:00", 2);
 
     // Allow the API call to complete
     await page.waitForTimeout(2000);
@@ -407,7 +408,7 @@ test.describe("TC-4 -- Waitlist and Email Notification (FR-5, FR-6, FR-10)", () 
     if (hasApiError) {
       test.skip(
         true,
-        "Availability API returned an error for 2026-12-25 -- date may be blocked; skipping waitlist test",
+        "Availability API returned an error for 2030-12-25 -- date may be blocked; skipping waitlist test",
       );
       return;
     }
@@ -427,7 +428,7 @@ test.describe("TC-4 -- Waitlist and Email Notification (FR-5, FR-6, FR-10)", () 
       // Tables are available -- waitlist flow not reachable this way
       test.skip(
         true,
-        "Tables available for 2026-12-25 19:00; waitlist button not shown -- skipping waitlist test",
+        "Tables available for 2030-12-25 19:00; waitlist button not shown -- skipping waitlist test",
       );
       return;
     }
@@ -574,7 +575,7 @@ test.describe("TC-4 -- Waitlist and Email Notification (FR-5, FR-6, FR-10)", () 
         guestName: "TC42 Test Customer",
         guestEmail: CUSTOMER_EMAIL,
         partySize: 2,
-        requestedDate: "2026-12-25",
+        requestedDate: "2030-12-25",
         requestedTime: "19:00",
         restaurantName: "Gordon Ramsay Restaurant",
         restaurantAddress: "1 Test Street, London, UK",

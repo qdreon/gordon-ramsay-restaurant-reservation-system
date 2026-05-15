@@ -132,36 +132,44 @@ async function getCustomerId(email: string): Promise<string> {
 async function getAvailabilityOption() {
   const { startTime, endTime } = buildReservationRange(SEARCH_DATE, SEARCH_TIME);
 
-  const response = await fetch(`${BASE_URL}/api/availability`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      reservationDate: SEARCH_DATE,
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/availability`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reservationDate: SEARCH_DATE,
+        startTime,
+        endTime,
+        partySize: Number(SEARCH_PARTY),
+      }),
+      signal: controller.signal,
+    });
+
+    const payload = (await response.json()) as {
+      options?: Array<{ table_ids: string[]; table_numbers: number[]; total_capacity: number }>;
+      error?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? "Failed to fetch availability options.");
+    }
+
+    const options = payload.options ?? [];
+    if (options.length === 0) {
+      return null;
+    }
+
+    return {
+      option: options[0],
       startTime,
       endTime,
-      partySize: Number(SEARCH_PARTY),
-    }),
-  });
-
-  const payload = (await response.json()) as {
-    options?: Array<{ table_ids: string[]; table_numbers: number[]; total_capacity: number }>;
-    error?: string;
-  };
-
-  if (!response.ok) {
-    throw new Error(payload.error ?? "Failed to fetch availability options.");
+    };
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const options = payload.options ?? [];
-  if (options.length === 0) {
-    return null;
-  }
-
-  return {
-    option: options[0],
-    startTime,
-    endTime,
-  };
 }
 
 async function postLockReservation(body: {
@@ -173,14 +181,22 @@ async function postLockReservation(body: {
   partySize: number;
   paymentToken: string;
 }) {
-  const response = await fetch(`${BASE_URL}/api/reservations/lock`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout per request
 
-  const payload = (await response.json()) as { error?: string; reservation?: unknown };
-  return { response, payload };
+  try {
+    const response = await fetch(`${BASE_URL}/api/reservations/lock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    const payload = (await response.json()) as { error?: string; reservation?: unknown };
+    return { response, payload };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ---------------------------------------------------------------------------

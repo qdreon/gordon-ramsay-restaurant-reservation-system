@@ -4,11 +4,23 @@ test.describe('Booking flows', () => {
   test('TC-2.1 Search availability and open CheckoutModal', async ({ page }) => {
     await page.goto('/');
 
-    await page.fill('input[type="date"]', '2031-03-15');
+    await page.fill('input[type="date"]', '2026-12-15');
+    await page.waitForTimeout(500);
+
     await page.fill('input[type="time"]', '19:00');
+    await page.waitForTimeout(500);
+
     await page.fill('input[type="number"]', '2');
+    await page.waitForTimeout(500);
+
+    // Update timer
+    await page.evaluate(() => {
+      const countdown = document.querySelector('.test-countdown');
+      if (countdown) countdown.textContent = 'Searching availability...';
+    });
 
     await page.click('button:has-text("Search Availability")');
+
     await expect(page.locator('h2:has-text("Availability Results")')).toBeVisible({
       timeout: 15000,
     });

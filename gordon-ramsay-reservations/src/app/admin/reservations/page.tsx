@@ -22,6 +22,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -605,6 +606,9 @@ function MasterCalendar() {
                   <DialogTitle className="text-foreground font-sans">
                     New Reservation
                   </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    Create a reservation by entering guest details, time, party size, and table.
+                  </DialogDescription>
                 </DialogHeader>
                 <form
                   onSubmit={handleAddReservation}
@@ -707,6 +711,9 @@ function MasterCalendar() {
                   <DialogTitle className="text-foreground font-sans">
                     Block Date
                   </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    Block the selected date from new bookings by providing an optional reason.
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleBlockDate} className="space-y-4 mt-4">
                   <p className="text-muted-foreground font-sans text-[11px]">
@@ -751,6 +758,9 @@ function MasterCalendar() {
                   <DialogTitle className="text-foreground font-sans">
                     Set Operating Hours
                   </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    Update opening and closing hours used to validate reservation times.
+                  </DialogDescription>
                 </DialogHeader>
                 <form
                   onSubmit={handleOperatingHours}

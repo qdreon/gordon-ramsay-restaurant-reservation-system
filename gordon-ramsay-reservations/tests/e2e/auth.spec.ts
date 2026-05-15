@@ -8,25 +8,43 @@ test.describe('Auth flows', () => {
     await page.goto('/auth/register');
 
     await page.fill('#fullName', 'QA Auth Customer');
+    await page.waitForTimeout(500);
+
     await page.fill('#email', email);
+    await page.waitForTimeout(500);
+
     await page.fill('#password', password);
+    await page.waitForTimeout(500);
+
     await page.fill('#confirmPassword', password);
+    await page.waitForTimeout(500);
 
     const submitButton = page.locator('button[type="submit"]');
     await expect(submitButton).toBeDisabled();
 
     await page.check('input[type="checkbox"]');
+    await page.waitForTimeout(500);
+
     await expect(submitButton).toBeEnabled();
     await page.click('button[type="submit"]');
+    await page.waitForTimeout(2000);
 
     await expect(page).toHaveURL(/customer\/dashboard/);
   });
 
   test('TC-1.2 Login works for registered user', async ({ page }) => {
     await page.goto('/auth/login');
+    await page.waitForTimeout(1000);
+
     await page.fill('#email', 'test-customer@example.com');
+    await page.waitForTimeout(500);
+
     await page.fill('#password', 'TestPassword123!');
+    await page.waitForTimeout(500);
+
     await page.click('button[type="submit"]');
+    await page.waitForTimeout(2000);
+
     await expect(page).toHaveURL(/customer\/dashboard/);
   });
 });

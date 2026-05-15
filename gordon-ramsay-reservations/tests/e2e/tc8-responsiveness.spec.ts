@@ -22,11 +22,31 @@ const VIEWPORTS = [
 
 const ASSERT_TIMEOUT = 15_000;
 
+async function gotoWithRetry(page: Page, url: string): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(1000);
+      return;
+    } catch (error) {
+      if (attempt === 1) {
+        throw error;
+      }
+    }
+  }
+}
+
 async function loginAsAdmin(page: Page): Promise<void> {
-  await page.goto("/admin/login");
+  await gotoWithRetry(page, "/admin/login");
   await page.fill("#email", ADMIN_EMAIL);
+  await page.waitForTimeout(500);
+
   await page.fill("#password", ADMIN_PASSWORD);
+  await page.waitForTimeout(500);
+
   await page.click('button[type="submit"]');
+  await page.waitForTimeout(2000);
+
   await expect(page).toHaveURL(/admin\/dashboard/, { timeout: ASSERT_TIMEOUT });
 }
 
@@ -46,15 +66,20 @@ for (const viewport of VIEWPORTS) {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
     test(`homepage renders cleanly at ${viewport.width}x${viewport.height}`, async ({ page }) => {
-      await page.goto("/");
+      await gotoWithRetry(page, "/");
 
       await expect(page.locator("h1").first()).toBeVisible({ timeout: ASSERT_TIMEOUT });
+      await page.waitForTimeout(500);
+
       await expect(page.locator('input[type="date"]').first()).toBeVisible({
         timeout: ASSERT_TIMEOUT,
       });
+      await page.waitForTimeout(500);
+
       await expect(page.locator('button[type="submit"]').first()).toBeVisible({
         timeout: ASSERT_TIMEOUT,
       });
+      await page.waitForTimeout(500);
 
       await assertNoHorizontalOverflow(page);
     });
@@ -63,11 +88,12 @@ for (const viewport of VIEWPORTS) {
       page,
     }) => {
       await loginAsAdmin(page);
-      await page.goto("/admin/dashboard");
+      await gotoWithRetry(page, "/admin/dashboard");
 
       await expect(
         page.locator('h2:has-text("System Status")').first(),
       ).toBeVisible({ timeout: ASSERT_TIMEOUT });
+      await page.waitForTimeout(500);
 
       await assertNoHorizontalOverflow(page);
     });
