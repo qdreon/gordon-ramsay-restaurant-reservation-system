@@ -28,6 +28,22 @@ import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+type BrowserSupabaseClient = ReturnType<typeof createBrowserClient>;
+
+let supabaseClient: BrowserSupabaseClient | null = null;
+
+function getSupabaseClient(): BrowserSupabaseClient {
+  if (supabaseClient) return supabaseClient;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "[Supabase Client Init Error] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY in environment.",
+    );
+  }
+
+  supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return supabaseClient;
+}
 
 /**
  * Singleton Supabase client for browser-side usage.
@@ -35,4 +51,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
  * instance exists per browser context, preventing auth state corruption.
  * All queries are subject to RLS.
  */
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = new Proxy({} as BrowserSupabaseClient, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getSupabaseClient(), prop, receiver);
+  },
+});

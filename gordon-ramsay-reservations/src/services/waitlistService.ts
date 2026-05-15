@@ -141,7 +141,9 @@ function normalizeAdminWaitlistEntry(row: {
 }
 
 class WaitlistService {
-  private supabase = createServiceSupabaseClient();
+  private get supabase() {
+    return createServiceSupabaseClient();
+  }
 
   /**
    * Join the waitlist (QDR-41.1: FR-5)

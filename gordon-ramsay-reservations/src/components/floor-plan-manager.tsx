@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Users, Clock, UtensilsCrossed, CircleDot } from "lucide-react";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -459,7 +460,7 @@ export function FloorPlanManager() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tables" },
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<Partial<TableData>>) => {
           const newRow = payload.new as Partial<TableData> | null;
           const oldRow = payload.old as Partial<TableData> | null;
 
