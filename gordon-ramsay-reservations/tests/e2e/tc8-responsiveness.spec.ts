@@ -23,11 +23,11 @@ const VIEWPORTS = [
 const ASSERT_TIMEOUT = 15_000;
 
 async function loginAsAdmin(page: Page): Promise<void> {
-  await page.goto("/auth/login");
+  await page.goto("/admin/login");
   await page.fill("#email", ADMIN_EMAIL);
   await page.fill("#password", ADMIN_PASSWORD);
   await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(/admin|customer/, { timeout: ASSERT_TIMEOUT });
+  await expect(page).toHaveURL(/admin\/dashboard/, { timeout: ASSERT_TIMEOUT });
 }
 
 async function assertNoHorizontalOverflow(page: Page): Promise<void> {

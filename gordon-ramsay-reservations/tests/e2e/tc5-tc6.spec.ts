@@ -37,12 +37,11 @@ const T = 15_000; // 15 s, well above the 10 000 ms minimum
  * without duplicating the same three lines.
  */
 async function loginAsAdmin(page: Page): Promise<void> {
-  await page.goto("/auth/login");
+  await page.goto("/admin/login");
   await page.fill("#email", ADMIN_EMAIL);
   await page.fill("#password", ADMIN_PASSWORD);
   await page.click('button[type="submit"]');
-  // Wait for redirect to any admin or customer dashboard
-  await expect(page).toHaveURL(/admin|customer/, { timeout: T });
+  await expect(page).toHaveURL(/admin\/dashboard/, { timeout: T });
 }
 
 async function removeQaMenuItems(): Promise<void> {

@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-05-14T15:46:47.821Z",
+  "results": [
+    {
+      "page": "Customer Home (Availability Search)",
+      "url": "http://localhost:3000/",
+      "skipped": true,
+      "reason": "Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests."
+    },
+    {
+      "page": "Login Page (admin dashboard requires authentication)",
+      "url": "http://localhost:3000/auth/login",
+      "skipped": true,
+      "reason": "Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+[
+  {
+    "path": "/admin/crm",
+    "title": "Admin CRM",
+    "fileSlug": "admin-crm",
+    "url": "http://127.0.0.1:3000/admin/crm",
+    "finalUrl": "http://127.0.0.1:3000/admin/crm",
+    "fileName": "01-admin-crm.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\01-admin-crm.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/admin/waitlist",
+    "title": "Admin Waitlist",
+    "fileSlug": "admin-waitlist",
+    "url": "http://127.0.0.1:3000/admin/waitlist",
+    "finalUrl": "http://127.0.0.1:3000/admin/waitlist",
+    "fileName": "02-admin-waitlist.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\02-admin-waitlist.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/admin/floorplan",
+    "title": "Admin Floor Plan",
+    "fileSlug": "admin-floorplan",
+    "url": "http://127.0.0.1:3000/admin/floorplan",
+    "finalUrl": "http://127.0.0.1:3000/admin/floorplan",
+    "fileName": "03-admin-floorplan.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\03-admin-floorplan.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/admin/menu",
+    "title": "Admin Menu Management",
+    "fileSlug": "admin-menu-management",
+    "url": "http://127.0.0.1:3000/admin/menu",
+    "finalUrl": "http://127.0.0.1:3000/admin/menu",
+    "fileName": "04-admin-menu-management.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\04-admin-menu-management.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/admin/reservations",
+    "title": "Admin Reservations",
+    "fileSlug": "admin-reservations",
+    "url": "http://127.0.0.1:3000/admin/reservations",
+    "finalUrl": "http://127.0.0.1:3000/admin/reservations",
+    "fileName": "05-admin-reservations.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\05-admin-reservations.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/admin/dashboard",
+    "title": "Admin Dashboard",
+    "fileSlug": "admin-dashboard",
+    "url": "http://127.0.0.1:3000/admin/dashboard",
+    "finalUrl": "http://127.0.0.1:3000/admin/dashboard",
+    "fileName": "06-admin-dashboard.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\06-admin-dashboard.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/admin",
+    "title": "Admin Home",
+    "fileSlug": "admin-home",
+    "url": "http://127.0.0.1:3000/admin",
+    "finalUrl": "http://127.0.0.1:3000/admin",
+    "fileName": "07-admin-home.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\07-admin-home.png",
+    "status": "Captured authenticated page"
+  },
+  {
+    "path": "/customer/dashboard",
+    "title": "Customer Dashboard",
+    "fileSlug": "customer-dashboard",
+    "url": "http://127.0.0.1:3000/customer/dashboard",
+    "finalUrl": "http://127.0.0.1:3000/customer/dashboard",
+    "fileName": "08-customer-dashboard.png",
+    "filePath": "C:\\Users\\Michael Angelo\\Desktop\\GRRRS\\Gordon-Ramsay-Restaurant-Reservation-System\\submission\\screenshot-outputs\\screenshots\\08-customer-dashboard.png",
+    "status": "Captured authenticated page"
+  }
+]

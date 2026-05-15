@@ -388,13 +388,13 @@ export function FloorPlanManager() {
   const [walkInName, setWalkInName] = React.useState("");
   const [walkInPax, setWalkInPax] = React.useState("");
   const [walkInTable, setWalkInTable] = React.useState("");
-  const [isOnline, setIsOnline] = React.useState(() =>
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  const [isOnline, setIsOnline] = React.useState(true);
   const [loadingTables, setLoadingTables] = React.useState(true);
   const [tableError, setTableError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    setIsOnline(typeof navigator === "undefined" ? true : navigator.onLine);
+
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 

@@ -19,6 +19,12 @@
 - **SAF-1 fallback:** Supabase PITR is documented as unavailable on the free tier, so the project now uses a documented manual backup fallback (`pg_dump` export, retention policy, and restore drill) in `documentation.md`.
 - **Next steps:** Finish the manual restore drill, confirm HSTS during deployment, complete production hosting / Supabase backup validation, and keep the final sign-off checklist in sync with MASTER_TODO.md.
 
+### [May 15, 2026] - Admin Dashboard Hydration Fix
+- **Hydration fix:** Resolved a React hydration mismatch on `/admin/dashboard` caused by `FloorPlanManager` seeding its online/offline state from `navigator.onLine` during render.
+- **Implementation:** The component now starts with a deterministic `isOnline = true` value and syncs the actual browser connectivity state after mount inside `useEffect()`.
+- **Verification:** Live browser testing on the admin dashboard completed without the hydration warning, and the offline warning / loading banner no longer mismatch between server and client markup.
+- **Docs sync:** Logged the issue in `Documents/defects_log.md` as DEF-006 for traceability.
+
 ### [May 13, 2026] - Phase 7 QA Progress Update (Current)
 - **Project status:** Phases 0-6 are complete; Phase 7 was in progress at approximately 65%; this has since been advanced to mostly verified at approximately 99%.
 - **DEF-004 resolved:** Added `playwright.prod.config.ts` and `npm run test:e2e:prod` so SEC-1 RBAC tests run against `next start` production mode instead of the webpack dev server. This removes the dev-server middleware hot-reload race.
