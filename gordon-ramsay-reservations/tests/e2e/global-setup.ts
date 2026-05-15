@@ -1,5 +1,74 @@
 import { loadEnvConfig } from "@next/env";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * Minimal Supabase schema typings for Playwright global setup only.
+ * (App `database.types.ts` is not generated yet; untyped createClient()
+ * makes `.from("users")` resolve to `never` and breaks `next build` tsc.)
+ */
+type E2EDatabase = {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string;
+          email: string;
+          full_name: string;
+          phone: string | null;
+          role: "customer" | "admin";
+          consent_given: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          full_name: string;
+          phone?: string | null;
+          role: "customer" | "admin";
+          consent_given?: boolean;
+        };
+        Update: Partial<{
+          id: string;
+          email: string;
+          full_name: string;
+          phone: string | null;
+          role: "customer" | "admin";
+          consent_given: boolean;
+        }>;
+        Relationships: [];
+      };
+      customers: {
+        Row: {
+          id: string;
+          user_id: string;
+          dietary_restrictions: string | null;
+          allergies: string | null;
+          vip_status: boolean;
+          total_visits: number;
+          total_no_shows: number;
+          staff_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+        };
+        Update: Partial<{ user_id: string }>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      user_role: "customer" | "admin";
+    };
+    CompositeTypes: Record<string, never>;
+  };
+};
+
+type E2EClient = SupabaseClient<E2EDatabase>;
 
 type TestAccount = {
   email: string;
@@ -23,10 +92,7 @@ const TEST_ACCOUNTS: TestAccount[] = [
   },
 ];
 
-async function findAuthUserByEmail(
-  supabase: ReturnType<typeof createClient>,
-  email: string,
-) {
+async function findAuthUserByEmail(supabase: E2EClient, email: string) {
   const perPage = 1000;
 
   for (let page = 1; page <= 10; page += 1) {
@@ -50,10 +116,7 @@ async function findAuthUserByEmail(
   return null;
 }
 
-async function ensureAccount(
-  supabase: ReturnType<typeof createClient>,
-  account: TestAccount,
-) {
+async function ensureAccount(supabase: E2EClient, account: TestAccount) {
   const existing = await findAuthUserByEmail(supabase, account.email);
 
   const { data, error } = existing
@@ -127,7 +190,7 @@ export default async function globalSetup() {
     );
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient<E2EDatabase>(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
 
