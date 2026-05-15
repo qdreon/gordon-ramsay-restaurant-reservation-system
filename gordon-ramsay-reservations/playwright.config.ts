@@ -5,7 +5,12 @@ loadEnvConfig(process.cwd());
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   timeout: 60_000,
+  // Phase 7 suites share seeded Supabase users and live reservation tables.
+  // Run serially to avoid cross-file data races, auth-cookie collisions, and
+  // artificial lock contention that can make otherwise valid QA checks flaky.
+  workers: 1,
   use: {
     headless: true,
     baseURL: process.env.BASE_URL || "http://localhost:3000",

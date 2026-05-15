@@ -15,6 +15,7 @@
  *   services: {
  *     supabase: 'ok' | 'error',
  *     smtp: 'ok' | 'error',
+ *     mailtrap: 'ok' | 'error',
  *     paymentGateway: 'ok' | 'error'
  *   }
  * }
@@ -36,14 +37,36 @@ async function checkSupabase(): Promise<'ok' | 'error'> {
   }
 }
 
+function hasSenderAddress(): boolean {
+  return Boolean(process.env.MAILTRAP_FROM?.trim() || process.env.EMAIL_FROM?.trim());
+}
+
 /**
- * Checks Mailtrap connectivity (basic check - would connect to the email service)
+ * SMTP path: host + From header (auth optional for local catchers like Mailpit).
  */
-async function checkMailtrap(): Promise<'ok' | 'error'> {
+function checkSmtpConfigured(): 'ok' | 'error' {
+  const host = process.env.SMTP_HOST?.trim();
+  if (!host || !hasSenderAddress()) return 'error';
+  return 'ok';
+}
+
+/**
+ * Mailtrap HTTP API path: token + From header.
+ */
+function checkMailtrapConfigured(): 'ok' | 'error' {
+  const token = process.env.MAILTRAP_API_TOKEN?.trim();
+  if (!token || !hasSenderAddress()) return 'error';
+  return 'ok';
+}
+
+/**
+ * Email delivery is OK if at least one provider is fully configured.
+ */
+async function checkEmailService(): Promise<'ok' | 'error'> {
   try {
-    // Mailtrap is configured and ready; no real connection needed for MVP
-    const isMailtrapConfigured = typeof process.env.MAILTRAP_API_TOKEN !== 'undefined';
-    return isMailtrapConfigured ? 'ok' : 'error';
+    return checkSmtpConfigured() === 'ok' || checkMailtrapConfigured() === 'ok'
+      ? 'ok'
+      : 'error';
   } catch {
     return 'error';
   }
@@ -71,15 +94,19 @@ async function checkPaymentGateway(): Promise<'ok' | 'error'> {
 export async function GET() {
   try {
     // Check all services in parallel
-    const [supabase, mailtrap, paymentGateway] = await Promise.all([
+    const [supabase, emailService, paymentGateway] = await Promise.all([
       checkSupabase(),
-      checkMailtrap(),
+      checkEmailService(),
       checkPaymentGateway(),
     ]);
 
     // Determine overall status
-    const allOk = supabase === 'ok' && mailtrap === 'ok' && paymentGateway === 'ok';
-    const anyError = supabase === 'error' || mailtrap === 'error' || paymentGateway === 'error';
+    const allOk =
+      supabase === 'ok' && emailService === 'ok' && paymentGateway === 'ok';
+    const anyError =
+      supabase === 'error' ||
+      emailService === 'error' ||
+      paymentGateway === 'error';
     const status = allOk ? 'ok' : anyError ? 'error' : 'degraded';
 
     return NextResponse.json({
@@ -87,7 +114,8 @@ export async function GET() {
       timestamp: new Date().toISOString(), // Always UTC (DB-3)
       services: {
         supabase,
-        mailtrap,
+        smtp: emailService,
+        mailtrap: emailService,
         paymentGateway,
       },
     });
@@ -99,6 +127,7 @@ export async function GET() {
         timestamp: new Date().toISOString(),
         services: {
           supabase: 'error',
+          smtp: 'error',
           mailtrap: 'error',
           paymentGateway: 'error',
         },

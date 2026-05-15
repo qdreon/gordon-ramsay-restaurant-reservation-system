@@ -33,9 +33,14 @@ Required for normal app usage:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-Required for email/health checks:
+Required for email/health checks (pick one delivery method):
 
-- `MAILTRAP_API_TOKEN`
+- **SMTP (recommended if your host gave you SMTP credentials):** set `SMTP_HOST`, and usually `SMTP_USER` / `SMTP_PASSWORD`. Optional: `SMTP_PORT` (default 587), `SMTP_SECURE=true` for implicit TLS (e.g. port 465), `SMTP_REQUIRE_TLS=true` if your provider requires STARTTLS.
+- **Mailtrap HTTP API:** set `MAILTRAP_API_TOKEN` (transactional sending token from Mailtrap Sending, or testing token with sandbox below).
+- **Mailtrap Email Testing inbox:** set `MAILTRAP_USE_SANDBOX=true` and `MAILTRAP_INBOX_ID` to your inbox number so messages appear in the Mailtrap testing UI instead of hitting the transactional API.
+
+Always set a From address:
+
 - `MAILTRAP_FROM` or `EMAIL_FROM`
 
 Optional metadata:
