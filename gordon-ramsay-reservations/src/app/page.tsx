@@ -101,19 +101,21 @@ export default function Home() {
         return;
       }
 
-      setReservationDate(saved.reservationDate);
-      setReservationTime(saved.reservationTime);
-      setPartySize(saved.partySize);
-      setStartTimeISO(saved.startTimeISO ?? "");
-      setEndTimeISO(saved.endTimeISO ?? "");
-      setOptions(Array.isArray(saved.options) ? saved.options : []);
-      setHasSearched(Boolean(saved.hasSearched));
-      setSelectedOption(saved.selectedOption ?? null);
+      window.setTimeout(() => {
+        setReservationDate(saved.reservationDate!);
+        setReservationTime(saved.reservationTime!);
+        setPartySize(saved.partySize!);
+        setStartTimeISO(saved.startTimeISO ?? "");
+        setEndTimeISO(saved.endTimeISO ?? "");
+        setOptions(Array.isArray(saved.options) ? saved.options : []);
+        setHasSearched(Boolean(saved.hasSearched));
+        setSelectedOption(saved.selectedOption ?? null);
 
-      if (saved.context === "checkout" && saved.selectedOption) {
-        setCheckoutModalKey((key) => key + 1);
-        setIsModalOpen(true);
-      }
+        if (saved.context === "checkout" && saved.selectedOption) {
+          setCheckoutModalKey((key) => key + 1);
+          setIsModalOpen(true);
+        }
+      }, 0);
     } catch (restoreError) {
       console.error("[Reservation Flow] Failed to restore reservation state:", restoreError);
     } finally {
