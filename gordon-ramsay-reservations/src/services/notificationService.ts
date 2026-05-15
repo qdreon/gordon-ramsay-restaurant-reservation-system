@@ -96,6 +96,24 @@ async function sendViaMailtrapApi(
   await mailtrapClient.send(payload);
 }
 
+async function deliverMail(
+  recipients: { email: string }[],
+  subject: string,
+  html: string,
+  text: string,
+  category: string,
+  attachments?: Array<{ content: string; filename: string; type: string }>,
+): Promise<void> {
+  await sendViaMailtrapApi(
+    recipients,
+    subject,
+    html,
+    text,
+    category,
+    attachments,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -211,12 +229,11 @@ export async function sendBookingConfirmation(
 
   try {
     console.log(
-      "[Notification] Attempting Mailtrap API send to:",
+      "[Notification] Attempting send to:",
       reservation.guestEmail,
-      "from:",
-      fromAddress.email,
+      "via Mailtrap API",
     );
-    await sendViaMailtrapApi(
+    await deliverMail(
       [{ email: reservation.guestEmail }],
       "Your Booking Confirmation",
       htmlTemplate,
@@ -231,14 +248,11 @@ export async function sendBookingConfirmation(
       ],
     );
     console.log(
-      "[Notification] Mailtrap API send successful for:",
+      "[Notification] Send successful for:",
       reservation.guestEmail,
     );
   } catch (err) {
-    console.error(
-      "[Notification] Mailtrap API sendBookingConfirmation failed:",
-      err,
-    );
+    console.error("[Notification] sendBookingConfirmation failed:", err);
   }
 }
 
@@ -292,12 +306,11 @@ END:VCALENDAR`;
 
   try {
     console.log(
-      "[Notification] Attempting Mailtrap API send to:",
+      "[Notification] Attempting send to:",
       invite.guestEmail,
-      "from:",
-      fromAddress.email,
+      "via Mailtrap API",
     );
-    await sendViaMailtrapApi(
+    await deliverMail(
       [{ email: invite.guestEmail }],
       "Your Waitlist Spot Is Available",
       htmlTemplate,
@@ -311,14 +324,8 @@ END:VCALENDAR`;
         },
       ],
     );
-    console.log(
-      "[Notification] Mailtrap API send successful for:",
-      invite.guestEmail,
-    );
+    console.log("[Notification] Send successful for:", invite.guestEmail);
   } catch (err) {
-    console.error(
-      "[Notification] Mailtrap API sendWaitlistInvite failed:",
-      err,
-    );
+    console.error("[Notification] sendWaitlistInvite failed:", err);
   }
 }

@@ -1,10 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-const publicPagePaths = new Set(["/", "/auth/login", "/auth/register"]);
+const publicPagePaths = new Set([
+  "/",
+  "/auth/login",
+  "/auth/register",
+  "/admin/login",
+]);
 
-function getLoginUrl(request: NextRequest) {
+function getCustomerLoginUrl(request: NextRequest) {
   const loginUrl = new URL("/auth/login", request.url);
+  loginUrl.searchParams.set("next", request.nextUrl.pathname);
+  return loginUrl;
+}
+
+function getAdminLoginUrl(request: NextRequest) {
+  const loginUrl = new URL("/admin/login", request.url);
   loginUrl.searchParams.set("next", request.nextUrl.pathname);
   return loginUrl;
 }
@@ -77,12 +88,20 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL("/customer/dashboard", request.url));
       }
 
+      if (user && role === "admin" && pathname === "/admin/login") {
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      }
+
+      if (user && role === "customer" && pathname === "/admin/login") {
+        return NextResponse.redirect(new URL("/customer/dashboard", request.url));
+      }
+
       return response;
     }
 
     if (pathname.startsWith("/admin")) {
       if (!user) {
-        return NextResponse.redirect(getLoginUrl(request));
+        return NextResponse.redirect(getAdminLoginUrl(request));
       }
 
       if (role !== "admin") {
@@ -92,7 +111,7 @@ export async function proxy(request: NextRequest) {
 
     if (pathname.startsWith("/customer")) {
       if (!user) {
-        return NextResponse.redirect(getLoginUrl(request));
+        return NextResponse.redirect(getCustomerLoginUrl(request));
       }
 
       if (role === "admin") {
@@ -105,7 +124,7 @@ export async function proxy(request: NextRequest) {
     console.error("[Proxy Error]", error);
     return NextResponse.next();
   }
- }
+}
 
 export const config = {
   matcher: [
