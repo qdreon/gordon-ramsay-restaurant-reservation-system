@@ -110,6 +110,8 @@ export interface ReservationNotification {
   reservationEndTime: string; // HH:mm
   restaurantName: string;
   restaurantAddress: string;
+  restaurantLocation?: string;
+  operatingHours?: string;
   specialRequests?: string | null;
   confirmationURL: string;
 }
@@ -192,10 +194,19 @@ export async function sendBookingConfirmation(
   const htmlTemplate = loadTemplate("bookingConfirmation.html")
     .replace("{{ guestName }}", reservation.guestName)
     .replace("{{ restaurantName }}", reservation.restaurantName)
+    .replace("{{ reservationId }}", reservation.reservationId)
     .replace("{{ reservationDate }}", reservation.reservationDate)
     .replace("{{ reservationTime }}", reservation.reservationTime)
     .replace("{{ partySize }}", reservation.partySize.toString())
     .replace("{{ restaurantAddress }}", reservation.restaurantAddress)
+    .replace(
+      "{{ restaurantLocation }}",
+      reservation.restaurantLocation ?? reservation.restaurantAddress,
+    )
+    .replace(
+      "{{ operatingHours }}",
+      reservation.operatingHours ?? "Open daily from 11:00 to 23:00",
+    )
     .replace("{{ specialRequests }}", reservation.specialRequests ?? "None")
     .replace("{{ confirmationURL }}", reservation.confirmationURL);
 
@@ -220,7 +231,14 @@ export async function sendBookingConfirmation(
       [{ email: reservation.guestEmail }],
       "Your Booking Confirmation",
       htmlTemplate,
-      `Booking confirmation for ${reservation.guestName}`,
+      `Booking confirmation for ${reservation.guestName}
+Reservation reference: ${reservation.reservationId}
+Date: ${reservation.reservationDate}
+Time: ${reservation.reservationTime}
+Party size: ${reservation.partySize}
+Restaurant: ${reservation.restaurantName}
+Location: ${reservation.restaurantLocation ?? reservation.restaurantAddress}
+Operating hours: ${reservation.operatingHours ?? "11:00-23:00"}`,
       "Booking Confirmation",
       [
         {
@@ -239,6 +257,7 @@ export async function sendBookingConfirmation(
       "[Notification] Mailtrap API sendBookingConfirmation failed:",
       err,
     );
+    throw err;
   }
 }
 
@@ -320,5 +339,6 @@ END:VCALENDAR`;
       "[Notification] Mailtrap API sendWaitlistInvite failed:",
       err,
     );
+    throw err;
   }
 }

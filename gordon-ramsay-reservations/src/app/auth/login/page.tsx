@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from '@/lib/authClient';
 
 /**
@@ -24,6 +24,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next');
+  const nextPath =
+    nextParam && nextParam.startsWith('/') ? nextParam : '/customer/dashboard';
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,8 +43,7 @@ export default function LoginPage() {
 
     try {
       await signIn({ email, password });
-      // Redirect to customer dashboard on successful login
-      router.push('/customer/dashboard');
+      router.push(nextPath);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(message);
@@ -113,7 +116,10 @@ export default function LoginPage() {
       <div className="text-center text-sm">
         <p className="text-zinc-300">
           Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="font-semibold text-amber-300 hover:underline">
+          <Link
+            href={nextParam ? `/auth/register?next=${encodeURIComponent(nextParam)}` : '/auth/register'}
+            className="font-semibold text-amber-300 hover:underline"
+          >
             Sign up here
           </Link>
         </p>

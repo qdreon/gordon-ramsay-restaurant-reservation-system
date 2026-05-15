@@ -9,6 +9,7 @@ import { validateReservationTime } from "@/lib/config";
 
 const DEFAULT_RESERVATION_HOURS = 2;
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+const RESERVATION_FLOW_STATE_KEY = "grrs-reservation-flow-state";
 
 type AvailabilityOption = {
   table_ids: string[];
@@ -23,6 +24,18 @@ type ToastMessage = {
   title: string;
   description: string;
   kind: ToastKind;
+};
+
+type ReservationFlowState = {
+  reservationDate: string;
+  reservationTime: string;
+  partySize: number;
+  startTimeISO: string;
+  endTimeISO: string;
+  options: AvailabilityOption[];
+  selectedOption: AvailabilityOption | null;
+  hasSearched: boolean;
+  context: "checkout" | "waitlist";
 };
 
 function isAvailabilityOptionArray(
@@ -78,6 +91,37 @@ export default function Home() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.sessionStorage.getItem(RESERVATION_FLOW_STATE_KEY);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw) as Partial<ReservationFlowState>;
+      if (!saved.reservationDate || !saved.reservationTime || !saved.partySize) {
+        return;
+      }
+
+      setReservationDate(saved.reservationDate);
+      setReservationTime(saved.reservationTime);
+      setPartySize(saved.partySize);
+      setStartTimeISO(saved.startTimeISO ?? "");
+      setEndTimeISO(saved.endTimeISO ?? "");
+      setOptions(Array.isArray(saved.options) ? saved.options : []);
+      setHasSearched(Boolean(saved.hasSearched));
+      setSelectedOption(saved.selectedOption ?? null);
+
+      if (saved.context === "checkout" && saved.selectedOption) {
+        setCheckoutModalKey((key) => key + 1);
+        setIsModalOpen(true);
+      }
+    } catch (restoreError) {
+      console.error("[Reservation Flow] Failed to restore reservation state:", restoreError);
+    } finally {
+      window.sessionStorage.removeItem(RESERVATION_FLOW_STATE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
     window.localStorage.setItem("theme", isDarkMode ? "dark" : "light");
   }, [isDarkMode]);
@@ -97,6 +141,31 @@ export default function Home() {
   function scrollToReservation() {
     reservationSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     setMobileMenuOpen(false);
+  }
+
+  function persistReservationFlowState(context: "checkout" | "waitlist") {
+    if (typeof window === "undefined") return;
+    const payload: ReservationFlowState = {
+      reservationDate,
+      reservationTime,
+      partySize,
+      startTimeISO,
+      endTimeISO,
+      options,
+      selectedOption,
+      hasSearched,
+      context,
+    };
+    window.sessionStorage.setItem(
+      RESERVATION_FLOW_STATE_KEY,
+      JSON.stringify(payload),
+    );
+  }
+
+  function redirectToAuth(context: "checkout" | "waitlist") {
+    persistReservationFlowState(context);
+    const nextPath = "/?resumeReservation=1#reservation";
+    router.push(`/auth/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
@@ -242,7 +311,7 @@ export default function Home() {
 
       if (!sessionData.session) {
         setIsModalOpen(false);
-        router.push("/auth/login");
+        redirectToAuth("checkout");
         return;
       }
 
@@ -286,6 +355,7 @@ export default function Home() {
 
       const lockPayload = (await lockRes.json()) as {
         reservation?: { reservation_id: string; locked_until: string };
+        email?: { sent: boolean; error?: string };
         error?: string;
       };
 
@@ -303,6 +373,13 @@ export default function Home() {
       }
 
       setIsModalOpen(false);
+      if (lockPayload.email && !lockPayload.email.sent) {
+        pushToast(
+          "Reservation confirmed",
+          "Your reservation is confirmed, but email delivery failed. Please check your dashboard for details.",
+          "info",
+        );
+      }
       pushToast("Reservation locked", "Your table has been reserved successfully.", "success");
       router.push("/customer/dashboard?booking=confirmed");
     } catch (err) {
@@ -372,7 +449,7 @@ export default function Home() {
 
       if (!sessionData.session) {
         setIsWaitlistModalOpen(false);
-        router.push("/auth/login");
+        redirectToAuth("waitlist");
         return;
       }
 
@@ -504,18 +581,14 @@ export default function Home() {
                 Explore Menu Highlights
               </a>
             </div>
-            <div className="grid grid-cols-3 gap-3 text-center text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                <p className="text-xl font-semibold text-amber-300">11:00</p>
-                <p className="text-zinc-400">Opens Daily</p>
+                <p className="text-sm font-semibold text-amber-300">Open Daily</p>
+                <p className="text-zinc-300">11:00 to 23:00</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                <p className="text-xl font-semibold text-amber-300">2k+</p>
-                <p className="text-zinc-400">Monthly Guests</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                <p className="text-xl font-semibold text-amber-300">18</p>
-                <p className="text-zinc-400">Signature Dishes</p>
+                <p className="text-sm font-semibold text-amber-300">Location</p>
+                <p className="text-zinc-300">Lapu-Lapu City, Cebu, Philippines</p>
               </div>
             </div>
           </div>

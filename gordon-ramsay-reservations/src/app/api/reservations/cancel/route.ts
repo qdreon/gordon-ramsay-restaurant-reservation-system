@@ -102,8 +102,9 @@ export async function POST(req: Request) {
               requestedDate: offeredWaitlist.desired_date,
               requestedTime: new Date(offeredWaitlist.desired_time).toISOString().slice(11, 16),
               restaurantName: process.env.RESTAURANT_NAME ?? 'Gordon Ramsay Restaurant',
-              restaurantAddress:
-                  process.env.RESTAURANT_ADDRESS ?? 'Gordon Ramsay Restaurant, Cebu City, Philippines',
+               restaurantAddress:
+                  process.env.RESTAURANT_ADDRESS ??
+                  'Gordon Ramsay Restaurant, Lapu-Lapu City, Cebu, Philippines',
               waitlistPosition: offeredWaitlist.position,
               confirmationURL:
                 `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/customer/dashboard?waitlist=offered`,

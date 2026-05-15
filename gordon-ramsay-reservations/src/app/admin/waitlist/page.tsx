@@ -344,7 +344,7 @@ export default function AdminWaitlistPage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-semibold font-heading text-white">
-            <UsersRound className="h-5 w-5 text-primary" /> Waitlist Control
+            <UsersRound className="h-5 w-5 text-amber-300" /> Waitlist Control
           </h1>
           <p className="mt-1 text-zinc-300">
             Reorder, review, and clear queue entries for VIP handling and
@@ -353,29 +353,29 @@ export default function AdminWaitlistPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="rounded-md border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">
               Waiting
             </p>
-            <p className="text-base font-semibold text-foreground">
+            <p className="text-base font-semibold text-zinc-100">
               {waitingCount}
             </p>
           </div>
-          <div className="rounded-md border border-border bg-card px-3 py-2">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">
               Offered
             </p>
-            <p className="text-base font-semibold text-foreground">
+            <p className="text-base font-semibold text-zinc-100">
               {offeredCount}
             </p>
           </div>
 
           <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-300" />
             <Input
               type="text"
               placeholder="Search guests..."
-              className="h-9 border-input bg-background pl-9 text-foreground focus-visible:ring-ring"
+              className="h-9 border-white/20 bg-black/25 pl-9 text-zinc-100 focus-visible:ring-ring"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
@@ -383,7 +383,7 @@ export default function AdminWaitlistPage() {
 
           <Input
             type="date"
-            className="h-9 w-44 border-input bg-background text-foreground focus-visible:ring-ring"
+            className="h-9 w-44 border-white/20 bg-black/25 text-zinc-100 focus-visible:ring-ring"
             value={dateFilter}
             onChange={(event) => setDateFilter(event.target.value)}
           />
@@ -394,7 +394,7 @@ export default function AdminWaitlistPage() {
               setStatusFilter(value as WaitlistStatus | "all")
             }
           >
-            <SelectTrigger className="h-9 w-44 border-input bg-background">
+            <SelectTrigger className="h-9 w-44 border-white/20 bg-black/25">
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
             <SelectContent>
@@ -408,7 +408,7 @@ export default function AdminWaitlistPage() {
 
           <Button
             type="button"
-            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-9 bg-amber-400 text-black hover:bg-amber-400/90"
             onClick={() => void fetchWaitlistEntries()}
           >
             Refresh Queue
@@ -422,23 +422,23 @@ export default function AdminWaitlistPage() {
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border hover:bg-transparent">
-              <TableHead className="font-bold uppercase tracking-widest text-muted-foreground">
+            <TableRow className="border-b border-white/10 hover:bg-transparent">
+              <TableHead className="font-bold uppercase tracking-widest text-zinc-300">
                 Guest
               </TableHead>
-              <TableHead className="font-bold uppercase tracking-widest text-muted-foreground">
+              <TableHead className="font-bold uppercase tracking-widest text-zinc-300">
                 Timeslot
               </TableHead>
-              <TableHead className="font-bold uppercase tracking-widest text-muted-foreground">
+              <TableHead className="font-bold uppercase tracking-widest text-zinc-300">
                 Party
               </TableHead>
-              <TableHead className="font-bold uppercase tracking-widest text-muted-foreground">
+              <TableHead className="font-bold uppercase tracking-widest text-zinc-300">
                 Priority
               </TableHead>
-              <TableHead className="font-bold uppercase tracking-widest text-muted-foreground">
+              <TableHead className="font-bold uppercase tracking-widest text-zinc-300">
                 Status
               </TableHead>
-              <TableHead className="text-right font-bold uppercase tracking-widest text-muted-foreground">
+              <TableHead className="text-right font-bold uppercase tracking-widest text-zinc-300">
                 Actions
               </TableHead>
             </TableRow>
@@ -451,9 +451,9 @@ export default function AdminWaitlistPage() {
               return (
                 <TableRow
                   key={entry.id}
-                  className="border-b border-border transition-colors hover:bg-muted/50"
+                  className="border-b border-white/10 transition-colors hover:bg-white/10"
                 >
-                  <TableCell className="font-medium text-foreground text-[12px]">
+                  <TableCell className="font-medium text-zinc-100 text-[12px]">
                     <div className="flex flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span>{entry.customer.user.full_name}</span>
@@ -468,26 +468,26 @@ export default function AdminWaitlistPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-[10px] text-zinc-300">
                         {entry.customer.user.email}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-[10px] text-zinc-300">
                         {entry.customer.user.phone ?? "No phone on file"}
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-secondary-foreground">
+                  <TableCell className="text-zinc-200">
                     <div className="flex flex-col gap-1">
                       <span>{entry.desired_date}</span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[10px] text-zinc-300">
                         {entry.desired_time.slice(0, 5)}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-foreground">
+                  <TableCell className="text-zinc-100">
                     {entry.party_size} pax
                   </TableCell>
-                  <TableCell className="text-foreground">
+                  <TableCell className="text-zinc-100">
                     #{entry.position}
                   </TableCell>
                   <TableCell>
@@ -505,7 +505,7 @@ export default function AdminWaitlistPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => void handleShiftPosition(entry, -1)}
-                        className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-primary"
+                        className="h-8 w-8 text-zinc-300 hover:bg-white/10 hover:text-amber-300"
                       >
                         <ArrowUp className="h-4 w-4" />
                       </Button>
@@ -514,7 +514,7 @@ export default function AdminWaitlistPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => void handleShiftPosition(entry, 1)}
-                        className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-primary"
+                        className="h-8 w-8 text-zinc-300 hover:bg-white/10 hover:text-amber-300"
                       >
                         <ArrowDown className="h-4 w-4" />
                       </Button>
@@ -523,7 +523,7 @@ export default function AdminWaitlistPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(entry)}
-                        className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-primary"
+                        className="h-8 w-8 text-zinc-300 hover:bg-white/10 hover:text-amber-300"
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -532,7 +532,7 @@ export default function AdminWaitlistPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => void handleDeleteEntry(entry)}
-                        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        className="h-8 w-8 text-zinc-300 hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -546,7 +546,7 @@ export default function AdminWaitlistPage() {
               <TableRow>
                 <TableCell
                   colSpan={6}
-                  className="py-8 text-center text-muted-foreground"
+                  className="py-8 text-center text-zinc-300"
                 >
                   No waitlist entries found.
                 </TableCell>
@@ -557,7 +557,7 @@ export default function AdminWaitlistPage() {
               <TableRow>
                 <TableCell
                   colSpan={6}
-                  className="py-8 text-center text-muted-foreground"
+                  className="py-8 text-center text-zinc-300"
                 >
                   Loading waitlist queue...
                 </TableCell>
@@ -571,17 +571,17 @@ export default function AdminWaitlistPage() {
         open={!!editingEntry}
         onOpenChange={(isOpen) => !isOpen && setEditingEntry(null)}
       >
-        <DialogContent className="border-border bg-popover text-popover-foreground font-sans text-[11px]">
+        <DialogContent className="border-white/10 bg-zinc-950 text-zinc-100 font-sans text-[11px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading text-primary">
+            <DialogTitle className="text-lg font-heading text-amber-300">
               Edit Waitlist Entry
             </DialogTitle>
           </DialogHeader>
 
           {editingEntry && (
             <form onSubmit={handleSaveEdit} className="grid gap-4 py-2">
-              <div className="rounded-md border border-border bg-muted/30 p-3 text-[10px] text-muted-foreground">
-                <p className="font-medium text-foreground">
+              <div className="rounded-md border border-white/10 bg-muted/30 p-3 text-[10px] text-zinc-300">
+                <p className="font-medium text-zinc-100">
                   {editingEntry.customer.user.full_name}
                 </p>
                 <p>{editingEntry.customer.user.email}</p>
@@ -590,7 +590,7 @@ export default function AdminWaitlistPage() {
 
               <Input
                 type="date"
-                className="bg-background border-input"
+                className="bg-black/25 border-white/20"
                 value={editForm.desired_date}
                 onChange={(event) =>
                   setEditForm((prev) => ({
@@ -602,7 +602,7 @@ export default function AdminWaitlistPage() {
               />
               <Input
                 type="time"
-                className="bg-background border-input"
+                className="bg-black/25 border-white/20"
                 value={editForm.desired_time}
                 onChange={(event) =>
                   setEditForm((prev) => ({
@@ -616,7 +616,7 @@ export default function AdminWaitlistPage() {
                 <Input
                   type="number"
                   min="1"
-                  className="bg-background border-input"
+                  className="bg-black/25 border-white/20"
                   value={editForm.party_size}
                   onChange={(event) =>
                     setEditForm((prev) => ({
@@ -629,7 +629,7 @@ export default function AdminWaitlistPage() {
                 <Input
                   type="number"
                   min="1"
-                  className="bg-background border-input"
+                  className="bg-black/25 border-white/20"
                   value={editForm.position}
                   onChange={(event) =>
                     setEditForm((prev) => ({
@@ -649,7 +649,7 @@ export default function AdminWaitlistPage() {
                   }))
                 }
               >
-                <SelectTrigger className="w-full bg-background border-input">
+                <SelectTrigger className="w-full bg-black/25 border-white/20">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -665,7 +665,7 @@ export default function AdminWaitlistPage() {
               <Button
                 type="submit"
                 disabled={isSaving}
-                className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="mt-1 bg-amber-400 text-black hover:bg-amber-400/90"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>

@@ -29,7 +29,6 @@ import {
 
 // --- Types & Interfaces Aligned with Schema ---
 type ReservationStatus =
-  | "pending_payment"
   | "confirmed"
   | "seated"
   | "cancelled"
@@ -73,11 +72,10 @@ type ReservationApiRow = {
   start_time: string;
   end_time: string;
   party_size: number;
-  status: ReservationStatus;
+  status: ReservationStatus | "pending_payment";
 };
 
 const statusColors: Record<ReservationStatus, string> = {
-  pending_payment: "bg-amber-500",
   confirmed: "bg-emerald-500",
   seated: "bg-cyan-500",
   cancelled: "bg-red-500",
@@ -109,7 +107,7 @@ function formatTime12h(time: string): string {
 // --- Components ---
 function SystemLiveIndicator() {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 backdrop-blur-sm rounded-sm border border-border">
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5/50 backdrop-blur-sm rounded-sm border border-white/10">
       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
       <span className="text-emerald-400 font-sans text-[11px]">
         System Live (DB-3)
@@ -189,7 +187,10 @@ function MasterCalendar() {
             end_time: res.end_time,
             party_size: res.party_size,
             tableId: "T1", // Mock; would come from reservation_tables junction
-            status: res.status as ReservationStatus,
+            status:
+              res.status === "pending_payment"
+                ? "confirmed"
+                : (res.status as ReservationStatus),
             isVip: false, // Would check customers.vip_status
             reservation_date: res.reservation_date,
             deposit_amount: 0,
@@ -236,7 +237,6 @@ function MasterCalendar() {
       {
         confirmed: number;
         seated: number;
-        pending_payment: number;
         cancelled: number;
         completed: number;
       }
@@ -246,7 +246,6 @@ function MasterCalendar() {
         map[res.reservation_date] = {
           confirmed: 0,
           seated: 0,
-          pending_payment: 0,
           cancelled: 0,
           completed: 0,
         };
@@ -399,8 +398,8 @@ function MasterCalendar() {
         </div>
       )}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-50">
-          <p className="text-muted-foreground font-sans text-[11px]">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/25/50 backdrop-blur-sm z-50">
+          <p className="text-zinc-300 font-sans text-[11px]">
             Loading calendar data...
           </p>
         </div>
@@ -495,10 +494,10 @@ function MasterCalendar() {
                   onClick={() =>
                     setSelectedDate(new Date(currentYear, currentMonth, day))
                   }
-                  className={`p-2 rounded-sm flex flex-col items-center justify-start min-h-20 transition-all ${isBlocked ? "bg-red-500/30 border-2 border-red-500" : selected ? "bg-cyber/20 border border-cyber" : "hover:bg-muted/50 border border-transparent"} ${isToday(day) ? "shadow-[0_0_12px_2px_rgba(6,182,212,0.4)]" : ""}`}
+                  className={`p-2 rounded-sm flex flex-col items-center justify-start min-h-20 transition-all ${isBlocked ? "bg-red-500/30 border-2 border-red-500" : selected ? "bg-cyber/20 border border-cyber" : "hover:bg-white/10 border border-transparent"} ${isToday(day) ? "shadow-[0_0_12px_2px_rgba(6,182,212,0.4)]" : ""}`}
                 >
                   <span
-                    className={`font-sans text-[11px] ${isBlocked ? "text-red-600 font-bold" : isToday(day) ? "text-cyber font-bold" : "text-foreground"}`}
+                    className={`font-sans text-[11px] ${isBlocked ? "text-red-600 font-bold" : isToday(day) ? "text-cyber font-bold" : "text-zinc-100"}`}
                   >
                     {day}
                   </span>
@@ -515,9 +514,6 @@ function MasterCalendar() {
                       {dayReservations.seated > 0 && (
                         <div className="w-2 h-2 rounded-full bg-cyan-500" />
                       )}
-                      {dayReservations.pending_payment > 0 && (
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                      )}
                     </div>
                   )}
                 </button>
@@ -526,7 +522,7 @@ function MasterCalendar() {
           </div>
         </div>
 
-        <footer className="flex items-center justify-end p-4 border-t border-border">
+        <footer className="flex items-center justify-end p-4 border-t border-white/10">
           <SystemLiveIndicator />
         </footer>
       </main>
@@ -552,7 +548,7 @@ function MasterCalendar() {
         <ScrollArea className="flex-1 overflow-hidden">
           <div className="space-y-3 p-4 pb-8">
             {filteredReservations.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8 font-sans text-[11px]">
+              <p className="text-zinc-300 text-center py-8 font-sans text-[11px]">
                 No reservations for this day
               </p>
             ) : (
@@ -573,7 +569,7 @@ function MasterCalendar() {
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">
+                      <span className="text-zinc-300">
                         {res.tableId}
                       </span>
                       <div
@@ -600,9 +596,9 @@ function MasterCalendar() {
                   New Reservation
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border">
+              <DialogContent className="bg-white/5 border-white/10">
                 <DialogHeader>
-                  <DialogTitle className="text-foreground font-sans">
+                  <DialogTitle className="text-zinc-100 font-sans">
                     New Reservation
                   </DialogTitle>
                 </DialogHeader>
@@ -619,7 +615,7 @@ function MasterCalendar() {
                         customer_id: e.target.value,
                       }))
                     }
-                    className="bg-input border-border font-sans text-[11px]"
+                    className="bg-black/30 border-white/10 font-sans text-[11px]"
                   />
                   <Input
                     type="time"
@@ -630,7 +626,7 @@ function MasterCalendar() {
                         start_time: e.target.value,
                       }))
                     }
-                    className="bg-input border-border font-sans text-[11px]"
+                    className="bg-black/30 border-white/10 font-sans text-[11px]"
                   />
                   <Input
                     type="number"
@@ -644,7 +640,7 @@ function MasterCalendar() {
                         party_size: e.target.value,
                       }))
                     }
-                    className="bg-input border-border font-sans text-[11px]"
+                    className="bg-black/30 border-white/10 font-sans text-[11px]"
                   />
                   <Input
                     placeholder="Table ID (e.g., T14)"
@@ -655,7 +651,7 @@ function MasterCalendar() {
                         tableId: e.target.value,
                       }))
                     }
-                    className="bg-input border-border font-sans text-[11px]"
+                    className="bg-black/30 border-white/10 font-sans text-[11px]"
                   />
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -669,7 +665,7 @@ function MasterCalendar() {
                       }
                       className="w-4 h-4 accent-electric"
                     />
-                    <span className="text-muted-foreground font-sans text-[11px]">
+                    <span className="text-zinc-300 font-sans text-[11px]">
                       VIP Guest
                     </span>
                   </label>
@@ -702,14 +698,14 @@ function MasterCalendar() {
                   Block Date
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border">
+              <DialogContent className="bg-white/5 border-white/10">
                 <DialogHeader>
-                  <DialogTitle className="text-foreground font-sans">
+                  <DialogTitle className="text-zinc-100 font-sans">
                     Block Date
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleBlockDate} className="space-y-4 mt-4">
-                  <p className="text-muted-foreground font-sans text-[11px]">
+                  <p className="text-zinc-300 font-sans text-[11px]">
                     Blocking:{" "}
                     {selectedDate.toLocaleDateString("en-US", {
                       weekday: "short",
@@ -721,7 +717,7 @@ function MasterCalendar() {
                     placeholder="Reason (e.g., Private Event, Holiday)"
                     value={blockDateReason}
                     onChange={(e) => setBlockDateReason(e.target.value)}
-                    className="bg-input border-border font-sans text-[11px]"
+                    className="bg-black/30 border-white/10 font-sans text-[11px]"
                   />
                   <Button
                     type="submit"
@@ -746,9 +742,9 @@ function MasterCalendar() {
                   Operating Hours
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border">
+              <DialogContent className="bg-white/5 border-white/10">
                 <DialogHeader>
-                  <DialogTitle className="text-foreground font-sans">
+                  <DialogTitle className="text-zinc-100 font-sans">
                     Set Operating Hours
                   </DialogTitle>
                 </DialogHeader>
@@ -757,7 +753,7 @@ function MasterCalendar() {
                   className="space-y-4 mt-4"
                 >
                   <div>
-                    <label className="text-muted-foreground font-sans text-[11px] block mb-1">
+                    <label className="text-zinc-300 font-sans text-[11px] block mb-1">
                       Opening Hour
                     </label>
                     <Input
@@ -771,11 +767,11 @@ function MasterCalendar() {
                           opening: Number(e.target.value),
                         }))
                       }
-                      className="bg-input border-border font-sans text-[11px]"
+                      className="bg-black/30 border-white/10 font-sans text-[11px]"
                     />
                   </div>
                   <div>
-                    <label className="text-muted-foreground font-sans text-[11px] block mb-1">
+                    <label className="text-zinc-300 font-sans text-[11px] block mb-1">
                       Closing Hour
                     </label>
                     <Input
@@ -789,7 +785,7 @@ function MasterCalendar() {
                           closing: Number(e.target.value),
                         }))
                       }
-                      className="bg-input border-border font-sans text-[11px]"
+                      className="bg-black/30 border-white/10 font-sans text-[11px]"
                     />
                   </div>
                   {operatingHoursError && (

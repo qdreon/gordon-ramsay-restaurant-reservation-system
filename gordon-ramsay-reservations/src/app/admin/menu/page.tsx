@@ -348,11 +348,11 @@ export default function MenuManagementPage() {
 
         <div className="flex items-center gap-4">
           <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-300" />
             <Input
               type="text"
               placeholder="Search dishes..."
-              className="pl-9 h-9 bg-background border-input text-foreground focus-visible:ring-ring"
+              className="pl-9 h-9 bg-black/25 border-white/20 text-zinc-100 focus-visible:ring-ring"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -360,20 +360,20 @@ export default function MenuManagementPage() {
 
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="h-9 bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button className="h-9 bg-amber-400 text-black hover:bg-amber-400/90">
                 <Plus className="mr-2 h-4 w-4" /> Add Menu Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-popover border-border text-popover-foreground font-sans text-[11px]">
+            <DialogContent className="bg-zinc-950 border-white/10 text-zinc-100 font-sans text-[11px]">
               <DialogHeader>
-                <DialogTitle className="text-lg font-heading text-primary">
+                <DialogTitle className="text-lg font-heading text-amber-300">
                   Add New Dish
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleCreateSubmit} className="grid gap-4 py-2">
                 <Input
                   placeholder="Dish Name"
-                  className="bg-background border-input"
+                  className="bg-black/25 border-white/20"
                   value={createForm.name}
                   onChange={(e) =>
                     setCreateForm((prev) => ({ ...prev, name: e.target.value }))
@@ -382,7 +382,7 @@ export default function MenuManagementPage() {
                 />
                 <Input
                   placeholder="Description"
-                  className="bg-background border-input"
+                  className="bg-black/25 border-white/20"
                   value={createForm.description}
                   onChange={(e) =>
                     setCreateForm((prev) => ({
@@ -400,7 +400,7 @@ export default function MenuManagementPage() {
                     }))
                   }
                 >
-                  <SelectTrigger className="w-full bg-background border-input">
+                  <SelectTrigger className="w-full bg-black/25 border-white/20">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -416,7 +416,7 @@ export default function MenuManagementPage() {
                     placeholder="Price"
                     type="number"
                     step="0.01"
-                    className="bg-background border-input"
+                    className="bg-black/25 border-white/20"
                     value={createForm.price}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -429,7 +429,7 @@ export default function MenuManagementPage() {
                   <Input
                     placeholder="Sort order"
                     type="number"
-                    className="bg-background border-input"
+                    className="bg-black/25 border-white/20"
                     value={createForm.sort_order}
                     onChange={(e) =>
                       setCreateForm((prev) => ({
@@ -442,7 +442,7 @@ export default function MenuManagementPage() {
                 <Button
                   type="submit"
                   disabled={isCreating}
-                  className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="mt-1 bg-amber-400 text-black hover:bg-amber-400/90"
                 >
                   {isCreating ? "Saving..." : "Save to Database"}
                 </Button>
@@ -458,20 +458,20 @@ export default function MenuManagementPage() {
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-border hover:bg-transparent">
-              <TableHead className="text-muted-foreground font-bold uppercase tracking-widest">
+            <TableRow className="border-b border-white/10 hover:bg-transparent">
+              <TableHead className="text-zinc-300 font-bold uppercase tracking-widest">
                 Item Name
               </TableHead>
-              <TableHead className="text-muted-foreground font-bold uppercase tracking-widest">
+              <TableHead className="text-zinc-300 font-bold uppercase tracking-widest">
                 Category
               </TableHead>
-              <TableHead className="text-muted-foreground font-bold uppercase tracking-widest">
+              <TableHead className="text-zinc-300 font-bold uppercase tracking-widest">
                 Price
               </TableHead>
-              <TableHead className="text-muted-foreground font-bold uppercase tracking-widest">
+              <TableHead className="text-zinc-300 font-bold uppercase tracking-widest">
                 Status
               </TableHead>
-              <TableHead className="text-right text-muted-foreground font-bold uppercase tracking-widest">
+              <TableHead className="text-right text-zinc-300 font-bold uppercase tracking-widest">
                 Actions
               </TableHead>
             </TableRow>
@@ -480,22 +480,22 @@ export default function MenuManagementPage() {
             {filteredMenu.map((item) => (
               <TableRow
                 key={item.id}
-                className={`border-b border-border transition-colors hover:bg-muted/50 ${
+                className={`border-b border-white/10 transition-colors hover:bg-white/10 ${
                   !item.available ? "opacity-60" : ""
                 }`}
               >
-                <TableCell className="font-medium text-foreground text-[12px]">
+                <TableCell className="font-medium text-zinc-100 text-[12px]">
                   {item.name}
                   {item.description && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-[10px] text-zinc-300 mt-0.5">
                       {item.description}
                     </p>
                   )}
                 </TableCell>
-                <TableCell className="text-secondary-foreground">
+                <TableCell className="text-zinc-200">
                   {categoryLabel(item.category)}
                 </TableCell>
-                <TableCell className="text-foreground">
+                <TableCell className="text-zinc-100">
                   ${item.price.toFixed(2)}
                 </TableCell>
                 <TableCell>
@@ -505,7 +505,7 @@ export default function MenuManagementPage() {
                       onCheckedChange={() => void toggleAvailability(item)}
                     />
                     {item.available ? (
-                      <span className="text-primary font-medium">
+                      <span className="text-amber-300 font-medium">
                         Available
                       </span>
                     ) : (
@@ -521,7 +521,7 @@ export default function MenuManagementPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => openEditDialog(item)}
-                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted"
+                      className="h-8 w-8 text-zinc-300 hover:text-amber-300 hover:bg-white/10"
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -529,7 +529,7 @@ export default function MenuManagementPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => void handleDelete(item)}
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 text-zinc-300 hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -542,7 +542,7 @@ export default function MenuManagementPage() {
               <TableRow>
                 <TableCell
                   colSpan={5}
-                  className="text-center text-muted-foreground py-8"
+                  className="text-center text-zinc-300 py-8"
                 >
                   {loading ? "Loading menu items..." : "No menu items found."}
                 </TableCell>
@@ -556,9 +556,9 @@ export default function MenuManagementPage() {
         open={!!editingItem}
         onOpenChange={(isOpen) => !isOpen && setEditingItem(null)}
       >
-        <DialogContent className="bg-popover border-border text-popover-foreground font-sans text-[11px]">
+        <DialogContent className="bg-zinc-950 border-white/10 text-zinc-100 font-sans text-[11px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-heading text-primary">
+            <DialogTitle className="text-lg font-heading text-amber-300">
               Edit Menu Item
             </DialogTitle>
           </DialogHeader>
@@ -569,7 +569,7 @@ export default function MenuManagementPage() {
                 onChange={(e) =>
                   setEditForm((prev) => ({ ...prev, name: e.target.value }))
                 }
-                className="bg-background border-input"
+                className="bg-black/25 border-white/20"
                 required
               />
               <Input
@@ -580,7 +580,7 @@ export default function MenuManagementPage() {
                     description: e.target.value,
                   }))
                 }
-                className="bg-background border-input"
+                className="bg-black/25 border-white/20"
                 placeholder="Description"
               />
               <Select
@@ -592,7 +592,7 @@ export default function MenuManagementPage() {
                   }))
                 }
               >
-                <SelectTrigger className="w-full bg-background border-input">
+                <SelectTrigger className="w-full bg-black/25 border-white/20">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -611,7 +611,7 @@ export default function MenuManagementPage() {
                   onChange={(e) =>
                     setEditForm((prev) => ({ ...prev, price: e.target.value }))
                   }
-                  className="bg-background border-input"
+                  className="bg-black/25 border-white/20"
                   required
                 />
                 <Input
@@ -623,13 +623,13 @@ export default function MenuManagementPage() {
                       sort_order: e.target.value,
                     }))
                   }
-                  className="bg-background border-input"
+                  className="bg-black/25 border-white/20"
                 />
               </div>
               <Button
                 type="submit"
                 disabled={isSavingEdit}
-                className="mt-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="mt-1 bg-amber-400 text-black hover:bg-amber-400/90"
               >
                 {isSavingEdit ? "Updating..." : "Update Item"}
               </Button>

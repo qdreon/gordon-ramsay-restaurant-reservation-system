@@ -151,7 +151,7 @@ function StatusBadge({ customer }: { customer: CustomerWithUser }) {
   const status = getCustomerStatus(customer)
   const variants: Record<typeof status, { className: string }> = {
     VIP: { className: "bg-cyber/10 text-cyber border-cyber/30" },
-    Regular: { className: "bg-secondary text-secondary-foreground border-border" },
+    Regular: { className: "bg-secondary text-zinc-200 border-white/10" },
     Blacklisted: { className: "bg-destructive/10 text-destructive border-destructive/30" },
   }
 
@@ -298,12 +298,12 @@ export default function GuestCrmDashboard() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Input */}
             <div className="relative flex-1 min-w-[280px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-300" />
               <Input
                 placeholder="Search by name, phone, or email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-input border-border font-sans text-[11px]"
+                className="pl-9 bg-black/30 border-white/10 font-sans text-[11px]"
               />
             </div>
 
@@ -312,7 +312,7 @@ export default function GuestCrmDashboard() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="gap-2 bg-input border-border font-sans text-[11px]"
+                  className="gap-2 bg-black/30 border-white/10 font-sans text-[11px]"
                 >
                   <Filter className="h-4 w-4" />
                   Filter by Status
@@ -350,7 +350,7 @@ export default function GuestCrmDashboard() {
             {/* Export Button */}
             <Button
               variant="outline"
-              className="gap-2 bg-input border-border font-sans text-[11px]"
+              className="gap-2 bg-black/30 border-white/10 font-sans text-[11px]"
             >
               <Download className="h-4 w-4" />
               Export Data
@@ -361,36 +361,36 @@ export default function GuestCrmDashboard() {
         {/* Table Container */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
           {error && (
-            <div className="px-4 py-3 font-sans text-[11px] text-destructive border-b border-border">
+            <div className="px-4 py-3 font-sans text-[11px] text-destructive border-b border-white/10">
               {error}
             </div>
           )}
 
           <Table>
             <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px]">
+              <TableRow className="border-white/10 hover:bg-transparent">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px]">
                   Guest Name & ID
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px]">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px]">
                   Contact
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px]">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px]">
                   Status
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px]">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px]">
                   Dietary / Allergies
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px] text-center">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px] text-center">
                   Visits
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px] text-center">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px] text-center">
                   No-Shows
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px]">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px]">
                   Updated
                 </TableHead>
-                <TableHead className="font-heading uppercase tracking-widest text-muted-foreground text-[10px]">
+                <TableHead className="font-heading uppercase tracking-widest text-zinc-300 text-[10px]">
                   Actions
                 </TableHead>
               </TableRow>
@@ -399,15 +399,15 @@ export default function GuestCrmDashboard() {
               {filteredCustomers.map((customer) => (
                 <TableRow
                   key={customer.id}
-                  className="border-border hover:bg-muted/50 transition-colors"
+                  className="border-white/10 hover:bg-white/10 transition-colors"
                 >
                   {/* Guest Name & ID */}
                   <TableCell>
                     <div className="space-y-0.5">
-                      <p className="font-sans text-[11px] text-foreground font-medium">
+                      <p className="font-sans text-[11px] text-zinc-100 font-medium">
                         {customer.user.full_name}
                       </p>
-                      <p className="font-sans text-[11px] text-muted-foreground font-mono">
+                      <p className="font-sans text-[11px] text-zinc-300 font-mono">
                         {formatUUID(customer.id)}
                       </p>
                     </div>
@@ -416,10 +416,10 @@ export default function GuestCrmDashboard() {
                   {/* Contact */}
                   <TableCell>
                     <div className="space-y-0.5">
-                      <p className="font-sans text-[11px] text-muted-foreground">
+                      <p className="font-sans text-[11px] text-zinc-300">
                         {customer.user.phone ?? "No phone"}
                       </p>
-                      <p className="font-sans text-[11px] text-muted-foreground">
+                      <p className="font-sans text-[11px] text-zinc-300">
                         {customer.user.email}
                       </p>
                     </div>
@@ -434,7 +434,7 @@ export default function GuestCrmDashboard() {
                   <TableCell>
                     <div className="space-y-0.5 max-w-[150px]">
                       {customer.dietary_restrictions && (
-                        <p className="font-sans text-[11px] text-muted-foreground truncate">
+                        <p className="font-sans text-[11px] text-zinc-300 truncate">
                           {customer.dietary_restrictions}
                         </p>
                       )}
@@ -444,7 +444,7 @@ export default function GuestCrmDashboard() {
                         </p>
                       )}
                       {!customer.dietary_restrictions && !customer.allergies && (
-                        <p className="font-sans text-[11px] text-muted-foreground/50">
+                        <p className="font-sans text-[11px] text-zinc-300/50">
                           None
                         </p>
                       )}
@@ -453,7 +453,7 @@ export default function GuestCrmDashboard() {
 
                   {/* Total Visits */}
                   <TableCell className="text-center">
-                    <span className="font-sans text-[11px] text-muted-foreground">
+                    <span className="font-sans text-[11px] text-zinc-300">
                       {customer.total_visits}
                     </span>
                   </TableCell>
@@ -464,7 +464,7 @@ export default function GuestCrmDashboard() {
                       className={`font-sans text-[11px] ${
                         customer.total_no_shows > 0
                           ? "text-destructive font-medium"
-                          : "text-muted-foreground"
+                          : "text-zinc-300"
                       }`}
                     >
                       {customer.total_no_shows}
@@ -473,7 +473,7 @@ export default function GuestCrmDashboard() {
 
                   {/* Updated */}
                   <TableCell>
-                    <span className="font-sans text-[11px] text-muted-foreground">
+                    <span className="font-sans text-[11px] text-zinc-300">
                       {formatDate(customer.updated_at)}
                     </span>
                   </TableCell>
@@ -497,7 +497,7 @@ export default function GuestCrmDashboard() {
 
           {filteredCustomers.length === 0 && (
             <div className="py-12 text-center">
-              <p className="font-sans text-[11px] text-muted-foreground">
+              <p className="font-sans text-[11px] text-zinc-300">
                 {loading ? "Loading guests..." : "No guests found matching your criteria."}
               </p>
             </div>
@@ -516,15 +516,15 @@ export default function GuestCrmDashboard() {
 
         {editingCustomer && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-2xl rounded-lg border border-border bg-background p-6 shadow-xl">
-              <h2 className="font-heading text-base text-foreground">Edit Guest CRM Profile</h2>
-              <p className="mt-1 font-sans text-[11px] text-muted-foreground">
+            <div className="w-full max-w-2xl rounded-lg border border-white/10 bg-black/25 p-6 shadow-xl">
+              <h2 className="font-heading text-base text-zinc-100">Edit Guest CRM Profile</h2>
+              <p className="mt-1 font-sans text-[11px] text-zinc-300">
                 {editingCustomer.user.full_name} ({formatUUID(editingCustomer.id)})
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <label className="space-y-1">
-                  <span className="font-sans text-[11px] text-muted-foreground">Dietary Restrictions</span>
+                  <span className="font-sans text-[11px] text-zinc-300">Dietary Restrictions</span>
                   <Input
                     value={editDietary}
                     onChange={(e) => setEditDietary(e.target.value)}
@@ -534,7 +534,7 @@ export default function GuestCrmDashboard() {
                 </label>
 
                 <label className="space-y-1">
-                  <span className="font-sans text-[11px] text-muted-foreground">Allergies</span>
+                  <span className="font-sans text-[11px] text-zinc-300">Allergies</span>
                   <Input
                     value={editAllergies}
                     onChange={(e) => setEditAllergies(e.target.value)}
@@ -544,7 +544,7 @@ export default function GuestCrmDashboard() {
                 </label>
 
                 <label className="space-y-1 md:col-span-2">
-                  <span className="font-sans text-[11px] text-muted-foreground">Staff Notes</span>
+                  <span className="font-sans text-[11px] text-zinc-300">Staff Notes</span>
                   <Textarea
                     value={editStaffNotes}
                     onChange={(e) => setEditStaffNotes(e.target.value)}
@@ -560,7 +560,7 @@ export default function GuestCrmDashboard() {
                     onChange={(e) => setEditVip(e.target.checked)}
                     className="h-4 w-4 accent-cyber"
                   />
-                  <span className="font-sans text-[11px] text-muted-foreground">Mark as VIP guest</span>
+                  <span className="font-sans text-[11px] text-zinc-300">Mark as VIP guest</span>
                 </label>
               </div>
 

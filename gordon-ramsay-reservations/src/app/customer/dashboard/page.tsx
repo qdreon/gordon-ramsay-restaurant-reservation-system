@@ -346,6 +346,16 @@ export default function CustomerDashboard() {
     return new Date(value).toLocaleString();
   }
 
+  function formatReservationStatus(status: string) {
+    if (status === "pending_payment" || status === "confirmed") {
+      return "Confirmed";
+    }
+    return status
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
   function canCancel(reservation: ReservationItem, currentMs: number) {
     const cancellableStatuses = ["pending_payment", "confirmed"];
     const msUntilStart = new Date(reservation.start_time).getTime() - currentMs;
@@ -377,7 +387,7 @@ export default function CustomerDashboard() {
 
   if (error) {
     return (
-      <div className="rounded-md bg-red-50 p-4 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+      <div className="rounded-md border border-red-400/30 bg-red-500/10 p-4 text-red-200 ">
         {error}
       </div>
     );
@@ -397,7 +407,7 @@ export default function CustomerDashboard() {
       <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold text-white">My Profile</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-zinc-300">
             Update your contact details and dining preferences.
           </p>
         </div>
@@ -530,7 +540,7 @@ export default function CustomerDashboard() {
                   </p>
                   <p>
                     <span className="font-semibold">Status:</span>{" "}
-                    {reservation.status}
+                    {formatReservationStatus(reservation.status)}
                   </p>
                   <div className="mt-3">
                     <button
@@ -538,13 +548,13 @@ export default function CustomerDashboard() {
                       disabled={
                         !canCancel(reservation, effectiveNow) || refreshing
                       }
-                      className="rounded-md border border-red-300 px-3 py-1.5 text-red-700 disabled:opacity-50 dark:border-red-700 dark:text-red-400"
+                      className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-red-200 disabled:opacity-50"
                     >
                       Cancel Booking
                     </button>
                     {!canCancel(reservation, effectiveNow) && (
                       <p className="mt-1 text-xs text-zinc-400">
-                        Cancellation allowed only for pending/confirmed
+                        Cancellation allowed only for confirmed
                         reservations at least 2 hours before start.
                       </p>
                     )}
@@ -580,7 +590,7 @@ export default function CustomerDashboard() {
                   </p>
                   <p>
                     <span className="font-semibold">Status:</span>{" "}
-                    {reservation.status}
+                    {formatReservationStatus(reservation.status)}
                   </p>
                 </li>
               ))}
@@ -607,9 +617,9 @@ export default function CustomerDashboard() {
           onClick={handleDeleteAccount}
           disabled={deletingAccount}
           className="w-full rounded-md border border-red-400/30 bg-red-500/10 py-2 text-red-200 disabled:opacity-50"
-          title="QDR-61: Delete account and all associated data"
+          title="Delete account and all associated data"
         >
-          {deletingAccount ? "Deleting Account..." : "Delete Account (QDR-61)"}
+          {deletingAccount ? "Deleting Account..." : "Delete Account"}
         </button>
       </section>
     </div>

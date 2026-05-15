@@ -32,11 +32,14 @@
           <p class="intro">Hi {{ guestName }}, your reservation has been successfully created.</p>
 
           <div class="card">
+            <p class="row"><span class="label">Reservation Reference:</span> {{ reservationId }}</p>
             <p class="row"><span class="label">Date:</span> {{ reservationDate }}</p>
             <p class="row"><span class="label">Time:</span> {{ reservationTime }}</p>
             <p class="row"><span class="label">Party Size:</span> {{ partySize }}</p>
             <p class="row"><span class="label">Special Requests:</span> {{ specialRequests }}</p>
             <p class="row"><span class="label">Restaurant Address:</span> {{ restaurantAddress }}</p>
+            <p class="row"><span class="label">Location:</span> {{ restaurantLocation }}</p>
+            <p class="row"><span class="label">Operating Hours:</span> {{ operatingHours }}</p>
           </div>
 
           <p class="muted">Use the button below to review your reservation details in the customer dashboard.</p>

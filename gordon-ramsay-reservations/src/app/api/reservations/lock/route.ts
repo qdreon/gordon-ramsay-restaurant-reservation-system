@@ -56,6 +56,9 @@ export async function POST(req: Request) {
       createdBy: body.createdBy,
     });
 
+    let emailSent = false;
+    let emailErrorMessage: string | null = null;
+
     try {
       const supabase = await createServerSupabaseClient();
       const {
@@ -71,7 +74,7 @@ export async function POST(req: Request) {
         (user.user_metadata as { full_name?: string } | null)?.full_name || user.email || 'Guest';
       const guestEmail = user.email;
 
-      void sendBookingConfirmation({
+      await sendBookingConfirmation({
         reservationId: lockResult.reservation_id,
         guestName,
         guestEmail,
@@ -81,18 +84,33 @@ export async function POST(req: Request) {
         reservationEndTime: formatTimeFromIso(endTime),
         restaurantName: process.env.RESTAURANT_NAME ?? 'Gordon Ramsay Restaurant',
         restaurantAddress:
-          process.env.RESTAURANT_ADDRESS ?? 'Gordon Ramsay Restaurant, Cebu City, Philippines',
+          process.env.RESTAURANT_ADDRESS ??
+          'Gordon Ramsay Restaurant, Lapu-Lapu City, Cebu, Philippines',
+        restaurantLocation:
+          process.env.RESTAURANT_LOCATION ?? 'Lapu-Lapu City, Cebu, Philippines',
+        operatingHours:
+          process.env.RESTAURANT_OPERATING_HOURS ?? 'Open daily from 11:00 to 23:00',
         specialRequests: body.specialRequests ?? null,
         confirmationURL:
           `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/customer/dashboard?booking=confirmed`,
-      }).catch((emailError) => {
-        console.error('[Reservation Notification] Failed to send booking confirmation:', emailError);
       });
+      emailSent = true;
     } catch (emailError) {
       console.error('[Reservation Notification] Failed to send booking confirmation:', emailError);
+      emailErrorMessage =
+        emailError instanceof Error ? emailError.message : 'Failed to send booking confirmation email.';
     }
 
-    return NextResponse.json({ reservation: lockResult }, { status: 200 });
+    return NextResponse.json(
+      {
+        reservation: lockResult,
+        email: {
+          sent: emailSent,
+          ...(emailErrorMessage ? { error: emailErrorMessage } : {}),
+        },
+      },
+      { status: emailSent ? 200 : 202 },
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unexpected error while creating reservation lock.';

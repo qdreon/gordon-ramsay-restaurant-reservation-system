@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signUp, signIn } from '@/lib/authClient';
 
 /**
@@ -33,6 +33,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next');
+  const nextPath =
+    nextParam && nextParam.startsWith('/') ? nextParam : '/customer/dashboard';
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,8 +80,7 @@ export default function RegisterPage() {
       // Auto-login the user immediately after account creation
       await signIn({ email, password });
       
-      // Redirect to customer dashboard on successful registration
-      router.push('/customer/dashboard');
+      router.push(nextPath);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setError(message);
@@ -225,7 +228,10 @@ export default function RegisterPage() {
       <div className="text-center text-sm text-zinc-200">
         <p className="text-zinc-300">
           Already have an account?{' '}
-          <Link href="/auth/login" className="font-semibold text-amber-300 hover:underline">
+          <Link
+            href={nextParam ? `/auth/login?next=${encodeURIComponent(nextParam)}` : '/auth/login'}
+            className="font-semibold text-amber-300 hover:underline"
+          >
             Sign in here
           </Link>
         </p>
