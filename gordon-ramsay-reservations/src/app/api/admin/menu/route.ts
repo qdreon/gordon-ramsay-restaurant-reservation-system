@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdminApi } from '@/lib/authGuards';
 import { createAdminMenuItem, getAdminMenuItems, type MenuCategory } from '@/services/menuService';
 
 interface CreateMenuBody {
@@ -13,8 +14,11 @@ interface CreateMenuBody {
 
 const VALID_CATEGORIES: MenuCategory[] = ['starters', 'mains', 'desserts', 'sides', 'beverages'];
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const items = await getAdminMenuItems();
     return NextResponse.json({ items }, { status: 200 });
   } catch (error) {
@@ -25,6 +29,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const body = (await request.json()) as CreateMenuBody;
 
     if (!body.name?.trim()) {

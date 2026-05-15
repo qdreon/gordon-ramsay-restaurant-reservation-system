@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdminApi } from '@/lib/authGuards';
 import { deleteAdminMenuItem, updateAdminMenuItem, type MenuCategory } from '@/services/menuService';
 
 interface UpdateMenuBody {
@@ -18,6 +19,9 @@ export async function PATCH(
   { params }: { params: Promise<{ menuItemId: string }> }
 ) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { menuItemId } = await params;
     if (!menuItemId) {
       return NextResponse.json({ error: 'menuItemId is required' }, { status: 400 });
@@ -54,10 +58,13 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ menuItemId: string }> }
 ) {
   try {
+    const auth = await requireAdminApi(request);
+    if (!auth.ok) return auth.response;
+
     const { menuItemId } = await params;
     if (!menuItemId) {
       return NextResponse.json({ error: 'menuItemId is required' }, { status: 400 });

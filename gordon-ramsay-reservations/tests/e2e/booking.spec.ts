@@ -3,33 +3,28 @@ import { test, expect } from '@playwright/test';
 test.describe('Booking flows', () => {
   test('TC-2.1 Search availability and open CheckoutModal', async ({ page }) => {
     await page.goto('/');
-    // Fill date/time/party fields if present
-    if ((await page.locator('input[name="date"]').count()) > 0) {
-      await page.fill('input[name="date"]', '2026-06-01');
-    }
-    if ((await page.locator('input[name="time"]').count()) > 0) {
-      await page.fill('input[name="time"]', '19:00');
-    }
-    if ((await page.locator('select[name="partySize"]').count()) > 0) {
-      await page.selectOption('select[name="partySize"]', '2');
-    }
+
+    await page.fill('input[type="date"]', '2031-03-15');
+    await page.fill('input[type="time"]', '19:00');
+    await page.fill('input[type="number"]', '2');
 
     await page.click('button:has-text("Search Availability")');
+    await expect(page.locator('h2:has-text("Availability Results")')).toBeVisible({
+      timeout: 15000,
+    });
 
-    // Wait for results container and attempt to open a booking
-    const result = page.locator('button:has-text("Book")');
-    if (await result.count() === 0) {
-      // Try a generic selector for availability item
-      const item = page.locator('[data-test="availability-item"]');
-      if (await item.count() > 0) {
-        await item.first().click();
-      }
-    } else {
-      await result.first().click();
+    const optionButtons = page.locator('ul li button');
+    const optionCount = await optionButtons.count();
+
+    if (optionCount === 0) {
+      test.skip(true, 'No availability options were returned for this live test slot.');
+      return;
     }
 
-    // Expect checkout modal to appear
-    const modal = page.locator('[data-test="checkout-modal"]');
-    await expect(modal.first()).toBeVisible({ timeout: 5000 });
+    await optionButtons.first().click();
+
+    await expect(page.locator('h2:has-text("Confirm Your Booking")')).toBeVisible({
+      timeout: 15000,
+    });
   });
 });

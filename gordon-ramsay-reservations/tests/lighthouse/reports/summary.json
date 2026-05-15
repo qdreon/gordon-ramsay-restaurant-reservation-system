@@ -1,17 +1,33 @@
 {
-  "timestamp": "2026-05-14T15:46:47.821Z",
+  "timestamp": "2026-05-15T04:08:34.278Z",
   "results": [
     {
       "page": "Customer Home (Availability Search)",
       "url": "http://localhost:3000/",
-      "skipped": true,
-      "reason": "Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests."
+      "metrics": {
+        "performanceScore": 79,
+        "lcp": 1496,
+        "fcp": 1046,
+        "tbt": 963,
+        "cls": "0.001",
+        "tti": 7538,
+        "si": 2202
+      },
+      "pass": true
     },
     {
-      "page": "Login Page (admin dashboard requires authentication)",
-      "url": "http://localhost:3000/auth/login",
-      "skipped": true,
-      "reason": "Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests."
+      "page": "Admin Dashboard (Floor Plan)",
+      "url": "http://localhost:3000/admin/dashboard",
+      "metrics": {
+        "performanceScore": 79,
+        "lcp": 1889,
+        "fcp": 1191,
+        "tbt": 895,
+        "cls": "0.000",
+        "tti": 7789,
+        "si": 1543
+      },
+      "pass": true
     }
   ]
 }
