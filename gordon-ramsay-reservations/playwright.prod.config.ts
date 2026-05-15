@@ -21,13 +21,18 @@
  * Jira: QDR-50 / DEF-004 / Subtask 7.4
  */
 
+import { loadEnvConfig } from "@next/env";
 import { defineConfig } from "@playwright/test";
+
+loadEnvConfig(process.cwd());
 
 export default defineConfig({
   // Only run the security test file
   testDir: "./tests/e2e",
   testMatch: ["**/tc7-security.spec.ts"],
+  globalSetup: "./tests/e2e/global-setup.ts",
   timeout: 90_000,
+  workers: 1,
   use: {
     headless: true,
     baseURL: process.env.BASE_URL || "http://localhost:3001",

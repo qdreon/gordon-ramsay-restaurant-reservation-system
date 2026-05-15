@@ -2,11 +2,16 @@
  * notificationService.ts
  * -----------------------
  * Notification service for reservation and waitlist emails.
- * Uses Mailtrap API only.
+ *
+ * Delivery:
+ * 1. If `SMTP_HOST` is set — send via Nodemailer (SMTP) first.
+ * 2. If SMTP fails but `MAILTRAP_API_TOKEN` is set — fall back to Mailtrap HTTP API.
+ * 3. If only Mailtrap is configured — use Mailtrap API.
  */
 
 import fs from "fs";
 import path from "path";
+import type { Transporter } from "nodemailer";
 
 type MailtrapPayload = Record<string, unknown>;
 
@@ -15,11 +20,32 @@ type MailtrapClientLike = {
 };
 
 type MailtrapModule = {
-  MailtrapClient: new (config: { token: string }) => MailtrapClientLike;
+  MailtrapClient: new (config: {
+    token: string;
+    sandbox?: boolean;
+    testInboxId?: number;
+  }) => MailtrapClientLike;
 };
 
 let mailtrapClient: MailtrapClientLike | null = null;
 let mailtrapClientInitialized = false;
+
+let smtpTransporter: Transporter | null = null;
+let smtpInitialized = false;
+
+function parseOptionalPositiveInt(raw: string | undefined): number | undefined {
+  if (raw == null || raw.trim() === "") return undefined;
+  const n = Number.parseInt(raw.trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+function isSmtpConfigured(): boolean {
+  return Boolean(process.env.SMTP_HOST?.trim());
+}
+
+function isMailtrapTokenConfigured(): boolean {
+  return Boolean(process.env.MAILTRAP_API_TOKEN?.trim());
+}
 
 async function initMailtrapApi(): Promise<void> {
   if (mailtrapClientInitialized) return;
@@ -28,16 +54,75 @@ async function initMailtrapApi(): Promise<void> {
   try {
     if (process.env.MAILTRAP_API_TOKEN) {
       const { MailtrapClient } = (await import("mailtrap")) as MailtrapModule;
+      const useSandbox =
+        process.env.MAILTRAP_USE_SANDBOX === "true" ||
+        process.env.MAILTRAP_SANDBOX === "true";
+      const testInboxId =
+        parseOptionalPositiveInt(process.env.MAILTRAP_INBOX_ID) ??
+        parseOptionalPositiveInt(process.env.MAILTRAP_TEST_INBOX_ID);
+
       mailtrapClient = new MailtrapClient({
         token: process.env.MAILTRAP_API_TOKEN,
+        sandbox: useSandbox,
+        ...(useSandbox && testInboxId != null ? { testInboxId } : {}),
       });
-      console.log("[Notification] Mailtrap API initialized successfully");
+      if (useSandbox && testInboxId == null) {
+        console.warn(
+          "[Notification] MAILTRAP_USE_SANDBOX is true but MAILTRAP_INBOX_ID is not set; Mailtrap testing sends will fail until you add the inbox ID from the Mailtrap dashboard.",
+        );
+      }
+      console.log(
+        `[Notification] Mailtrap API initialized (${useSandbox ? "sandbox/testing inbox" : "transactional send"})`,
+      );
     } else {
       console.log("[Notification] MAILTRAP_API_TOKEN not found");
     }
   } catch (err) {
     console.error("[Notification] Failed to initialize Mailtrap API:", err);
     mailtrapClient = null;
+  }
+}
+
+async function initSmtpTransporter(): Promise<void> {
+  if (smtpInitialized) return;
+  smtpInitialized = true;
+
+  const host = process.env.SMTP_HOST?.trim();
+  if (!host) {
+    return;
+  }
+
+  try {
+    const nodemailer = await import("nodemailer");
+    const portRaw = process.env.SMTP_PORT?.trim();
+    const port = portRaw ? Number.parseInt(portRaw, 10) : 587;
+    const secureEnv = process.env.SMTP_SECURE === "true";
+    const secure = secureEnv || port === 465;
+    const user =
+      process.env.SMTP_USER?.trim() ||
+      process.env.SMTP_USERNAME?.trim() ||
+      undefined;
+    const pass =
+      process.env.SMTP_PASSWORD?.trim() ||
+      process.env.SMTP_PASS?.trim() ||
+      undefined;
+
+    smtpTransporter = nodemailer.createTransport({
+      host,
+      port: Number.isFinite(port) ? port : 587,
+      secure,
+      auth:
+        user && pass
+          ? { user, pass }
+          : user
+            ? { user, pass: pass ?? "" }
+            : undefined,
+      requireTLS: process.env.SMTP_REQUIRE_TLS === "true",
+    });
+    console.log("[Notification] SMTP transporter initialized for host:", host);
+  } catch (err) {
+    console.error("[Notification] Failed to initialize SMTP:", err);
+    smtpTransporter = null;
   }
 }
 
@@ -59,6 +144,43 @@ function getMailtrapSender(): { email: string; name?: string } | null {
   const email = match[2].trim();
 
   return name ? { email, name } : { email };
+}
+
+async function sendViaSmtp(
+  recipients: { email: string }[],
+  subject: string,
+  html: string,
+  text: string,
+  attachments?: Array<{ content: string; filename: string; type: string }>,
+): Promise<void> {
+  await initSmtpTransporter();
+
+  if (!smtpTransporter) {
+    throw new Error("SMTP transporter is not configured.");
+  }
+
+  const sender = getMailtrapSender();
+  if (!sender) {
+    throw new Error("Missing MAILTRAP_FROM/EMAIL_FROM sender address.");
+  }
+
+  const from =
+    sender.name != null && sender.name.length > 0
+      ? { name: sender.name, address: sender.email }
+      : sender.email;
+
+  await smtpTransporter.sendMail({
+    from,
+    to: recipients.map((r) => r.email),
+    subject,
+    text,
+    html,
+    attachments: attachments?.map((a) => ({
+      filename: a.filename,
+      content: Buffer.from(a.content, "base64"),
+      contentType: a.type,
+    })),
+  });
 }
 
 async function sendViaMailtrapApi(
@@ -104,6 +226,27 @@ async function deliverMail(
   category: string,
   attachments?: Array<{ content: string; filename: string; type: string }>,
 ): Promise<void> {
+  if (isSmtpConfigured()) {
+    try {
+      await sendViaSmtp(recipients, subject, html, text, attachments);
+      console.log("[Notification] Delivered via SMTP");
+      return;
+    } catch (smtpErr) {
+      console.error(
+        "[Notification] SMTP send failed:",
+        smtpErr instanceof Error ? smtpErr.stack ?? smtpErr.message : smtpErr,
+      );
+      if (!isMailtrapTokenConfigured()) {
+        throw smtpErr instanceof Error
+          ? smtpErr
+          : new Error(String(smtpErr));
+      }
+      console.warn(
+        "[Notification] Retrying via Mailtrap API (SMTP failed but MAILTRAP_API_TOKEN is set).",
+      );
+    }
+  }
+
   await sendViaMailtrapApi(
     recipients,
     subject,
@@ -112,6 +255,7 @@ async function deliverMail(
     category,
     attachments,
   );
+  console.log("[Notification] Delivered via Mailtrap API");
 }
 
 // ---------------------------------------------------------------------------
@@ -227,11 +371,17 @@ export async function sendBookingConfirmation(
     return;
   }
 
+  const channelHint = isSmtpConfigured()
+    ? "SMTP (Mailtrap fallback if SMTP fails)"
+    : "Mailtrap API";
+
   try {
     console.log(
       "[Notification] Attempting send to:",
       reservation.guestEmail,
-      "via Mailtrap API",
+      "from:",
+      fromAddress.email,
+      `via ${channelHint}`,
     );
     await deliverMail(
       [{ email: reservation.guestEmail }],
@@ -304,11 +454,17 @@ END:VCALENDAR`;
     return;
   }
 
+  const channelHint = isSmtpConfigured()
+    ? "SMTP (Mailtrap fallback if SMTP fails)"
+    : "Mailtrap API";
+
   try {
     console.log(
       "[Notification] Attempting send to:",
       invite.guestEmail,
-      "via Mailtrap API",
+      "from:",
+      fromAddress.email,
+      `via ${channelHint}`,
     );
     await deliverMail(
       [{ email: invite.guestEmail }],

@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { signIn } from '@/lib/authClient';
 
 /**
@@ -23,7 +22,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,7 +38,7 @@ export default function LoginPage() {
     try {
       await signIn({ email, password });
       // Redirect to customer dashboard on successful login
-      router.push('/customer/dashboard');
+      window.location.assign('/customer/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(message);

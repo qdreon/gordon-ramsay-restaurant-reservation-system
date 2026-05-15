@@ -43,6 +43,16 @@ Always set a From address:
 
 - `MAILTRAP_FROM` or `EMAIL_FROM`
 
+### Quick email smoke test (local)
+
+With `npm run dev` running, in another terminal from this directory:
+
+```bash
+npm run test:notify -- you@example.com
+```
+
+This hits `/api/notifications/send` with a fake booking payload so you can confirm SMTP/Mailtrap before doing a full checkout flow.
+
 Optional metadata:
 
 - `RESTAURANT_NAME`

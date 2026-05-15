@@ -14,7 +14,8 @@
     "test:e2e:prod": "playwright test --config=playwright.prod.config.ts",
     "test:perf": "node tests/lighthouse/run-lighthouse.js",
     "test:perf:legacy": "lighthouse http://localhost:3000 --quiet --output=json --output-path=./tests/lighthouse/report.json --chrome-flags=\"--no-sandbox --headless\"",
-    "test:qa": "npm run test:e2e && npm run test:e2e:prod && npm run test:perf"
+    "test:qa": "npm run test:e2e && npm run test:e2e:prod && npm run test:perf",
+    "test:notify": "node scripts/poke-booking-email.cjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.1.0",
