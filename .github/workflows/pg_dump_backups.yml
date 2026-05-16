@@ -5,6 +5,9 @@ on:
     - cron: '0 2 * * *' # daily at 02:00 UTC
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 env:
   # Default retention (days) can be overridden via repository secret or env var
   BACKUP_RETENTION_DAYS: 30
