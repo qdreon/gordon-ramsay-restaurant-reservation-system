@@ -38,8 +38,8 @@ The system supports customer reservation booking, simulated deposit checkout, vi
 | Section 3. Development | Apr 22 – May 12, 2026 | Done | Coding work completed before the official May 12 coding freeze |
 | Section 4. Testing & QA | May 1 – May 12, 2026 | Done | Functional, structural, latency, concurrency, offline, RBAC, and compliance testing |
 | Section 5. Submission / Handoff | May 13 – May 14, 2026 | Done | Documentation, evidence sync, Canvas submission, GitHub links, handoff notes |
-| Section 6. Presentation & System Demo Prep | May 15 – May 19, 2026 | In Progress | 20-minute project presentation and 20-minute system demo preparation |
-| Final Examination | May 20 – May 21, 2026 | To Do | Final examination milestone only |
+| Section 6. Presentation & System Demo Prep | May 15 – May 19, 2026 | Done | 20-minute project presentation and 20-minute system demo preparation |
+| Final Examination | May 20 – May 21, 2026 | Done | Final examination milestone only |
 
 ---
 
@@ -595,9 +595,9 @@ gantt
     Deferred Deployment-Time Items                     :done, 2026-05-14, 2026-05-14
 
     section Presentation and System Demo
-    Presentation and Demo Preparation                  :active, 2026-05-15, 2026-05-19
-    System Demo Dry Run                                :active, 2026-05-16, 2026-05-18
-    Final Examination Milestone                        :crit, 2026-05-20, 2026-05-21
+    Presentation and Demo Preparation                  :done, 2026-05-15, 2026-05-19
+    System Demo Dry Run                                :done, 2026-05-16, 2026-05-18
+    Final Examination Milestone                        :done, 2026-05-20, 2026-05-21
 ```
 
 ---
@@ -611,8 +611,8 @@ gantt
 | QDR-35 Section 3. Development — Code Freeze by May 12 | Apr 22 – May 12 | Done |
 | QDR-46 Section 4. Testing and QA — Testing Freeze by May 12 | May 1 – May 12 | Done |
 | QDR-51 Section 5. Submission, Deployment Evidence, and Handoff | May 13 – May 14 | Done |
-| Section 6. Presentation and System Demo Preparation | May 15 – May 19 | In Progress |
-| Final Examination Readiness Milestone | May 20 – May 21 | To Do |
+| Section 6. Presentation and System Demo Preparation | May 15 – May 19 | Done |
+| Final Examination Readiness Milestone | May 20 – May 21 | Done |
 
 ---
 
